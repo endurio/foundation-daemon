@@ -1,10 +1,10 @@
-dcrd
+ndrd
 ====
 
-[![Build Status](https://travis-ci.org/decred/dcrd.png?branch=master)](https://travis-ci.org/decred/dcrd)
+[![Build Status](https://travis-ci.org/endurio/ndrd.png?branch=master)](https://travis-ci.org/endurio/ndrd)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/decred/dcrd)
-[![Go Report Card](https://goreportcard.com/badge/github.com/decred/dcrd)](https://goreportcard.com/report/github.com/decred/dcrd)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/endurio/ndrd)
+[![Go Report Card](https://goreportcard.com/badge/github.com/endurio/ndrd)](https://goreportcard.com/report/github.com/endurio/ndrd)
 
 ## Decred Overview
 
@@ -12,19 +12,19 @@ Decred is a blockchain-based cryptocurrency with a strong focus on community
 input, open governance, and sustainable funding for development. It utilizes a
 hybrid proof-of-work and proof-of-stake mining system to ensure that a small
 group cannot dominate the flow of transactions or make changes to Decred without
-the input of the community.  A unit of the currency is called a `decred` (DCR).
+the input of the community.  A unit of the currency is called a `endurio` (DCR).
 
-https://decred.org
+https://endurio.org
 
 ## Latest Downloads
 
-https://decred.org/downloads
+https://endurio.org/downloads
 
-## What is dcrd?
+## What is ndrd?
 
-dcrd is a full node implementation of Decred written in Go (golang).
+ndrd is a full node implementation of Decred written in Go (golang).
 
-It acts as a fully-validating chain daemon for the Decred cryptocurrency.  dcrd
+It acts as a fully-validating chain daemon for the Decred cryptocurrency.  ndrd
 maintains the entire past transactional ledger of Decred and allows relaying of
 transactions to other Decred nodes around the world.
 
@@ -35,7 +35,7 @@ The software was originally forked from [btcd](https://github.com/btcsuite/btcd)
 which is a bitcoin full node implementation that is still under active
 development.  To gain the benefit of btcd's ongoing upgrades, including improved
 peer and connection handling, database optimization, and other blockchain
-related technology improvements, dcrd is continuously synced with the btcd
+related technology improvements, ndrd is continuously synced with the btcd
 codebase.
 
 ## What is a full node?
@@ -53,13 +53,13 @@ of software participating in the Decred peer network. For instance, there are
 and cryptographic proofs they require to function, as well as relay their
 transactions to the rest of the global network.
 
-## Why run dcrd?
+## Why run ndrd?
 
 As described in the previous section, the Decred cryptocurrency relies on having
 a peer-to-peer network of nodes that fully validate all transactions and blocks
 and then relay them to other full nodes.
 
-Running a full node with dcrd contributes to the overall security of the
+Running a full node with ndrd contributes to the overall security of the
 network, increases the available paths for transactions and blocks to relay,
 and helps ensure there are an adequate number of nodes available to serve
 lightweight clients, such as Simplified Payment Verification (SPV) wallets.
@@ -69,13 +69,13 @@ users of lightweight clients which could force them to have to rely on
 centralized services that significantly reduce privacy and are vulnerable to
 censorship.
 
-In terms of individual benefits, since dcrd fully validates every block and
+In terms of individual benefits, since ndrd fully validates every block and
 transaction, it provides the highest security and privacy possible when used in
 conjunction with a wallet that also supports directly connecting to it in full
-validation mode, such as [dcrwallet (CLI)](https://github.com/decred/dcrwallet)
-and [Decrediton (GUI)](https://github.com/decred/decrediton).
+validation mode, such as [dcrwallet (CLI)](https://github.com/endurio/dcrwallet)
+and [Decrediton (GUI)](https://github.com/endurio/endurioiton).
 
-## Minimum Recommended Specifications (dcrd only)
+## Minimum Recommended Specifications (ndrd only)
 
 * 10 GB disk space (as of September 2018, increases over time)
 * 1GB memory (RAM)
@@ -87,7 +87,7 @@ and [Decrediton (GUI)](https://github.com/decred/decrediton).
 ## Getting Started
 
 So, you've decided to help the network by running a full node.  Great!  Running
-dcrd is simple.  All you need to do is install dcrd on a machine that is
+ndrd is simple.  All you need to do is install ndrd on a machine that is
 connected to the internet and meets the minimum recommended specifications, and
 launch it.
 
@@ -102,7 +102,7 @@ Also, make sure your firewall is configured to allow inbound connections to port
 
 Binary releases are provided for common operating systems and architectures:
 
-https://decred.org/downloads
+https://endurio.org/downloads
 
 ### Build from source (all platforms)
 
@@ -135,74 +135,74 @@ the repo's root directory.  Some notes:
 
 * Replace `go` with `vgo` when using Go 1.10.
 
-* The `dcrd` executable will be installed to `$GOPATH/bin`.  `GOPATH`
+* The `ndrd` executable will be installed to `$GOPATH/bin`.  `GOPATH`
   defaults to `$HOME/go` (or `%USERPROFILE%\go` on Windows) if unset.
 
 
 ### Example of obtaining and building from source on Windows 10 with Go 1.11:
 
 ```PowerShell
-PS> git clone https://github.com/decred/dcrd $env:USERPROFILE\src\dcrd
-PS> cd $env:USERPROFILE\src\dcrd
+PS> git clone https://github.com/endurio/ndrd $env:USERPROFILE\src\ndrd
+PS> cd $env:USERPROFILE\src\ndrd
 PS> go install . .\cmd\...
-PS> & "$(go env GOPATH)\bin\dcrd" -V
+PS> & "$(go env GOPATH)\bin\ndrd" -V
 
 ```
 
 ### Example of obtaining and building from source on Linux with Go 1.10:
 
 ```bash
-$ git clone https://github.com/decred/dcrd ~/src/dcrd
-$ cd ~/src/dcrd
+$ git clone https://github.com/endurio/ndrd ~/src/ndrd
+$ cd ~/src/ndrd
 $ vgo install . ./cmd/...
-$ $(vgo env GOPATH)/bin/dcrd -V
+$ $(vgo env GOPATH)/bin/ndrd -V
 ```
 
 ## Docker
 
-### Running dcrd
+### Running ndrd
 
-You can run a decred node from inside a docker container.  To build the image
+You can run a endurio node from inside a docker container.  To build the image
 yourself, use the following command:
 
 ```
-docker build -t decred/dcrd .
+docker build -t endurio/ndrd .
 ```
 
 Or you can create an alpine based image (requires Docker 17.05 or higher):
 
 ```
-docker build -t decred/dcrd:alpine -f Dockerfile.alpine .
+docker build -t endurio/ndrd:alpine -f Dockerfile.alpine .
 ```
 
 You can then run the image using:
 
 ```
-docker run decred/dcrd
+docker run endurio/ndrd
 ```
 
 You may wish to use an external volume to customise your config and persist the
 data in an external volume:
 
 ```
-docker run --rm -v /home/user/dcrdata:/root/.dcrd/data decred/dcrd
+docker run --rm -v /home/user/ndrdata:/root/.ndrd/data endurio/ndrd
 ```
 
-For a minimal image, you can use the decred/dcrd:alpine tag.  This is typically
+For a minimal image, you can use the endurio/ndrd:alpine tag.  This is typically
 a more secure option while also being a much smaller image.
 
 You can run dcrctl from inside the image.  For example, run an image (mounting
 your data from externally) with:
 
 ```
-docker run --rm -ti --name=dcrd-1 -v /home/user/.dcrd:/root/.dcrd \
-  decred/dcrd:alpine
+docker run --rm -ti --name=ndrd-1 -v /home/user/.ndrd:/root/.ndrd \
+  endurio/ndrd:alpine
 ```
 
 And then run dcrctl commands against it.  For example:
 
 ```
-docker exec -ti dcrd-1 dcrctl getbestblock
+docker exec -ti ndrd-1 dcrctl getbestblock
 ```
 
 ### Running Tests
@@ -234,18 +234,18 @@ GOVERSION=1.10 ./run_tests.sh
 
 If you have any further questions you can find us at:
 
-https://decred.org/community
+https://endurio.org/community
 
 ## Issue Tracker
 
-The [integrated github issue tracker](https://github.com/decred/dcrd/issues)
+The [integrated github issue tracker](https://github.com/endurio/ndrd/issues)
 is used for this project.
 
 ## Documentation
 
-The documentation for dcrd is a work-in-progress.  It is located in the
-[docs](https://github.com/decred/dcrd/tree/master/docs) folder.
+The documentation for ndrd is a work-in-progress.  It is located in the
+[docs](https://github.com/endurio/ndrd/tree/master/docs) folder.
 
 ## License
 
-dcrd is licensed under the [copyfree](http://copyfree.org) ISC License.
+ndrd is licensed under the [copyfree](http://copyfree.org) ISC License.

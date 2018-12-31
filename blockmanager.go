@@ -16,14 +16,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/decred/dcrd/blockchain"
-	"github.com/decred/dcrd/blockchain/stake"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/database"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/mempool"
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/blockchain"
+	"github.com/endurio/ndrd/blockchain/stake"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/database"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/mempool"
+	"github.com/endurio/ndrd/wire"
 )
 
 const (
@@ -2419,7 +2419,7 @@ func removeRegressionDB(dbPath string) error {
 	// Remove the old regression test database if it already exists.
 	fi, err := os.Stat(dbPath)
 	if err == nil {
-		dcrdLog.Infof("Removing regression test database from '%s'", dbPath)
+		ndrdLog.Infof("Removing regression test database from '%s'", dbPath)
 		if fi.IsDir() {
 			err := os.RemoveAll(dbPath)
 			if err != nil {
@@ -2471,7 +2471,7 @@ func warnMultipleDBs() {
 	// Warn if there are extra databases.
 	if len(duplicateDbPaths) > 0 {
 		selectedDbPath := blockDbPath(cfg.DbType)
-		dcrdLog.Warnf("WARNING: There are multiple block chain databases "+
+		ndrdLog.Warnf("WARNING: There are multiple block chain databases "+
 			"using different database types.\nYou probably don't "+
 			"want to waste disk space by having more than one.\n"+
 			"Your current database is located at [%v].\nThe "+
@@ -2490,7 +2490,7 @@ func loadBlockDB() (database.DB, error) {
 	// handle it uniquely.  We also don't want to worry about the multiple
 	// database type warnings when running with the memory database.
 	if cfg.DbType == "memdb" {
-		dcrdLog.Infof("Creating block database in memory.")
+		ndrdLog.Infof("Creating block database in memory.")
 		db, err := database.Create(cfg.DbType)
 		if err != nil {
 			return nil, err
@@ -2507,7 +2507,7 @@ func loadBlockDB() (database.DB, error) {
 	// each run, so remove it now if it already exists.
 	removeRegressionDB(dbPath)
 
-	dcrdLog.Infof("Loading block database from '%s'", dbPath)
+	ndrdLog.Infof("Loading block database from '%s'", dbPath)
 	db, err := database.Open(cfg.DbType, dbPath, activeNetParams.Net)
 	if err != nil {
 		// Return the error if it's not because the database doesn't
@@ -2529,7 +2529,7 @@ func loadBlockDB() (database.DB, error) {
 		}
 	}
 
-	dcrdLog.Info("Block database loaded")
+	ndrdLog.Info("Block database loaded")
 	return db, nil
 }
 

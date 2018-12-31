@@ -11,15 +11,15 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/decred/dcrd/blockchain"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/dcrec/secp256k1"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/hdkeychain"
-	"github.com/decred/dcrd/rpcclient"
-	"github.com/decred/dcrd/txscript"
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/blockchain"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/dcrec/secp256k1"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/hdkeychain"
+	"github.com/endurio/ndrd/rpcclient"
+	"github.com/endurio/ndrd/txscript"
+	"github.com/endurio/ndrd/wire"
 )
 
 var (
@@ -170,7 +170,7 @@ func (m *memWallet) SyncedHeight() int64 {
 	return m.currentHeight
 }
 
-// SetRPCClient saves the passed rpc connection to dcrd as the wallet's
+// SetRPCClient saves the passed rpc connection to ndrd as the wallet's
 // personal rpc connection.
 func (m *memWallet) SetRPCClient(rpcClient *rpcclient.Client) {
 	m.rpc = rpcClient

@@ -16,9 +16,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/decred/dcrd/dcrjson"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/internal/version"
+	"github.com/endurio/ndrd/dcrjson"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/internal/version"
 
 	flags "github.com/jessevdk/go-flags"
 )
@@ -31,13 +31,13 @@ const (
 )
 
 var (
-	dcrdHomeDir            = dcrutil.AppDataDir("dcrd", false)
+	ndrdHomeDir            = dcrutil.AppDataDir("ndrd", false)
 	dcrctlHomeDir          = dcrutil.AppDataDir("dcrctl", false)
 	dcrwalletHomeDir       = dcrutil.AppDataDir("dcrwallet", false)
 	defaultConfigFile      = filepath.Join(dcrctlHomeDir, "dcrctl.conf")
 	defaultRPCServer       = "localhost"
 	defaultWalletRPCServer = "localhost"
-	defaultRPCCertFile     = filepath.Join(dcrdHomeDir, "rpc.cert")
+	defaultRPCCertFile     = filepath.Join(ndrdHomeDir, "rpc.cert")
 	defaultWalletCertFile  = filepath.Join(dcrwalletHomeDir, "rpc.cert")
 )
 
@@ -342,23 +342,23 @@ func loadConfig() (*config, []string, error) {
 }
 
 // createDefaultConfig creates a basic config file at the given destination path.
-// For this it tries to read the dcrd config file at its default path, and extract
+// For this it tries to read the ndrd config file at its default path, and extract
 // the RPC user and password from it.
 func createDefaultConfigFile(destinationPath string) error {
-	// Nothing to do when there is no existing dcrd conf file at the default
+	// Nothing to do when there is no existing ndrd conf file at the default
 	// path to extract the details from.
-	dcrdConfigPath := filepath.Join(dcrdHomeDir, "dcrd.conf")
-	if !fileExists(dcrdConfigPath) {
+	ndrdConfigPath := filepath.Join(ndrdHomeDir, "ndrd.conf")
+	if !fileExists(ndrdConfigPath) {
 		return nil
 	}
 
-	// Read dcrd.conf from its default path
-	dcrdConfigFile, err := os.Open(dcrdConfigPath)
+	// Read ndrd.conf from its default path
+	ndrdConfigFile, err := os.Open(ndrdConfigPath)
 	if err != nil {
 		return err
 	}
-	defer dcrdConfigFile.Close()
-	content, err := ioutil.ReadAll(dcrdConfigFile)
+	defer ndrdConfigFile.Close()
+	content, err := ioutil.ReadAll(ndrdConfigFile)
 	if err != nil {
 		return err
 	}

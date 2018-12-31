@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/decred/dcrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
 )
 
 const (

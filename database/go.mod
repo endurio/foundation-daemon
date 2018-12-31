@@ -1,11 +1,11 @@
-module github.com/decred/dcrd/database
+module github.com/endurio/ndrd/database
 
 require (
 	github.com/btcsuite/goleveldb v1.0.0
-	github.com/decred/dcrd/chaincfg v1.2.0
-	github.com/decred/dcrd/chaincfg/chainhash v1.0.1
-	github.com/decred/dcrd/dcrutil v1.1.1
-	github.com/decred/dcrd/wire v1.2.0
+	github.com/endurio/ndrd/chaincfg v1.2.0
+	github.com/endurio/ndrd/chaincfg/chainhash v1.0.1
+	github.com/endurio/ndrd/dcrutil v1.1.1
+	github.com/endurio/ndrd/wire v1.2.0
 	github.com/decred/slog v1.0.0
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/golang/protobuf v1.2.0 // indirect
@@ -21,11 +21,11 @@ require (
 )
 
 replace (
-	github.com/decred/dcrd/chaincfg => ../chaincfg
-	github.com/decred/dcrd/chaincfg/chainhash => ../chaincfg/chainhash
-	github.com/decred/dcrd/dcrec => ../dcrec
-	github.com/decred/dcrd/dcrec/edwards => ../dcrec/edwards
-	github.com/decred/dcrd/dcrec/secp256k1 => ../dcrec/secp256k1
-	github.com/decred/dcrd/dcrutil => ../dcrutil
-	github.com/decred/dcrd/wire => ../wire
+	github.com/endurio/ndrd/chaincfg => ../chaincfg
+	github.com/endurio/ndrd/chaincfg/chainhash => ../chaincfg/chainhash
+	github.com/endurio/ndrd/dcrec => ../dcrec
+	github.com/endurio/ndrd/dcrec/edwards => ../dcrec/edwards
+	github.com/endurio/ndrd/dcrec/secp256k1 => ../dcrec/secp256k1
+	github.com/endurio/ndrd/dcrutil => ../dcrutil
+	github.com/endurio/ndrd/wire => ../wire
 )

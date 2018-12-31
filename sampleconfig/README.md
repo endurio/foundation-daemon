@@ -1,12 +1,12 @@
 sampleconfig
 ============
 
-[![Build Status](http://img.shields.io/travis/decred/dcrd.svg)](https://travis-ci.org/decred/dcrd)
+[![Build Status](http://img.shields.io/travis/endurio/ndrd.svg)](https://travis-ci.org/endurio/ndrd)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/decred/dcrd/sampleconfig)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/endurio/ndrd/sampleconfig)
 
 Package sampleconfig provides a single constant that contains the contents of
-the sample configuration file for dcrd.  This is provided for tools that perform
+the sample configuration file for ndrd.  This is provided for tools that perform
 automatic configuration and would like to ensure the generated configuration
 file not only includes the specifically configured values, but also provides
 samples of other configuration options.
@@ -14,7 +14,7 @@ samples of other configuration options.
 ## Installation and Updating
 
 ```bash
-$ go get -u github.com/decred/dcrd/sampleconfig
+$ go get -u github.com/endurio/ndrd/sampleconfig
 ```
 
 ## License

@@ -9,7 +9,7 @@ import (
 	"io"
 )
 
-// MsgGetAddr implements the Message interface and represents a decred
+// MsgGetAddr implements the Message interface and represents a endurio
 // getaddr message.  It is used to request a list of known active peers on the
 // network from a peer to help identify potential nodes.  The list is returned
 // via one or more addr messages (MsgAddr).

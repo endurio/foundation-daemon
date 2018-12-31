@@ -23,7 +23,7 @@
 #   - Updates project changes file with release notes
 #
 
-PROJECT=dcrd
+PROJECT=ndrd
 PROJECT_UC=$(echo $PROJECT | tr '[:lower:]' '[:upper:]')
 SCRIPT=$(basename $0)
 VERFILE=../version.go

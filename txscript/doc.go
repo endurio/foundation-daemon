@@ -7,7 +7,7 @@
 Package txscript implements the Decred transaction script language.
 
 This package provides data structures and functions to parse and execute
-decred transaction scripts.
+endurio transaction scripts.
 
 Script Overview
 
@@ -25,7 +25,7 @@ which proves the spender owns the associated private key.  This information
 is used to prove the the spender is authorized to perform the transaction.
 
 One benefit of using a scripting language is added flexibility in specifying
-what conditions must be met in order to spend decreds.
+what conditions must be met in order to spend endurios.
 
 Errors
 

@@ -10,12 +10,12 @@ import (
 	"errors"
 
 	"github.com/decred/base58"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainec"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/dcrec"
-	"github.com/decred/dcrd/dcrec/edwards"
-	"github.com/decred/dcrd/dcrec/secp256k1"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/chaincfg/chainec"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/dcrec"
+	"github.com/endurio/ndrd/dcrec/edwards"
+	"github.com/endurio/ndrd/dcrec/secp256k1"
 )
 
 // ErrMalformedPrivateKey describes an error where a WIF-encoded private

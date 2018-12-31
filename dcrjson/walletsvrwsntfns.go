@@ -15,7 +15,7 @@ const (
 
 	// DcrdConnectedNtfnMethod is the method used for notifications when
 	// a wallet server is connected to a chain server.
-	DcrdConnectedNtfnMethod = "dcrdconnected"
+	DcrdConnectedNtfnMethod = "ndrdconnected"
 
 	// NewTicketsNtfnMethod is the method of the daemon
 	// newtickets notification.
@@ -71,13 +71,13 @@ func NewAccountBalanceNtfn(account string, balance float64, confirmed bool) *Acc
 	}
 }
 
-// DcrdConnectedNtfn defines the dcrddconnected JSON-RPC notification.
+// DcrdConnectedNtfn defines the ndrddconnected JSON-RPC notification.
 type DcrdConnectedNtfn struct {
 	Connected bool
 }
 
 // NewDcrdConnectedNtfn returns a new instance which can be used to issue a
-// dcrddconnected JSON-RPC notification.
+// ndrddconnected JSON-RPC notification.
 func NewDcrdConnectedNtfn(connected bool) *DcrdConnectedNtfn {
 	return &DcrdConnectedNtfn{
 		Connected: connected,

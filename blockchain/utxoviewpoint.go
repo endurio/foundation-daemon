@@ -8,11 +8,11 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/decred/dcrd/blockchain/stake"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/database"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/txscript"
+	"github.com/endurio/ndrd/blockchain/stake"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/database"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/txscript"
 )
 
 // utxoOutput houses details about an individual unspent transaction output such

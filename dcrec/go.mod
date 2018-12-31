@@ -1,1 +1,1 @@
-module github.com/decred/dcrd/dcrec
+module github.com/endurio/ndrd/dcrec

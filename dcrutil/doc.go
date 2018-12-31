@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package dcrutil provides decred-specific convenience functions and types.
+Package dcrutil provides endurio-specific convenience functions and types.
 
 Block Overview
 

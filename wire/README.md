@@ -1,9 +1,9 @@
 wire
 ====
 
-[![Build Status](http://img.shields.io/travis/decred/dcrd.svg)](https://travis-ci.org/decred/dcrd)
+[![Build Status](http://img.shields.io/travis/endurio/ndrd.svg)](https://travis-ci.org/endurio/ndrd)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/decred/dcrd/wire)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/endurio/ndrd/wire)
 
 Package wire implements the Decred wire protocol.  A comprehensive suite of
 tests with 100% test coverage is provided to ensure proper functionality.
@@ -15,14 +15,14 @@ protocol level.
 ## Installation and Updating
 
 ```bash
-$ go get -u github.com/decred/dcrd/wire
+$ go get -u github.com/endurio/ndrd/wire
 ```
 
 ## Decred Message Overview
 
 The Decred protocol consists of exchanging messages between peers. Each message
 is preceded by a header which identifies information about it such as which
-decred network it is a part of, its type, how big it is, and a checksum to
+endurio network it is a part of, its type, how big it is, and a checksum to
 verify validity. All encoding and decoding of message headers is handled by this
 package.
 

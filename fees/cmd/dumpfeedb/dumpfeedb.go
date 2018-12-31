@@ -11,8 +11,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/fees"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/fees"
 	flags "github.com/jessevdk/go-flags"
 )
 
@@ -22,7 +22,7 @@ type config struct {
 
 func main() {
 	cfg := config{
-		DB: path.Join(dcrutil.AppDataDir("dcrd", false), "data", "mainnet", "feesdb"),
+		DB: path.Join(dcrutil.AppDataDir("ndrd", false), "data", "mainnet", "feesdb"),
 	}
 
 	parser := flags.NewParser(&cfg, flags.Default)

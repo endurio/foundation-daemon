@@ -3,10 +3,10 @@ Description=Decred Full Node
 
 [Service]
 Type=simple
-User=dcrd
-Group=dcrd
-WorkingDirectory=/var/dcrd
-ExecStart=/opt/decred/bin/dcrd --appdata=/var/dcrd
+User=ndrd
+Group=ndrd
+WorkingDirectory=/var/ndrd
+ExecStart=/opt/endurio/bin/ndrd --appdata=/var/ndrd
 Restart=on-abnormal
 
 [Install]

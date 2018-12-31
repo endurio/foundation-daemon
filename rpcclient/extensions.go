@@ -11,10 +11,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/dcrjson"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/dcrjson"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/wire"
 )
 
 var (
@@ -84,7 +84,7 @@ func (r FutureDebugLevelResult) Receive() (string, error) {
 //
 // See DebugLevel for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) DebugLevelAsync(levelSpec string) FutureDebugLevelResult {
 	cmd := dcrjson.NewDebugLevelCmd(levelSpec)
 	return c.sendCmd(cmd)
@@ -99,7 +99,7 @@ func (c *Client) DebugLevelAsync(levelSpec string) FutureDebugLevelResult {
 // Additionally, the special keyword 'show' can be used to get a list of the
 // available subsystems.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) DebugLevel(levelSpec string) (string, error) {
 	return c.DebugLevelAsync(levelSpec).Receive()
 }
@@ -132,7 +132,7 @@ func (r FutureEstimateStakeDiffResult) Receive() (*dcrjson.EstimateStakeDiffResu
 //
 // See EstimateStakeDiff for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) EstimateStakeDiffAsync(tickets *uint32) FutureEstimateStakeDiffResult {
 	cmd := dcrjson.NewEstimateStakeDiffCmd(tickets)
 	return c.sendCmd(cmd)
@@ -141,7 +141,7 @@ func (c *Client) EstimateStakeDiffAsync(tickets *uint32) FutureEstimateStakeDiff
 // EstimateStakeDiff returns the minimum, maximum, and expected next stake
 // difficulty.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) EstimateStakeDiff(tickets *uint32) (*dcrjson.EstimateStakeDiffResult, error) {
 	return c.EstimateStakeDiffAsync(tickets).Receive()
 }
@@ -178,7 +178,7 @@ func (c *Client) ExistsAddressAsync(address dcrutil.Address) FutureExistsAddress
 // ExistsAddress returns information about whether or not an address has been
 // used on the main chain or in mempool.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) ExistsAddress(address dcrutil.Address) (bool, error) {
 	return c.ExistsAddressAsync(address).Receive()
 }
@@ -221,7 +221,7 @@ func (c *Client) ExistsAddressesAsync(addresses []dcrutil.Address) FutureExistsA
 // ExistsAddresses returns information about whether or not an address exists
 // in the blockchain or memory pool.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) ExistsAddresses(addresses []dcrutil.Address) (string, error) {
 	return c.ExistsAddressesAsync(addresses).Receive()
 }
@@ -304,7 +304,7 @@ func (c *Client) ExistsExpiredTicketsAsync(hashes []*chainhash.Hash) FutureExist
 // ExistsExpiredTickets returns information about whether or not a ticket hash exists
 // in the expired ticket database.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) ExistsExpiredTickets(hashes []*chainhash.Hash) (string, error) {
 	return c.ExistsExpiredTicketsAsync(hashes).Receive()
 }
@@ -342,7 +342,7 @@ func (c *Client) ExistsLiveTicketAsync(hash *chainhash.Hash) FutureExistsLiveTic
 // ExistsLiveTicket returns information about whether or not a ticket hash exists
 // in the live ticket database.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) ExistsLiveTicket(hash *chainhash.Hash) (bool, error) {
 	return c.ExistsLiveTicketAsync(hash).Receive()
 }
@@ -385,7 +385,7 @@ func (c *Client) ExistsLiveTicketsAsync(hashes []*chainhash.Hash) FutureExistsLi
 // ExistsLiveTickets returns information about whether or not a ticket hash exists
 // in the live ticket database.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) ExistsLiveTickets(hashes []*chainhash.Hash) (string, error) {
 	return c.ExistsLiveTicketsAsync(hashes).Receive()
 }
@@ -428,7 +428,7 @@ func (c *Client) ExistsMempoolTxsAsync(hashes []*chainhash.Hash) FutureExistsMem
 // ExistsMempoolTxs returns information about whether or not a ticket hash exists
 // in the live ticket database.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) ExistsMempoolTxs(hashes []*chainhash.Hash) (string, error) {
 	return c.ExistsMempoolTxsAsync(hashes).Receive()
 }
@@ -536,7 +536,7 @@ func (r FutureGetBestBlockResult) Receive() (*chainhash.Hash, int64, error) {
 //
 // See GetBestBlock for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetBestBlockAsync() FutureGetBestBlockResult {
 	cmd := dcrjson.NewGetBestBlockCmd()
 	return c.sendCmd(cmd)
@@ -545,7 +545,7 @@ func (c *Client) GetBestBlockAsync() FutureGetBestBlockResult {
 // GetBestBlock returns the hash and height of the block in the longest (best)
 // chain.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetBestBlock() (*chainhash.Hash, int64, error) {
 	return c.GetBestBlockAsync().Receive()
 }
@@ -578,7 +578,7 @@ func (r FutureGetCurrentNetResult) Receive() (wire.CurrencyNet, error) {
 //
 // See GetCurrentNet for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetCurrentNetAsync() FutureGetCurrentNetResult {
 	cmd := dcrjson.NewGetCurrentNetCmd()
 	return c.sendCmd(cmd)
@@ -586,7 +586,7 @@ func (c *Client) GetCurrentNetAsync() FutureGetCurrentNetResult {
 
 // GetCurrentNet returns the network the server is running on.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetCurrentNet() (wire.CurrencyNet, error) {
 	return c.GetCurrentNetAsync().Receive()
 }
@@ -662,7 +662,7 @@ func (r FutureGetStakeDifficultyResult) Receive() (*dcrjson.GetStakeDifficultyRe
 //
 // See GetStakeDifficulty for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetStakeDifficultyAsync() FutureGetStakeDifficultyResult {
 	cmd := dcrjson.NewGetStakeDifficultyCmd()
 	return c.sendCmd(cmd)
@@ -670,7 +670,7 @@ func (c *Client) GetStakeDifficultyAsync() FutureGetStakeDifficultyResult {
 
 // GetStakeDifficulty returns the current and next stake difficulty.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetStakeDifficulty() (*dcrjson.GetStakeDifficultyResult, error) {
 	return c.GetStakeDifficultyAsync().Receive()
 }
@@ -703,7 +703,7 @@ func (r FutureGetStakeVersionsResult) Receive() (*dcrjson.GetStakeVersionsResult
 //
 // See GetStakeVersionInfo for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetStakeVersionInfoAsync(count int32) FutureGetStakeVersionInfoResult {
 	cmd := dcrjson.NewGetStakeVersionInfoCmd(count)
 	return c.sendCmd(cmd)
@@ -711,7 +711,7 @@ func (c *Client) GetStakeVersionInfoAsync(count int32) FutureGetStakeVersionInfo
 
 // GetStakeVersionInfo returns the stake versions results for past requested intervals (count).
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetStakeVersionInfo(count int32) (*dcrjson.GetStakeVersionInfoResult, error) {
 	return c.GetStakeVersionInfoAsync(count).Receive()
 }
@@ -744,7 +744,7 @@ func (r FutureGetStakeVersionInfoResult) Receive() (*dcrjson.GetStakeVersionInfo
 //
 // See GetStakeVersions for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetStakeVersionsAsync(hash string, count int32) FutureGetStakeVersionsResult {
 	cmd := dcrjson.NewGetStakeVersionsCmd(hash, count)
 	return c.sendCmd(cmd)
@@ -752,7 +752,7 @@ func (c *Client) GetStakeVersionsAsync(hash string, count int32) FutureGetStakeV
 
 // GetStakeVersions returns the stake versions and vote versions of past requested blocks.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetStakeVersions(hash string, count int32) (*dcrjson.GetStakeVersionsResult, error) {
 	return c.GetStakeVersionsAsync(hash, count).Receive()
 }
@@ -791,7 +791,7 @@ func (r FutureGetTicketPoolValueResult) Receive() (dcrutil.Amount, error) {
 //
 // See GetTicketPoolValue for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetTicketPoolValueAsync() FutureGetTicketPoolValueResult {
 	cmd := dcrjson.NewGetTicketPoolValueCmd()
 	return c.sendCmd(cmd)
@@ -799,7 +799,7 @@ func (c *Client) GetTicketPoolValueAsync() FutureGetTicketPoolValueResult {
 
 // GetTicketPoolValue returns the value of the live ticket pool.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetTicketPoolValue() (dcrutil.Amount, error) {
 	return c.GetTicketPoolValueAsync().Receive()
 }
@@ -832,7 +832,7 @@ func (r FutureGetVoteInfoResult) Receive() (*dcrjson.GetVoteInfoResult, error) {
 //
 // See GetVoteInfo for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetVoteInfoAsync(version uint32) FutureGetVoteInfoResult {
 	cmd := dcrjson.NewGetVoteInfoCmd(version)
 	return c.sendCmd(cmd)
@@ -841,7 +841,7 @@ func (c *Client) GetVoteInfoAsync(version uint32) FutureGetVoteInfoResult {
 // GetVoteInfo returns voting information for the specified stake version. This
 // includes current voting window, quorum, total votes and agendas.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) GetVoteInfo(version uint32) (*dcrjson.GetVoteInfoResult, error) {
 	return c.GetVoteInfoAsync(version).Receive()
 }
@@ -873,7 +873,7 @@ func (r FutureListAddressTransactionsResult) Receive() ([]dcrjson.ListTransactio
 //
 // See ListAddressTransactions for the blocking version and more details.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) ListAddressTransactionsAsync(addresses []dcrutil.Address, account string) FutureListAddressTransactionsResult {
 	// Convert addresses to strings.
 	addrs := make([]string, 0, len(addresses))
@@ -934,7 +934,7 @@ func (c *Client) LiveTicketsAsync() FutureLiveTicketsResult {
 // LiveTickets returns all currently missed tickets from the missed
 // ticket database in the daemon.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) LiveTickets() ([]*chainhash.Hash, error) {
 	return c.LiveTicketsAsync().Receive()
 }
@@ -981,7 +981,7 @@ func (c *Client) MissedTicketsAsync() FutureMissedTicketsResult {
 // MissedTickets returns all currently missed tickets from the missed
 // ticket database in the daemon.
 //
-// NOTE: This is a dcrd extension.
+// NOTE: This is a ndrd extension.
 func (c *Client) MissedTickets() ([]*chainhash.Hash, error) {
 	return c.MissedTicketsAsync().Receive()
 }

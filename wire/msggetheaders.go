@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/decred/dcrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
 )
 
-// MsgGetHeaders implements the Message interface and represents a decred
+// MsgGetHeaders implements the Message interface and represents a endurio
 // getheaders message.  It is used to request a list of block headers for
 // blocks starting after the last known hash in the slice of block locator
 // hashes.  The list is returned via a headers message (MsgHeaders) and is

@@ -11,27 +11,27 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/database"
-	_ "github.com/decred/dcrd/database/ffldb"
-	"github.com/decred/dcrd/dcrutil"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/database"
+	_ "github.com/endurio/ndrd/database/ffldb"
+	"github.com/endurio/ndrd/dcrutil"
 )
 
 var (
-	dcrdHomeDir     = dcrutil.AppDataDir("dcrd", false)
+	ndrdHomeDir     = dcrutil.AppDataDir("ndrd", false)
 	knownDbTypes    = database.SupportedDrivers()
 	activeNetParams = &chaincfg.MainNetParams
 
 	// Default global config.
 	cfg = &config{
-		DataDir: filepath.Join(dcrdHomeDir, "data"),
+		DataDir: filepath.Join(ndrdHomeDir, "data"),
 		DbType:  "ffldb",
 	}
 )
 
 // config defines the global configuration options.
 type config struct {
-	DataDir string `short:"b" long:"datadir" description:"Location of the dcrd data directory"`
+	DataDir string `short:"b" long:"datadir" description:"Location of the ndrd data directory"`
 	DbType  string `long:"dbtype" description:"Database backend to use for the Block Chain"`
 	TestNet bool   `long:"testnet" description:"Use the test network"`
 	SimNet  bool   `long:"simnet" description:"Use the simulation test network"`

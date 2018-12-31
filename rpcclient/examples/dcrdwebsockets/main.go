@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/rpcclient"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/rpcclient"
 )
 
 func main() {
@@ -29,9 +29,9 @@ func main() {
 		},
 	}
 
-	// Connect to local dcrd RPC server using websockets.
-	dcrdHomeDir := dcrutil.AppDataDir("dcrd", false)
-	certs, err := ioutil.ReadFile(filepath.Join(dcrdHomeDir, "rpc.cert"))
+	// Connect to local ndrd RPC server using websockets.
+	ndrdHomeDir := dcrutil.AppDataDir("ndrd", false)
+	certs, err := ioutil.ReadFile(filepath.Join(ndrdHomeDir, "rpc.cert"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -14,8 +14,8 @@ package dcrutil
 
 import (
 	"github.com/decred/base58"
-	"github.com/decred/dcrd/chaincfg/chainec"
-	"github.com/decred/dcrd/dcrec/secp256k1"
+	"github.com/endurio/ndrd/chaincfg/chainec"
+	"github.com/endurio/ndrd/dcrec/secp256k1"
 
 	"golang.org/x/crypto/ripemd160"
 )

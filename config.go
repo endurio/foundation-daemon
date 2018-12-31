@@ -22,23 +22,23 @@ import (
 	"time"
 
 	"github.com/btcsuite/go-socks/socks"
-	"github.com/decred/dcrd/connmgr"
-	"github.com/decred/dcrd/database"
-	_ "github.com/decred/dcrd/database/ffldb"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/internal/version"
-	"github.com/decred/dcrd/mempool"
-	"github.com/decred/dcrd/sampleconfig"
+	"github.com/endurio/ndrd/connmgr"
+	"github.com/endurio/ndrd/database"
+	_ "github.com/endurio/ndrd/database/ffldb"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/internal/version"
+	"github.com/endurio/ndrd/mempool"
+	"github.com/endurio/ndrd/sampleconfig"
 	"github.com/decred/slog"
 	flags "github.com/jessevdk/go-flags"
 )
 
 const (
-	defaultConfigFilename        = "dcrd.conf"
+	defaultConfigFilename        = "ndrd.conf"
 	defaultDataDirname           = "data"
 	defaultLogLevel              = "info"
 	defaultLogDirname            = "logs"
-	defaultLogFilename           = "dcrd.log"
+	defaultLogFilename           = "ndrd.log"
 	defaultMaxSameIP             = 5
 	defaultMaxPeers              = 125
 	defaultBanDuration           = time.Hour * 24
@@ -64,7 +64,7 @@ const (
 )
 
 var (
-	defaultHomeDir     = dcrutil.AppDataDir("dcrd", false)
+	defaultHomeDir     = dcrutil.AppDataDir("ndrd", false)
 	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
 	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
 	knownDbTypes       = database.SupportedDrivers()
@@ -87,7 +87,7 @@ func minUint32(a, b uint32) uint32 {
 	return b
 }
 
-// config defines the configuration options for dcrd.
+// config defines the configuration options for ndrd.
 //
 // See loadConfig for details on the configuration load process.
 type config struct {
@@ -374,7 +374,7 @@ func newConfigParser(cfg *config, so *serviceOptions, options flags.Options) *fl
 	return parser
 }
 
-// createDefaultConfig copies the file sample-dcrd.conf to the given destination path,
+// createDefaultConfig copies the file sample-ndrd.conf to the given destination path,
 // and populates it with some randomly generated RPC username and password.
 func createDefaultConfigFile(destPath string) error {
 	// Create the destination directory if it does not exist.
@@ -427,7 +427,7 @@ func createDefaultConfigFile(destPath string) error {
 // 	3) Load configuration file overwriting defaults with any specified options
 // 	4) Parse CLI options and overwrite/add any specified options
 //
-// The above results in dcrd functioning properly without any config settings
+// The above results in ndrd functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
 func loadConfig() (*config, []string, error) {
@@ -506,7 +506,7 @@ func loadConfig() (*config, []string, error) {
 		os.Exit(0)
 	}
 
-	// Update the home directory for dcrd if specified. Since the home
+	// Update the home directory for ndrd if specified. Since the home
 	// directory is updated, other variables need to be updated to
 	// reflect the new changes.
 	if preCfg.HomeDir != "" {
@@ -1138,7 +1138,7 @@ func loadConfig() (*config, []string, error) {
 	// Warn if old testnet directory is present.
 	for _, oldDir := range oldTestNets {
 		if fileExists(oldDir) {
-			dcrdLog.Warnf("Block chain data from previous testnet"+
+			ndrdLog.Warnf("Block chain data from previous testnet"+
 				" found (%v) and can probably be removed.",
 				oldDir)
 		}
@@ -1148,32 +1148,32 @@ func loadConfig() (*config, []string, error) {
 	// done.  This prevents the warning on help messages and invalid
 	// options.  Note this should go directly before the return.
 	if configFileError != nil {
-		dcrdLog.Warnf("%v", configFileError)
+		ndrdLog.Warnf("%v", configFileError)
 	}
 
 	return &cfg, remainingArgs, nil
 }
 
-// dcrdDial connects to the address on the named network using the appropriate
+// ndrdDial connects to the address on the named network using the appropriate
 // dial function depending on the address and configuration options.  For
 // example, .onion addresses will be dialed using the onion specific proxy if
 // one was specified, but will otherwise use the normal dial function (which
 // could itself use a proxy or not).
-func dcrdDial(network, addr string) (net.Conn, error) {
+func ndrdDial(network, addr string) (net.Conn, error) {
 	if strings.Contains(addr, ".onion:") {
 		return cfg.oniondial(network, addr)
 	}
 	return cfg.dial(network, addr)
 }
 
-// dcrdLookup returns the correct DNS lookup function to use depending on the
+// ndrdLookup returns the correct DNS lookup function to use depending on the
 // passed host and configuration options.  For example, .onion addresses will be
 // resolved using the onion specific proxy if one was specified, but will
 // otherwise treat the normal proxy as tor unless --noonion was specified in
 // which case the lookup will fail.  Meanwhile, normal IP addresses will be
 // resolved using tor if a proxy was specified unless --noonion was also
 // specified in which case the normal system DNS resolver will be used.
-func dcrdLookup(host string) ([]net.IP, error) {
+func ndrdLookup(host string) ([]net.IP, error) {
 	if strings.HasSuffix(host, ".onion") {
 		return cfg.onionlookup(host)
 	}

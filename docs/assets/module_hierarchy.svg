@@ -15,13 +15,13 @@
 <path fill="darkkhaki" stroke="black" d="M45,-108C45,-108 12,-108 12,-108 6,-108 0,-102 0,-96 0,-96 0,-84 0,-84 0,-78 6,-72 12,-72 12,-72 45,-72 45,-72 51,-72 57,-78 57,-84 57,-84 57,-96 57,-96 57,-102 51,-108 45,-108"/>
 <text text-anchor="middle" x="28.5" y="-86.3" font-family="Times New Roman,serif" font-size="14.00">certgen</text>
 </g>
-<!-- dcrd -->
-<g id="node23" class="node"><title>dcrd</title>
+<!-- ndrd -->
+<g id="node23" class="node"><title>ndrd</title>
 <path fill="chocolate" stroke="black" d="M342.5,-36C342.5,-36 312.5,-36 312.5,-36 306.5,-36 300.5,-30 300.5,-24 300.5,-24 300.5,-12 300.5,-12 300.5,-6 306.5,-0 312.5,-0 312.5,-0 342.5,-0 342.5,-0 348.5,-0 354.5,-6 354.5,-12 354.5,-12 354.5,-24 354.5,-24 354.5,-30 348.5,-36 342.5,-36"/>
-<text text-anchor="middle" x="327.5" y="-14.3" font-family="Times New Roman,serif" font-size="14.00">dcrd</text>
+<text text-anchor="middle" x="327.5" y="-14.3" font-family="Times New Roman,serif" font-size="14.00">ndrd</text>
 </g>
-<!-- certgen&#45;&gt;dcrd -->
-<g id="edge25" class="edge"><title>certgen&#45;&gt;dcrd</title>
+<!-- certgen&#45;&gt;ndrd -->
+<g id="edge25" class="edge"><title>certgen&#45;&gt;ndrd</title>
 <path fill="none" stroke="darkkhaki" d="M28.5,-61.6198C28.5,-61.6198 28.5,-9 28.5,-9 28.5,-9 226.837,-9 300.438,-9"/>
 <polygon fill="darkkhaki" stroke="darkkhaki" points="25.0001,-61.6198 28.5,-71.6198 32.0001,-61.6199 25.0001,-61.6198"/>
 </g>
@@ -90,8 +90,8 @@
 <path fill="none" stroke="coral" d="M190.5,-637.831C190.5,-637.831 190.5,-612.413 190.5,-612.413"/>
 <polygon fill="coral" stroke="coral" points="187,-637.831 190.5,-647.831 194,-637.831 187,-637.831"/>
 </g>
-<!-- addrmgr&#45;&gt;dcrd -->
-<g id="edge26" class="edge"><title>addrmgr&#45;&gt;dcrd</title>
+<!-- addrmgr&#45;&gt;ndrd -->
+<g id="edge26" class="edge"><title>addrmgr&#45;&gt;ndrd</title>
 <path fill="none" stroke="lightsalmon" d="M107.5,-61.8314C107.5,-61.8314 107.5,-18 107.5,-18 107.5,-18 241.107,-18 300.082,-18"/>
 <polygon fill="lightsalmon" stroke="lightsalmon" points="104,-61.8313 107.5,-71.8314 111,-61.8314 104,-61.8313"/>
 </g>
@@ -115,8 +115,8 @@
 <path fill="none" stroke="cadetblue" d="M201.167,-565.831C201.167,-565.831 201.167,-522 201.167,-522 201.167,-522 288.013,-522 333.471,-522"/>
 <polygon fill="cadetblue" stroke="cadetblue" points="197.667,-565.831 201.167,-575.831 204.667,-565.831 197.667,-565.831"/>
 </g>
-<!-- connmgr&#45;&gt;dcrd -->
-<g id="edge28" class="edge"><title>connmgr&#45;&gt;dcrd</title>
+<!-- connmgr&#45;&gt;ndrd -->
+<g id="edge28" class="edge"><title>connmgr&#45;&gt;ndrd</title>
 <path fill="none" stroke="mistyrose" d="M190.5,-61.7778C190.5,-61.7778 190.5,-27 190.5,-27 190.5,-27 260.507,-27 300.433,-27"/>
 <polygon fill="mistyrose" stroke="mistyrose" points="187,-61.7778 190.5,-71.7778 194,-61.7778 187,-61.7778"/>
 </g>
@@ -185,8 +185,8 @@
 <path fill="none" stroke="dodgerblue" d="M389.25,-421.831C389.25,-421.831 389.25,-396.413 389.25,-396.413"/>
 <polygon fill="dodgerblue" stroke="dodgerblue" points="385.75,-421.831 389.25,-431.831 392.75,-421.831 385.75,-421.831"/>
 </g>
-<!-- hdkeychain&#45;&gt;dcrd -->
-<g id="edge27" class="edge"><title>hdkeychain&#45;&gt;dcrd</title>
+<!-- hdkeychain&#45;&gt;ndrd -->
+<g id="edge27" class="edge"><title>hdkeychain&#45;&gt;ndrd</title>
 <path fill="none" stroke="deepskyblue" d="M311,-61.8314C311,-61.8314 311,-36.4133 311,-36.4133"/>
 <polygon fill="deepskyblue" stroke="deepskyblue" points="307.5,-61.8313 311,-71.8314 314.5,-61.8314 307.5,-61.8313"/>
 </g>
@@ -245,8 +245,8 @@
 <path fill="slategray" stroke="black" d="M397,-108C397,-108 352,-108 352,-108 346,-108 340,-102 340,-96 340,-96 340,-84 340,-84 340,-78 346,-72 352,-72 352,-72 397,-72 397,-72 403,-72 409,-78 409,-84 409,-84 409,-96 409,-96 409,-102 403,-108 397,-108"/>
 <text text-anchor="middle" x="374.5" y="-86.3" font-family="Times New Roman,serif" font-size="14.00">mempool</text>
 </g>
-<!-- mempool&#45;&gt;dcrd -->
-<g id="edge24" class="edge"><title>mempool&#45;&gt;dcrd</title>
+<!-- mempool&#45;&gt;ndrd -->
+<g id="edge24" class="edge"><title>mempool&#45;&gt;ndrd</title>
 <path fill="none" stroke="slategray" d="M347.25,-61.8314C347.25,-61.8314 347.25,-36.4133 347.25,-36.4133"/>
 <polygon fill="slategray" stroke="slategray" points="343.75,-61.8313 347.25,-71.8314 350.75,-61.8314 343.75,-61.8313"/>
 </g>
@@ -255,13 +255,13 @@
 <path fill="none" stroke="chartreuse" d="M381.5,-133.831C381.5,-133.831 381.5,-108.413 381.5,-108.413"/>
 <polygon fill="chartreuse" stroke="chartreuse" points="378,-133.831 381.5,-143.831 385,-133.831 378,-133.831"/>
 </g>
-<!-- peer&#45;&gt;dcrd -->
-<g id="edge30" class="edge"><title>peer&#45;&gt;dcrd</title>
+<!-- peer&#45;&gt;ndrd -->
+<g id="edge30" class="edge"><title>peer&#45;&gt;ndrd</title>
 <path fill="none" stroke="khaki" d="M454.5,-61.7778C454.5,-61.7778 454.5,-27 454.5,-27 454.5,-27 392.061,-27 354.745,-27"/>
 <polygon fill="khaki" stroke="khaki" points="451,-61.7778 454.5,-71.7778 458,-61.7778 451,-61.7778"/>
 </g>
-<!-- rpcclient&#45;&gt;dcrd -->
-<g id="edge29" class="edge"><title>rpcclient&#45;&gt;dcrd</title>
+<!-- rpcclient&#45;&gt;ndrd -->
+<g id="edge29" class="edge"><title>rpcclient&#45;&gt;ndrd</title>
 <path fill="none" stroke="mediumseagreen" d="M532.5,-61.8314C532.5,-61.8314 532.5,-18 532.5,-18 532.5,-18 410.486,-18 354.722,-18"/>
 <polygon fill="mediumseagreen" stroke="mediumseagreen" points="529,-61.8313 532.5,-71.8314 536,-61.8314 529,-61.8313"/>
 </g>
@@ -270,8 +270,8 @@
 <path fill="#bcee68" stroke="black" d="M625.5,-108C625.5,-108 595.5,-108 595.5,-108 589.5,-108 583.5,-102 583.5,-96 583.5,-96 583.5,-84 583.5,-84 583.5,-78 589.5,-72 595.5,-72 595.5,-72 625.5,-72 625.5,-72 631.5,-72 637.5,-78 637.5,-84 637.5,-84 637.5,-96 637.5,-96 637.5,-102 631.5,-108 625.5,-108"/>
 <text text-anchor="middle" x="610.5" y="-86.3" font-family="Times New Roman,serif" font-size="14.00">fees</text>
 </g>
-<!-- fees&#45;&gt;dcrd -->
-<g id="edge23" class="edge"><title>fees&#45;&gt;dcrd</title>
+<!-- fees&#45;&gt;ndrd -->
+<g id="edge23" class="edge"><title>fees&#45;&gt;ndrd</title>
 <path fill="none" stroke="#bcee68" d="M610.5,-61.6198C610.5,-61.6198 610.5,-9 610.5,-9 610.5,-9 425.468,-9 354.635,-9"/>
 <polygon fill="#bcee68" stroke="#bcee68" points="607,-61.6198 610.5,-71.6198 614,-61.6199 607,-61.6198"/>
 </g>

@@ -10,7 +10,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/decred/dcrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
 )
 
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
@@ -22,7 +22,7 @@ import (
 // --> Total 180 bytes.
 const MaxBlockHeaderPayload = 84 + (chainhash.HashSize * 3)
 
-// BlockHeader defines information about a block and is used in the decred
+// BlockHeader defines information about a block and is used in the endurio
 // block (MsgBlock) and headers (MsgHeaders) messages.
 type BlockHeader struct {
 	// Version of the block.  This is not the same as the protocol version.

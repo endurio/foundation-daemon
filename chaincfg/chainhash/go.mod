@@ -1,3 +1,3 @@
-module github.com/decred/dcrd/chaincfg/chainhash
+module github.com/endurio/ndrd/chaincfg/chainhash
 
 require github.com/dchest/blake256 v1.0.0

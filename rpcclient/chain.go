@@ -11,12 +11,12 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/dcrjson"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/gcs"
-	"github.com/decred/dcrd/gcs/blockcf"
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/dcrjson"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/gcs"
+	"github.com/endurio/ndrd/gcs/blockcf"
+	"github.com/endurio/ndrd/wire"
 )
 
 // FutureGetBestBlockHashResult is a future promise to deliver the result of a

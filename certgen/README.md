@@ -1,9 +1,9 @@
 Certgen
 ======
 
-[![Build Status](http://img.shields.io/travis/decred/dcrd.svg)](https://travis-ci.org/decred/dcrd)
+[![Build Status](http://img.shields.io/travis/endurio/ndrd.svg)](https://travis-ci.org/endurio/ndrd)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/decred/dcrd/certgen)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/endurio/ndrd/certgen)
 
 ## Overview
 
@@ -14,7 +14,7 @@ RPC and websocket communications.
 ## Installation and Updating
 
 ```bash
-$ go get -u github.com/decred/dcrd/certgen
+$ go get -u github.com/endurio/ndrd/certgen
 ```
 
 ## License

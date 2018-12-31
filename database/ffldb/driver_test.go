@@ -13,10 +13,10 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/database"
-	"github.com/decred/dcrd/database/ffldb"
-	"github.com/decred/dcrd/dcrutil"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/database"
+	"github.com/endurio/ndrd/database/ffldb"
+	"github.com/endurio/ndrd/dcrutil"
 )
 
 // dbType is the database type name for this driver.

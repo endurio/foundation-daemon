@@ -8,7 +8,7 @@ package chaincfg
 import (
 	"time"
 
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/wire"
 )
 
 // TestNet3Params defines the network parameters for the test currency network.
@@ -19,9 +19,9 @@ var TestNet3Params = Params{
 	Net:         wire.TestNet3,
 	DefaultPort: "19108",
 	DNSSeeds: []DNSSeed{
-		{"testnet-seed.decred.mindcry.org", true},
-		{"testnet-seed.decred.netpurgatory.com", true},
-		{"testnet-seed.decred.org", true},
+		{"testnet-seed.endurio.mindcry.org", true},
+		{"testnet-seed.endurio.netpurgatory.com", true},
+		{"testnet-seed.endurio.org", true},
 	},
 
 	// Chain parameters

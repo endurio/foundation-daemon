@@ -8,8 +8,8 @@ package hdkeychain_test
 import (
 	"fmt"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/hdkeychain"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/hdkeychain"
 )
 
 // This example demonstrates how to generate a cryptographically random seed

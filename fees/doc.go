@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package fees provides decred-specific methods for tracking and estimating fee
+Package fees provides endurio-specific methods for tracking and estimating fee
 rates for new transactions to be mined into the network. Fee rate estimation has
 two main goals:
 
@@ -11,7 +11,7 @@ two main goals:
   (expressed in blocks);
 - Attempting to minimize fees while maintaining be above restriction.
 
-Although it was primarily written for dcrd, this package has intentionally been
+Although it was primarily written for ndrd, this package has intentionally been
 designed so it can be used as a standalone package for any projects needing the
 functionality provided.
 
@@ -35,7 +35,7 @@ be clear in the examples and simulations which of these is being discussed.
 Note: a very high contention scenario (> 90% of blocks being full and
 transactions remaining in the mempool indefinitely) is one in which stakeholders
 should be discussing alternative solutions (increase block size, provide other
-second layer alternatives, etc). Also, the current fill rate of blocks in decred
+second layer alternatives, etc). Also, the current fill rate of blocks in endurio
 is low, so while we try to account for this regime, I personally expect that the
 implementation will need more tweaks as it approaches this.
 
@@ -52,7 +52,7 @@ overview is available in reference [1].
 This particular version was chosen because it's simpler to implement and should
 be sufficient for low contention regimes. It probably overestimates fees in
 higher contention regimes and longer target confirmation windows, but as pointed
-out earlier should be sufficient for current fill rate of decred's network.
+out earlier should be sufficient for current fill rate of endurio's network.
 
 The basic algorithm is as follows (as executed by a single full node):
 

@@ -2,7 +2,7 @@
 *~
 
 # Databases
-dcrd.db
+ndrd.db
 *-shm
 *-wal
 
@@ -34,7 +34,7 @@ _testmain.go
 
 # Binaries
 *.exe
-dcrd
+ndrd
 cmd/addblock/addblock
 cmd/checkdevpremine/checkdevpremine
 cmd/dcrctl/dcrctl

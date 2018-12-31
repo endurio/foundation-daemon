@@ -10,15 +10,15 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/decred/dcrd/blockchain"
-	"github.com/decred/dcrd/blockchain/indexers"
-	"github.com/decred/dcrd/database"
-	"github.com/decred/dcrd/internal/limits"
+	"github.com/endurio/ndrd/blockchain"
+	"github.com/endurio/ndrd/blockchain/indexers"
+	"github.com/endurio/ndrd/database"
+	"github.com/endurio/ndrd/internal/limits"
 	"github.com/decred/slog"
 )
 
 const (
-	// blockDbNamePrefix is the prefix for the dcrd block database.
+	// blockDbNamePrefix is the prefix for the ndrd block database.
 	blockDbNamePrefix = "blocks"
 )
 

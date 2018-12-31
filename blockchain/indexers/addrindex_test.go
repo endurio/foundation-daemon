@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/wire"
 )
 
 // addrIndexBucket provides a mock address index database bucket by implementing

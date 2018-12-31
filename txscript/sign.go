@@ -9,11 +9,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainec"
-	"github.com/decred/dcrd/dcrec"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/chaincfg/chainec"
+	"github.com/endurio/ndrd/dcrec"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/wire"
 )
 
 // RawTxInSignature returns the serialized ECDSA signature for the input idx of

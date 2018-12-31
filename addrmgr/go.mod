@@ -1,12 +1,12 @@
-module github.com/decred/dcrd/addrmgr
+module github.com/endurio/ndrd/addrmgr
 
 require (
-	github.com/decred/dcrd/chaincfg/chainhash v1.0.1
-	github.com/decred/dcrd/wire v1.1.0
 	github.com/decred/slog v1.0.0
+	github.com/endurio/ndrd/chaincfg/chainhash v1.0.1
+	github.com/endurio/ndrd/wire v1.1.0
 )
 
 replace (
-	github.com/decred/dcrd/chaincfg/chainhash => ../chaincfg/chainhash
-	github.com/decred/dcrd/wire => ../wire
+	github.com/endurio/ndrd/chaincfg/chainhash => ../chaincfg/chainhash
+	github.com/endurio/ndrd/wire => ../wire
 )

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/decred/dcrd/blockchain/stake"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/txscript"
+	"github.com/endurio/ndrd/blockchain/stake"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/txscript"
 )
 
 // testLNFeaturesDeployment ensures the deployment of the LN features agenda

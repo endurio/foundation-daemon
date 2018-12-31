@@ -10,7 +10,7 @@ import (
 	"io"
 )
 
-// MsgGetData implements the Message interface and represents a decred
+// MsgGetData implements the Message interface and represents a endurio
 // getdata message.  It is used to request data such as blocks and transactions
 // from another peer.  It should be used in response to the inv (MsgInv) message
 // to request the actual data referenced by each inventory vector the receiving

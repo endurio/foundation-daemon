@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/decred/dcrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
 )
 
 // MaxBlockLocatorsPerMsg is the maximum number of block locator hashes allowed
 // per message.
 const MaxBlockLocatorsPerMsg = 500
 
-// MsgGetBlocks implements the Message interface and represents a decred
+// MsgGetBlocks implements the Message interface and represents a endurio
 // getblocks message.  It is used to request a list of blocks starting after the
 // last known hash in the slice of block locator hashes.  The list is returned
 // via an inv message (MsgInv) and is limited by a specific hash to stop at or

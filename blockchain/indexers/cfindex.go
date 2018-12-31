@@ -9,14 +9,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/decred/dcrd/blockchain"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/database"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/gcs"
-	"github.com/decred/dcrd/gcs/blockcf"
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/blockchain"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/database"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/gcs"
+	"github.com/endurio/ndrd/gcs/blockcf"
+	"github.com/endurio/ndrd/wire"
 )
 
 const (

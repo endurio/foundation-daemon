@@ -8,7 +8,7 @@ package chaincfg
 import (
 	"time"
 
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/wire"
 )
 
 // MainNetParams defines the network parameters for the main Decred network.
@@ -17,9 +17,9 @@ var MainNetParams = Params{
 	Net:         wire.MainNet,
 	DefaultPort: "9108",
 	DNSSeeds: []DNSSeed{
-		{"mainnet-seed.decred.mindcry.org", true},
-		{"mainnet-seed.decred.netpurgatory.com", true},
-		{"mainnet-seed.decred.org", true},
+		{"mainnet-seed.endurio.mindcry.org", true},
+		{"mainnet-seed.endurio.netpurgatory.com", true},
+		{"mainnet-seed.endurio.org", true},
 	},
 
 	// Chain parameters

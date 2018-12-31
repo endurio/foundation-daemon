@@ -13,14 +13,14 @@ import (
 	"sort"
 	"time"
 
-	"github.com/decred/dcrd/blockchain"
-	"github.com/decred/dcrd/blockchain/stake"
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/mining"
-	"github.com/decred/dcrd/txscript"
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/blockchain"
+	"github.com/endurio/ndrd/blockchain/stake"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/mining"
+	"github.com/endurio/ndrd/txscript"
+	"github.com/endurio/ndrd/wire"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 
 	// coinbaseFlags is some extra data appended to the coinbase script
 	// sig.
-	coinbaseFlags = "/dcrd/"
+	coinbaseFlags = "/ndrd/"
 
 	// kilobyte is the size of a kilobyte.
 	kilobyte = 1000

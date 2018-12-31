@@ -15,12 +15,12 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/decred/dcrd/chaincfg"
-	"github.com/decred/dcrd/chaincfg/chainhash"
-	"github.com/decred/dcrd/dcrec"
-	"github.com/decred/dcrd/dcrutil"
-	"github.com/decred/dcrd/txscript"
-	"github.com/decred/dcrd/wire"
+	"github.com/endurio/ndrd/chaincfg"
+	"github.com/endurio/ndrd/chaincfg/chainhash"
+	"github.com/endurio/ndrd/dcrec"
+	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/txscript"
+	"github.com/endurio/ndrd/wire"
 )
 
 // TxType indicates the type of tx (regular or stake type).
