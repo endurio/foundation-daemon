@@ -28,7 +28,6 @@ type MsgMiningState struct {
 	Version     uint32
 	Height      uint32
 	BlockHashes []*chainhash.Hash
-	VoteHashes  []*chainhash.Hash
 }
 
 // AddBlockHash adds a new block hash to the message.
@@ -40,18 +39,6 @@ func (msg *MsgMiningState) AddBlockHash(hash *chainhash.Hash) error {
 	}
 
 	msg.BlockHashes = append(msg.BlockHashes, hash)
-	return nil
-}
-
-// AddVoteHash adds a new vote hash to the message.
-func (msg *MsgMiningState) AddVoteHash(hash *chainhash.Hash) error {
-	if len(msg.VoteHashes)+1 > MaxMSVotesAtHeadPerMsg {
-		str := fmt.Sprintf("too many vote hashes for message [max %v]",
-			MaxMSVotesAtHeadPerMsg)
-		return messageError("MsgMiningState.AddVoteHash", str)
-	}
-
-	msg.VoteHashes = append(msg.VoteHashes, hash)
 	return nil
 }
 
@@ -87,30 +74,6 @@ func (msg *MsgMiningState) BtcDecode(r io.Reader, pver uint32) error {
 			return err
 		}
 		msg.AddBlockHash(&hash)
-	}
-
-	// Read num vote hashes and limit to max.
-	count, err = ReadVarInt(r, pver)
-	if err != nil {
-		return err
-	}
-	if count > MaxMSVotesAtHeadPerMsg {
-		str := fmt.Sprintf("too many vote hashes for message "+
-			"[count %v, max %v]", count, MaxMSVotesAtHeadPerMsg)
-		return messageError("MsgMiningState.BtcDecode", str)
-	}
-
-	msg.VoteHashes = make([]*chainhash.Hash, 0, count)
-	for i := uint64(0); i < count; i++ {
-		hash := chainhash.Hash{}
-		err := readElement(r, &hash)
-		if err != nil {
-			return err
-		}
-		err = msg.AddVoteHash(&hash)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -149,26 +112,6 @@ func (msg *MsgMiningState) BtcEncode(w io.Writer, pver uint32) error {
 		}
 	}
 
-	// Write vote hashes.
-	count = len(msg.VoteHashes)
-	if count > MaxMSVotesAtHeadPerMsg {
-		str := fmt.Sprintf("too many vote hashes for message "+
-			"[count %v, max %v]", count, MaxMSVotesAtHeadPerMsg)
-		return messageError("MsgMiningState.BtcEncode", str)
-	}
-
-	err = WriteVarInt(w, pver, uint64(count))
-	if err != nil {
-		return err
-	}
-
-	for _, hash := range msg.VoteHashes {
-		err = writeElement(w, hash)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -195,6 +138,5 @@ func NewMsgMiningState() *MsgMiningState {
 		Version:     1,
 		Height:      0,
 		BlockHashes: make([]*chainhash.Hash, 0, MaxMSBlocksAtHeadPerMsg),
-		VoteHashes:  make([]*chainhash.Hash, 0, MaxMSVotesAtHeadPerMsg),
 	}
 }

@@ -481,7 +481,7 @@ func (sp *serverPeer) OnMemPool(p *peer.Peer, msg *wire.MsgMemPool) {
 
 // pushMiningStateMsg pushes a mining state message to the queue for a
 // requesting peer.
-func (sp *serverPeer) pushMiningStateMsg(height uint32, blockHashes []chainhash.Hash, voteHashes []chainhash.Hash) error {
+func (sp *serverPeer) pushMiningStateMsg(height uint32, blockHashes []chainhash.Hash) error {
 	// Nothing to send, abort.
 	if len(blockHashes) == 0 {
 		return nil
@@ -494,15 +494,6 @@ func (sp *serverPeer) pushMiningStateMsg(height uint32, blockHashes []chainhash.
 		err := msg.AddBlockHash(&blockHashes[i])
 		if err != nil {
 			return err
-		}
-	}
-	for i := range voteHashes {
-		err := msg.AddVoteHash(&voteHashes[i])
-		if err != nil {
-			return err
-		}
-		if i+1 >= wire.MaxMSBlocksAtHeadPerMsg {
-			break
 		}
 	}
 
@@ -540,33 +531,14 @@ func (sp *serverPeer) OnGetMiningState(p *peer.Peer, msg *wire.MsgGetMiningState
 		return
 	}
 
-	// Get the list of blocks of blocks that are eligible to built on and
-	// limit the list to the maximum number of allowed eligible block hashes
-	// per mining state message.  There is nothing to send when there are no
-	// eligible blocks.
-	blockHashes := SortParentsByVotes(mp, best.Hash, children,
-		bm.server.chainParams)
+	// TODO: sort the list by PoW diff or some order
+	blockHashes := children
 	numBlocks := len(blockHashes)
 	if numBlocks == 0 {
 		return
 	}
 	if numBlocks > wire.MaxMSBlocksAtHeadPerMsg {
 		blockHashes = blockHashes[:wire.MaxMSBlocksAtHeadPerMsg]
-	}
-
-	// Construct the set of votes to send.
-	voteHashes := make([]chainhash.Hash, 0, wire.MaxMSVotesAtHeadPerMsg)
-	for i := range blockHashes {
-		// Fetch the vote hashes themselves and append them.
-		bh := &blockHashes[i]
-		vhsForBlock := mp.VoteHashesForBlock(bh)
-		if len(vhsForBlock) == 0 {
-			peerLog.Warnf("unexpected error while fetching vote hashes "+
-				"for block %v for a mining state request: no vote "+
-				"metadata for block", bh)
-			return
-		}
-		voteHashes = append(voteHashes, vhsForBlock...)
 	}
 
 	err = sp.pushMiningStateMsg(uint32(best.Height), blockHashes, voteHashes)
