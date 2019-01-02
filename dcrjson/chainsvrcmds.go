@@ -67,7 +67,6 @@ type TransactionInput struct {
 	Amount float64 `json:"amount,omitempty"`
 	Txid   string  `json:"txid"`
 	Vout   uint32  `json:"vout"`
-	Tree   int8    `json:"tree"`
 }
 
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
@@ -397,7 +396,6 @@ func NewGetBlockHeaderCmd(hash string, verbose *bool) *GetBlockHeaderCmd {
 // GetBlockSubsidyCmd defines the getblocksubsidy JSON-RPC command.
 type GetBlockSubsidyCmd struct {
 	Height int64
-	Voters uint16
 }
 
 // NewGetBlockSubsidyCmd returns a new instance which can be used to issue a
@@ -405,7 +403,6 @@ type GetBlockSubsidyCmd struct {
 func NewGetBlockSubsidyCmd(height int64, voters uint16) *GetBlockSubsidyCmd {
 	return &GetBlockSubsidyCmd{
 		Height: height,
-		Voters: voters,
 	}
 }
 
@@ -701,7 +698,6 @@ const (
 // GetRawMempoolCmd defines the getmempool JSON-RPC command.
 type GetRawMempoolCmd struct {
 	Verbose *bool `jsonrpcdefault:"false"`
-	TxType  *string
 }
 
 // NewGetRawMempoolCmd returns a new instance which can be used to issue a
@@ -712,7 +708,6 @@ type GetRawMempoolCmd struct {
 func NewGetRawMempoolCmd(verbose *bool, txType *string) *GetRawMempoolCmd {
 	return &GetRawMempoolCmd{
 		Verbose: verbose,
-		TxType:  txType,
 	}
 }
 

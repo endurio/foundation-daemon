@@ -36,7 +36,6 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/endurio/ndrd/blockchain"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/certgen"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
@@ -98,13 +97,6 @@ const (
 	// changed and there have been changes to the available transactions
 	// in the memory pool.
 	gbtRegenerateSeconds = 60
-
-	// merkleRootPairSize
-	merkleRootPairSize = 64
-
-	// sstxCommitmentString is the string to insert when a verbose
-	// transaction output's pkscript type is a ticket commitment.
-	sstxCommitmentString = "sstxcommitment"
 )
 
 var (
@@ -170,21 +162,14 @@ type commandHandler func(*rpcServer, interface{}, <-chan struct{}) (interface{},
 var rpcHandlers map[string]commandHandler
 var rpcHandlersBeforeInit = map[string]commandHandler{
 	"addnode":               handleAddNode,
-	"createrawsstx":         handleCreateRawSStx,
-	"createrawssrtx":        handleCreateRawSSRtx,
 	"createrawtransaction":  handleCreateRawTransaction,
 	"debuglevel":            handleDebugLevel,
 	"decoderawtransaction":  handleDecodeRawTransaction,
 	"decodescript":          handleDecodeScript,
 	"estimatefee":           handleEstimateFee,
 	"estimatesmartfee":      handleEstimateSmartFee,
-	"estimatestakediff":     handleEstimateStakeDiff,
 	"existsaddress":         handleExistsAddress,
 	"existsaddresses":       handleExistsAddresses,
-	"existsmissedtickets":   handleExistsMissedTickets,
-	"existsexpiredtickets":  handleExistsExpiredTickets,
-	"existsliveticket":      handleExistsLiveTicket,
-	"existslivetickets":     handleExistsLiveTickets,
 	"existsmempooltxs":      handleExistsMempoolTxs,
 	"generate":              handleGenerate,
 	"getaddednodeinfo":      handleGetAddedNodeInfo,
@@ -214,28 +199,16 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"getpeerinfo":           handleGetPeerInfo,
 	"getrawmempool":         handleGetRawMempool,
 	"getrawtransaction":     handleGetRawTransaction,
-	"getstakedifficulty":    handleGetStakeDifficulty,
-	"getstakeversioninfo":   handleGetStakeVersionInfo,
-	"getstakeversions":      handleGetStakeVersions,
-	"getticketpoolvalue":    handleGetTicketPoolValue,
-	"getvoteinfo":           handleGetVoteInfo,
 	"gettxout":              handleGetTxOut,
 	"getwork":               handleGetWork,
 	"help":                  handleHelp,
-	"livetickets":           handleLiveTickets,
-	"missedtickets":         handleMissedTickets,
 	"node":                  handleNode,
 	"ping":                  handlePing,
 	"searchrawtransactions": handleSearchRawTransactions,
-	"rebroadcastmissed":     handleRebroadcastMissed,
-	"rebroadcastwinners":    handleRebroadcastWinners,
 	"sendrawtransaction":    handleSendRawTransaction,
 	"setgenerate":           handleSetGenerate,
 	"stop":                  handleStop,
 	"submitblock":           handleSubmitBlock,
-	"ticketfeeinfo":         handleTicketFeeInfo,
-	"ticketsforaddress":     handleTicketsForAddress,
-	"ticketvwap":            handleTicketVWAP,
 	"txfeeinfo":             handleTxFeeInfo,
 	"validateaddress":       handleValidateAddress,
 	"verifychain":           handleVerifyChain,
@@ -643,12 +616,6 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 			return nil, rpcDecodeHexError(input.Txid)
 		}
 
-		if !(input.Tree == wire.TxTreeRegular ||
-			input.Tree == wire.TxTreeStake) {
-			return nil, rpcInvalidError("Tx tree must be regular " +
-				"or stake")
-		}
-
 		prevOutV := wire.NullValueIn
 		if input.Amount > 0 {
 			amt, err := dcrutil.NewAmount(input.Amount)
@@ -658,7 +625,7 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 			prevOutV = int64(amt)
 		}
 
-		prevOut := wire.NewOutPoint(txHash, input.Vout, input.Tree)
+		prevOut := wire.NewOutPoint(txHash, input.Vout)
 		txIn := wire.NewTxIn(prevOut, prevOutV, []byte{})
 		if c.LockTime != nil && *c.LockTime != 0 {
 			txIn.Sequence = wire.MaxTxInSequenceNum - 1
@@ -734,350 +701,6 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 	return mtxHex, nil
 }
 
-// handleCreateRawSStx handles createrawsstx commands.
-func handleCreateRawSStx(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.CreateRawSStxCmd)
-
-	// Basic sanity checks for the information coming from the cmd.
-	if len(c.Inputs) != len(c.COuts) {
-		return nil, rpcInvalidError("Number of inputs should be equal "+
-			"to the number of future commitment/change outs for "+
-			"any sstx; %v inputs given, but %v COuts",
-			len(c.Inputs), len(c.COuts))
-	}
-	if len(c.Amount) != 1 {
-		return nil, rpcInvalidError("Only one SSGen tagged output is "+
-			"allowed per sstx; len ssgenout %v", len(c.Amount))
-	}
-
-	// Add all transaction inputs to a new transaction after performing
-	// some validity checks.
-	mtx := wire.NewMsgTx()
-	for _, input := range c.Inputs {
-		txHash, err := chainhash.NewHashFromStr(input.Txid)
-		if err != nil {
-			return nil, rpcDecodeHexError(input.Txid)
-		}
-
-		if input.Vout < 0 {
-			return nil, rpcInvalidError("Vout must be positive")
-		}
-
-		if !(input.Tree == wire.TxTreeRegular ||
-			input.Tree == wire.TxTreeStake) {
-			rpcInvalidError("Tx tree must be regular or stake")
-		}
-
-		prevOut := wire.NewOutPoint(txHash, input.Vout, input.Tree)
-		txIn := wire.NewTxIn(prevOut, wire.NullValueIn, []byte{})
-		mtx.AddTxIn(txIn)
-	}
-
-	// Add all transaction outputs to the transaction after performing
-	// some validity checks.
-	amtTicket := int64(0)
-
-	for encodedAddr, amount := range c.Amount {
-		// Ensure amount is in the valid range for monetary amounts.
-		if amount <= 0 || amount > dcrutil.MaxAmount {
-			return nil, rpcInvalidError("Invalid SSTx commitment "+
-				"amount: 0 >= %v > %v", amount,
-				dcrutil.MaxAmount)
-		}
-
-		// Decode the provided address.
-		addr, err := dcrutil.DecodeAddress(encodedAddr)
-		if err != nil {
-			return nil, rpcAddressKeyError("Could not decode "+
-				"address: %v", err)
-		}
-
-		// Ensure the address is one of the supported types and that
-		// the network encoded with the address matches the network the
-		// server is currently on.
-		switch addr.(type) {
-		case *dcrutil.AddressPubKeyHash:
-		case *dcrutil.AddressScriptHash:
-		default:
-			return nil, rpcAddressKeyError("Invalid address type: "+
-				"%T", addr)
-		}
-		if !addr.IsForNet(s.server.chainParams) {
-			return nil, rpcAddressKeyError("Wrong network: %v",
-				addr)
-		}
-
-		// Create a new script which pays to the provided address with an
-		// SStx tagged output.
-		pkScript, err := txscript.PayToSStx(addr)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(),
-				"Could not create TX script")
-		}
-
-		txOut := wire.NewTxOut(amount, pkScript)
-		mtx.AddTxOut(txOut)
-
-		amtTicket += amount
-	}
-
-	// Calculated the commitment amounts, then create the
-	// addresses and payout proportions as null data
-	// outputs.
-	inputAmts := make([]int64, len(c.Inputs))
-	for i, input := range c.Inputs {
-		inputAmts[i] = input.Amt
-	}
-	changeAmts := make([]int64, len(c.COuts))
-	for i, cout := range c.COuts {
-		changeAmts[i] = cout.ChangeAmt
-	}
-
-	// Check and make sure none of the change overflows
-	// the input amounts.
-	for i, amt := range inputAmts {
-		if changeAmts[i] >= amt {
-			return nil, rpcInvalidError("input %v >= amount %v",
-				changeAmts[i], amt)
-		}
-	}
-
-	// Obtain the commitment amounts.
-	_, amountsCommitted, err := stake.SStxNullOutputAmounts(inputAmts,
-		changeAmts, amtTicket)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(),
-			"Invalid SSTx output amounts")
-	}
-
-	for i, cout := range c.COuts {
-		// 1. Append future commitment output.
-		addr, err := dcrutil.DecodeAddress(cout.Addr)
-		if err != nil {
-			return nil, rpcAddressKeyError("Could not decode "+
-				"address: %v", err)
-		}
-
-		// Ensure the address is one of the supported types and that
-		// the network encoded with the address matches the network the
-		// server is currently on.
-		switch addr.(type) {
-		case *dcrutil.AddressPubKeyHash:
-			break
-		case *dcrutil.AddressScriptHash:
-			break
-		default:
-			return nil, rpcAddressKeyError("Invalid type: %T", addr)
-		}
-		if !addr.IsForNet(s.server.chainParams) {
-			return nil, rpcAddressKeyError("Wrong network: %v",
-				addr)
-		}
-
-		// Create an OP_RETURN push containing the pubkeyhash to send
-		// rewards to.  TODO Replace 0x0000 fee limits with an argument
-		// passed to the RPC call.
-		pkScript, err := txscript.GenerateSStxAddrPush(addr,
-			dcrutil.Amount(amountsCommitted[i]), 0x0000)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(),
-				"Could not create SStx script")
-		}
-		txout := wire.NewTxOut(int64(0), pkScript)
-		mtx.AddTxOut(txout)
-
-		// 2. Append change output.
-
-		// Ensure amount is in the valid range for monetary amounts.
-		if cout.ChangeAmt < 0 || cout.ChangeAmt > dcrutil.MaxAmount {
-			return nil, rpcInvalidError("Invalid change amount: 0 "+
-				"> %v > %v", cout.ChangeAmt, dcrutil.MaxAmount)
-		}
-
-		// Decode the provided address.
-		addr, err = dcrutil.DecodeAddress(cout.ChangeAddr)
-		if err != nil {
-			return nil, rpcAddressKeyError("Wrong network: %v",
-				addr)
-		}
-
-		// Ensure the address is one of the supported types and that
-		// the network encoded with the address matches the network the
-		// server is currently on.
-		switch addr.(type) {
-		case *dcrutil.AddressPubKeyHash:
-			break
-		case *dcrutil.AddressScriptHash:
-			break
-		default:
-			return nil, rpcAddressKeyError("Invalid type: %T", addr)
-		}
-		if !addr.IsForNet(s.server.chainParams) {
-			return nil, rpcAddressKeyError("Wrong network: %v",
-				addr)
-		}
-
-		// Create a new script which pays to the provided address with
-		// an SStx change tagged output.
-		pkScript, err = txscript.PayToSStxChange(addr)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(),
-				"Could not create SStx change script")
-		}
-
-		txOut := wire.NewTxOut(cout.ChangeAmt, pkScript)
-		mtx.AddTxOut(txOut)
-	}
-
-	// Make sure we generated a valid SStx.
-	if err := stake.CheckSStx(mtx); err != nil {
-		return nil, rpcInternalError(err.Error(),
-			"Invalid SStx")
-	}
-
-	// Return the serialized and hex-encoded transaction.
-	mtxHex, err := messageToHex(mtx)
-	if err != nil {
-		return nil, err
-	}
-	return mtxHex, nil
-}
-
-// handleCreateRawSSRtx handles createrawssrtx commands.
-func handleCreateRawSSRtx(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.CreateRawSSRtxCmd)
-
-	// Only a single SStx should be given
-	if len(c.Inputs) != 1 {
-		return nil, rpcInvalidError("SSRtx invalid number of inputs")
-	}
-
-	// Decode the fee as coins.
-	var feeAmt dcrutil.Amount
-	if c.Fee != nil {
-		var err error
-		feeAmt, err = dcrutil.NewAmount(*c.Fee)
-		if err != nil {
-			return nil, rpcInvalidError("Invalid fee amount: %v",
-				err)
-		}
-	}
-
-	// 1. Fetch the SStx, then calculate all the values we'll need later
-	// for the generation of the SSGen tx outputs.
-	//
-	// Convert the provided transaction hash hex to a chainhash.Hash.
-	txHash, err := chainhash.NewHashFromStr(c.Inputs[0].Txid)
-	if err != nil {
-		return nil, rpcDecodeHexError(c.Inputs[0].Txid)
-	}
-
-	// Try to fetch the ticket from the block database.
-	ticketUtx, err := s.chain.FetchUtxoEntry(txHash)
-	if ticketUtx == nil || err != nil {
-		return nil, rpcNoTxInfoError(txHash)
-	}
-	if t := ticketUtx.TransactionType(); t != stake.TxTypeSStx {
-		return nil, rpcDeserializationError("Invalid Tx type: %v", t)
-	}
-
-	// Store the sstx pubkeyhashes and amounts as found in the transaction
-	// outputs.
-	minimalOutputs := blockchain.ConvertUtxosToMinimalOutputs(ticketUtx)
-	ssrtxPayTypes, ssrtxPkhs, sstxAmts, _, _, _ :=
-		stake.SStxStakeOutputInfo(minimalOutputs)
-
-	// 2. Add all transaction inputs to a new transaction after performing
-	// some validity checks; the only input for an SSRtx is an OP_SSTX tagged
-	// output.
-	mtx := wire.NewMsgTx()
-	for _, input := range c.Inputs {
-		txHash, err := chainhash.NewHashFromStr(input.Txid)
-		if err != nil {
-			return nil, rpcDecodeHexError(input.Txid)
-		}
-
-		if input.Vout < 0 {
-			return nil, rpcInvalidError("Vout must be positive")
-		}
-
-		if !(input.Tree == wire.TxTreeStake) {
-			return nil, rpcInvalidError("Input tree is not " +
-				"TxTreeStake type")
-		}
-
-		prevOutV := wire.NullValueIn
-		if input.Amount > 0 {
-			amt, err := dcrutil.NewAmount(input.Amount)
-			if err != nil {
-				return nil, rpcInvalidError(err.Error())
-			}
-			prevOutV = int64(amt)
-		}
-
-		prevOut := wire.NewOutPoint(txHash, input.Vout, input.Tree)
-		txIn := wire.NewTxIn(prevOut, prevOutV, []byte{})
-		mtx.AddTxIn(txIn)
-	}
-
-	// 3. Add all the OP_SSRTX tagged outputs.
-
-	// Calculate the output values from this data.
-	ssrtxCalcAmts := stake.CalculateRewards(sstxAmts,
-		minimalOutputs[0].Value, 0) // No subsidy for a revocation
-
-	// Add all the SSRtx-tagged transaction outputs to the transaction after
-	// performing some validity checks.
-	feeApplied := false
-	for i, ssrtxPkh := range ssrtxPkhs {
-		// Ensure amount is in the valid range for monetary amounts.
-		if sstxAmts[i] <= 0 || sstxAmts[i] > dcrutil.MaxAmount {
-			return nil, rpcInvalidError("Invalid SSTx amount: 0 >="+
-				" %v > %v", sstxAmts[i] <= 0, dcrutil.MaxAmount)
-		}
-
-		// Create a new script which pays to the provided address specified in
-		// the original ticket tx.
-		var ssrtxOutScript []byte
-		switch ssrtxPayTypes[i] {
-		case false: // P2PKH
-			ssrtxOutScript, err = txscript.PayToSSRtxPKHDirect(ssrtxPkh)
-			if err != nil {
-				return nil, rpcInvalidError("Could not "+
-					"generate PKH script: %v", err)
-			}
-		case true: // P2SH
-			ssrtxOutScript, err = txscript.PayToSSRtxSHDirect(ssrtxPkh)
-			if err != nil {
-				return nil, rpcInvalidError("Could not "+
-					"generate SHD script: %v", err)
-			}
-		}
-
-		// Add the txout to our SSGen tx.
-		amt := ssrtxCalcAmts[i]
-		if !feeApplied && int64(feeAmt) < amt {
-			amt -= int64(feeAmt)
-			feeApplied = true
-		}
-		txOut := wire.NewTxOut(amt, ssrtxOutScript)
-		mtx.AddTxOut(txOut)
-	}
-
-	// Check to make sure our SSRtx was created correctly.
-	err = stake.CheckSSRtx(mtx)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(), "Invalid SSRtx")
-	}
-
-	// Return the serialized and hex-encoded transaction.
-	mtxHex, err := messageToHex(mtx)
-	if err != nil {
-		return nil, err
-	}
-	return mtxHex, nil
-}
-
 // handleDebugLevel handles debuglevel commands.
 func handleDebugLevel(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*dcrjson.DebugLevelCmd)
@@ -1113,22 +736,7 @@ func createVinList(mtx *wire.MsgTx) []dcrjson.Vin {
 		return vinList
 	}
 
-	// Stakebase transactions (votes) have two inputs: a null stake base
-	// followed by an input consuming a ticket's stakesubmission.
-	isSSGen := stake.IsSSGen(mtx)
-
 	for i, txIn := range mtx.TxIn {
-		// Handle only the null input of a stakebase differently.
-		if isSSGen && i == 0 {
-			vinEntry := &vinList[0]
-			vinEntry.Stakebase = hex.EncodeToString(txIn.SignatureScript)
-			vinEntry.Sequence = txIn.Sequence
-			vinEntry.AmountIn = dcrutil.Amount(txIn.ValueIn).ToCoin()
-			vinEntry.BlockHeight = txIn.BlockHeight
-			vinEntry.BlockIndex = txIn.BlockIndex
-			continue
-		}
-
 		// The disassembled string will contain [error] inline
 		// if the script doesn't fully parse, so ignore the
 		// error here.
@@ -1137,7 +745,6 @@ func createVinList(mtx *wire.MsgTx) []dcrjson.Vin {
 		vinEntry := &vinList[i]
 		vinEntry.Txid = txIn.PreviousOutPoint.Hash.String()
 		vinEntry.Vout = txIn.PreviousOutPoint.Index
-		vinEntry.Tree = txIn.PreviousOutPoint.Tree
 		vinEntry.Sequence = txIn.Sequence
 		vinEntry.AmountIn = dcrutil.Amount(txIn.ValueIn).ToCoin()
 		vinEntry.BlockHeight = txIn.BlockHeight
@@ -1155,7 +762,6 @@ func createVinList(mtx *wire.MsgTx) []dcrjson.Vin {
 // transaction.
 func createVoutList(mtx *wire.MsgTx, chainParams *chaincfg.Params, filterAddrMap map[string]struct{}) []dcrjson.Vout {
 
-	txType := stake.DetermineTxType(mtx)
 	voutList := make([]dcrjson.Vout, 0, len(mtx.TxOut))
 	for i, v := range mtx.TxOut {
 		// The disassembled string will contain [error] inline if the
@@ -1170,34 +776,14 @@ func createVoutList(mtx *wire.MsgTx, chainParams *chaincfg.Params, filterAddrMap
 		var scriptClass string
 		var reqSigs int
 		var commitAmt *dcrutil.Amount
-		if txType == stake.TxTypeSStx && (i%2 != 0) {
-			scriptClass = sstxCommitmentString
-			addr, err := stake.AddrFromSStxPkScrCommitment(v.PkScript,
-				chainParams)
-			if err != nil {
-				rpcsLog.Warnf("failed to decode ticket "+
-					"commitment addr output for tx hash "+
-					"%v, output idx %v", mtx.TxHash(), i)
-			} else {
-				addrs = []dcrutil.Address{addr}
-			}
-			amt, err := stake.AmountFromSStxPkScrCommitment(v.PkScript)
-			if err != nil {
-				rpcsLog.Warnf("failed to decode ticket "+
-					"commitment amt output for tx hash %v"+
-					", output idx %v", mtx.TxHash(), i)
-			} else {
-				commitAmt = &amt
-			}
-		} else {
-			// Ignore the error here since an error means the script
-			// couldn't parse and there is no additional information
-			// about it anyways.
-			var sc txscript.ScriptClass
-			sc, addrs, reqSigs, _ = txscript.ExtractPkScriptAddrs(
-				v.Version, v.PkScript, chainParams)
-			scriptClass = sc.String()
-		}
+
+		// Ignore the error here since an error means the script
+		// couldn't parse and there is no additional information
+		// about it anyways.
+		var sc txscript.ScriptClass
+		sc, addrs, reqSigs, _ = txscript.ExtractPkScriptAddrs(
+			v.Version, v.PkScript, chainParams)
+		scriptClass = sc.String()
 
 		// Encode the addresses while checking if the address passes the
 		// filter when needed.
@@ -1390,74 +976,6 @@ func handleEstimateSmartFee(s *rpcServer, cmd interface{}, closeChan <-chan stru
 	return fee.ToCoin(), nil
 }
 
-// handleEstimateStakeDiff implements the estimatestakediff command.
-func handleEstimateStakeDiff(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.EstimateStakeDiffCmd)
-
-	// Minimum possible stake difficulty.
-	chain := s.server.blockManager.chain
-	min, err := chain.EstimateNextStakeDifficulty(0, false)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(), "Could not "+
-			"estimate next minimum stake difficulty")
-	}
-
-	// Maximum possible stake difficulty.
-	max, err := chain.EstimateNextStakeDifficulty(0, true)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(), "Could not "+
-			"estimate next maximum stake difficulty")
-	}
-
-	// The expected stake difficulty. Average the number of fresh stake
-	// since the last retarget to get the number of tickets per block,
-	// then use that to estimate the next stake difficulty.
-	bestHeight := s.server.blockManager.chain.BestSnapshot().Height
-	lastAdjustment := (bestHeight / activeNetParams.StakeDiffWindowSize) *
-		activeNetParams.StakeDiffWindowSize
-	nextAdjustment := ((bestHeight / activeNetParams.StakeDiffWindowSize) +
-		1) * activeNetParams.StakeDiffWindowSize
-	totalTickets := 0
-	for i := lastAdjustment; i <= bestHeight; i++ {
-		bh, err := chain.HeaderByHeight(i)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(), "Could not "+
-				"estimate next stake difficulty")
-		}
-		totalTickets += int(bh.FreshStake)
-	}
-	blocksSince := float64(bestHeight - lastAdjustment + 1)
-	remaining := float64(nextAdjustment - bestHeight - 1)
-	averagePerBlock := float64(totalTickets) / blocksSince
-	expectedTickets := int64(math.Floor(averagePerBlock * remaining))
-	expected, err := chain.EstimateNextStakeDifficulty(expectedTickets,
-		false)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(), "Could not "+
-			"estimate next stake difficulty")
-	}
-
-	// User-specified stake difficulty, if they asked for one.
-	var userEstFltPtr *float64
-	if c.Tickets != nil {
-		userEst, err := chain.EstimateNextStakeDifficulty(int64(*c.Tickets),
-			false)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(), "Could not "+
-				"estimate next user specified stake difficulty")
-		}
-		userEstFlt := dcrutil.Amount(userEst).ToCoin()
-		userEstFltPtr = &userEstFlt
-	}
-
-	return &dcrjson.EstimateStakeDiffResult{
-		Min:      dcrutil.Amount(min).ToCoin(),
-		Max:      dcrutil.Amount(max).ToCoin(),
-		Expected: dcrutil.Amount(expected).ToCoin(),
-		User:     userEstFltPtr,
-	}, nil
-}
-
 // handleExistsAddress implements the existsaddress command.
 func handleExistsAddress(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	existsAddrIndex := s.server.existsAddrIndex
@@ -1510,96 +1028,6 @@ func handleExistsAddresses(s *rpcServer, cmd interface{}, closeChan <-chan struc
 
 	// Convert the slice of bools into a compacted set of bit flags.
 	set := bitset.NewBytes(len(c.Addresses))
-	for i := range exists {
-		if exists[i] {
-			set.Set(i)
-		}
-	}
-
-	return hex.EncodeToString([]byte(set)), nil
-}
-
-// handleExistsMissedTickets implements the existsmissedtickets command.
-func handleExistsMissedTickets(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.ExistsMissedTicketsCmd)
-
-	hashes, err := dcrjson.DecodeConcatenatedHashes(c.TxHashBlob)
-	if err != nil {
-		return nil, err
-	}
-
-	exists := s.server.blockManager.chain.CheckMissedTickets(hashes)
-	if len(exists) != len(hashes) {
-		return nil, rpcInvalidError("Invalid missed ticket count "+
-			"got %v, want %v", len(exists), len(hashes))
-	}
-
-	// Convert the slice of bools into a compacted set of bit flags.
-	set := bitset.NewBytes(len(hashes))
-	for i := range exists {
-		if exists[i] {
-			set.Set(i)
-		}
-	}
-
-	return hex.EncodeToString([]byte(set)), nil
-}
-
-// handleExistsExpiredTickets implements the existsexpiredtickets command.
-func handleExistsExpiredTickets(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.ExistsExpiredTicketsCmd)
-
-	hashes, err := dcrjson.DecodeConcatenatedHashes(c.TxHashBlob)
-	if err != nil {
-		return nil, err
-	}
-
-	exists := s.server.blockManager.chain.CheckExpiredTickets(hashes)
-	if len(exists) != len(hashes) {
-		return nil, rpcInvalidError("Invalid expired ticket count "+
-			"got %v, want %v", len(exists), len(hashes))
-	}
-
-	// Convert the slice of bools into a compacted set of bit flags.
-	set := bitset.NewBytes(len(hashes))
-	for i := range exists {
-		if exists[i] {
-			set.Set(i)
-		}
-	}
-
-	return hex.EncodeToString([]byte(set)), nil
-}
-
-// handleExistsLiveTicket implements the existsliveticket command.
-func handleExistsLiveTicket(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.ExistsLiveTicketCmd)
-
-	hash, err := chainhash.NewHashFromStr(c.TxHash)
-	if err != nil {
-		return nil, rpcDecodeHexError(c.TxHash)
-	}
-
-	return s.server.blockManager.chain.CheckLiveTicket(*hash), nil
-}
-
-// handleExistsLiveTickets implements the existslivetickets command.
-func handleExistsLiveTickets(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.ExistsLiveTicketsCmd)
-
-	hashes, err := dcrjson.DecodeConcatenatedHashes(c.TxHashBlob)
-	if err != nil {
-		return nil, err
-	}
-
-	exists := s.server.blockManager.chain.CheckLiveTickets(hashes)
-	if len(exists) != len(hashes) {
-		return nil, rpcInvalidError("Invalid live ticket count got "+
-			"%v, want %v", len(exists), len(hashes))
-	}
-
-	// Convert the slice of bools into a compacted set of bit flags.
-	set := bitset.NewBytes(len(hashes))
 	for i := range exists {
 		if exists[i] {
 			set.Set(i)
@@ -1844,8 +1272,8 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 	blockHeader := &blk.MsgBlock().Header
 	confirmations := int64(-1)
 	if s.chain.MainChainHasBlock(hash) {
-		if int64(blockHeader.Height) < best.Height {
-			nextHash, err := s.chain.BlockHashByHeight(int64(blockHeader.Height + 1))
+		if int64(blk.Height()) < best.Height {
+			nextHash, err := s.chain.BlockHashByHeight(int64(blk.Height() + 1))
 			if err != nil {
 				context := "No next block"
 				return nil, rpcInternalError(err.Error(),
@@ -1853,33 +1281,22 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 			}
 			nextHashString = nextHash.String()
 		}
-		confirmations = 1 + best.Height - int64(blockHeader.Height)
+		confirmations = 1 + best.Height - int64(blk.Height())
 	}
 
-	sbitsFloat := float64(blockHeader.SBits) / dcrutil.AtomsPerCoin
 	blockReply := dcrjson.GetBlockVerboseResult{
 		Hash:          c.Hash,
 		Version:       blockHeader.Version,
 		MerkleRoot:    blockHeader.MerkleRoot.String(),
-		StakeRoot:     blockHeader.StakeRoot.String(),
 		PreviousHash:  blockHeader.PrevBlock.String(),
 		Nonce:         blockHeader.Nonce,
-		VoteBits:      blockHeader.VoteBits,
-		FinalState:    hex.EncodeToString(blockHeader.FinalState[:]),
-		Voters:        blockHeader.Voters,
-		FreshStake:    blockHeader.FreshStake,
-		Revocations:   blockHeader.Revocations,
-		PoolSize:      blockHeader.PoolSize,
 		Time:          blockHeader.Timestamp.Unix(),
-		StakeVersion:  blockHeader.StakeVersion,
 		Confirmations: confirmations,
-		Height:        int64(blockHeader.Height),
+		Height:        int64(blk.Height()),
 		Size:          int32(blk.MsgBlock().SerializeSize()),
 		Bits:          strconv.FormatInt(int64(blockHeader.Bits), 16),
-		SBits:         sbitsFloat,
 		Difficulty:    getDifficultyRatio(blockHeader.Bits),
 		ChainWork:     fmt.Sprintf("%064x", chainWork),
-		ExtraData:     hex.EncodeToString(blockHeader.ExtraData[:]),
 		NextHash:      nextHashString,
 	}
 
@@ -1889,16 +1306,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		for i, tx := range transactions {
 			txNames[i] = tx.Hash().String()
 		}
-
 		blockReply.Tx = txNames
-
-		stransactions := blk.STransactions()
-		stxNames := make([]string, len(stransactions))
-		for i, tx := range stransactions {
-			stxNames[i] = tx.Hash().String()
-		}
-
-		blockReply.STx = stxNames
 	} else {
 		txns := blk.Transactions()
 		rawTxns := make([]dcrjson.TxRawResult, len(txns))
@@ -1906,7 +1314,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 			rawTxn, err := createTxRawResult(s.server.chainParams,
 				tx.MsgTx(), tx.Hash().String(), uint32(i),
 				blockHeader, blk.Hash().String(),
-				int64(blockHeader.Height), confirmations)
+				int64(blk.Height()), confirmations)
 			if err != nil {
 				return nil, rpcInternalError(err.Error(),
 					"Could not create transaction")
@@ -1914,21 +1322,6 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 			rawTxns[i] = *rawTxn
 		}
 		blockReply.RawTx = rawTxns
-
-		stxns := blk.STransactions()
-		rawSTxns := make([]dcrjson.TxRawResult, len(stxns))
-		for i, tx := range stxns {
-			rawSTxn, err := createTxRawResult(s.server.chainParams,
-				tx.MsgTx(), tx.Hash().String(), uint32(i),
-				blockHeader, blk.Hash().String(),
-				int64(blockHeader.Height), confirmations)
-			if err != nil {
-				return nil, rpcInternalError(err.Error(),
-					"Could not create stake transaction")
-			}
-			rawSTxns[i] = *rawSTxn
-		}
-		blockReply.RawSTx = rawSTxns
 	}
 
 	return blockReply, nil
@@ -1960,35 +1353,14 @@ func handleGetBlockchainInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 
 	// Fetch the agendas of the consensus deployments as well as their
 	// threshold states and state activation heights.
-	dInfo := make(map[string]dcrjson.AgendaInfo)
+	dInfo := make([]dcrjson.AgendaInfo, chaincfg.DefinedDeployments)
 	params := s.server.chainParams
-	for version, deployments := range params.Deployments {
-		for _, agenda := range deployments {
-			aInfo := dcrjson.AgendaInfo{
-				StartTime:  agenda.StartTime,
-				ExpireTime: agenda.ExpireTime,
-			}
-
-			state, err := s.chain.NextThresholdState(&best.PrevHash, version,
-				agenda.Vote.Id)
-			if err != nil {
-				return nil, rpcInternalError(err.Error(),
-					fmt.Sprintf("Could not fetch threshold state "+
-						"for agenda with id (%v).", agenda.Vote.Id))
-			}
-
-			stateChangedHeight, err := s.chain.StateLastChangedHeight(
-				&best.Hash, version, agenda.Vote.Id)
-			if err != nil {
-				return nil, rpcInternalError(err.Error(),
-					fmt.Sprintf("Could not fetch state last changed "+
-						"height for agenda with id (%v).", agenda.Vote.Id))
-			}
-
-			aInfo.Since = stateChangedHeight
-			aInfo.Status = state.String()
-			dInfo[agenda.Vote.Id] = aInfo
+	for i, agenda := range params.Deployments {
+		aInfo := dcrjson.AgendaInfo{
+			StartTime:  agenda.StartTime,
+			ExpireTime: agenda.ExpireTime,
 		}
+		dInfo[i] = aInfo
 	}
 
 	// Generate rpc response.
@@ -2071,8 +1443,13 @@ func handleGetBlockHeader(s *rpcServer, cmd interface{}, closeChan <-chan struct
 	// Get next block hash unless there are none.
 	var nextHashString string
 	confirmations := int64(-1)
-	height := int64(blockHeader.Height)
+	height := dcrutil.BlockHeightUnknown
 	if s.chain.MainChainHasBlock(hash) {
+		height, err := s.chain.BlockHeightByHash(hash)
+		if err != nil {
+			context := "Failed to obtain block height"
+			return nil, rpcInternalError(err.Error(), context)
+		}
 		if height < best.Height {
 			nextHash, err := s.chain.BlockHashByHeight(height + 1)
 			if err != nil {
@@ -2090,21 +1467,10 @@ func handleGetBlockHeader(s *rpcServer, cmd interface{}, closeChan <-chan struct
 		Confirmations: confirmations,
 		Version:       blockHeader.Version,
 		MerkleRoot:    blockHeader.MerkleRoot.String(),
-		StakeRoot:     blockHeader.StakeRoot.String(),
-		VoteBits:      blockHeader.VoteBits,
-		FinalState:    hex.EncodeToString(blockHeader.FinalState[:]),
-		Voters:        blockHeader.Voters,
-		FreshStake:    blockHeader.FreshStake,
-		Revocations:   blockHeader.Revocations,
-		PoolSize:      blockHeader.PoolSize,
 		Bits:          strconv.FormatInt(int64(blockHeader.Bits), 16),
-		SBits:         dcrutil.Amount(blockHeader.SBits).ToCoin(),
 		Height:        uint32(height),
-		Size:          blockHeader.Size,
 		Time:          blockHeader.Timestamp.Unix(),
 		Nonce:         blockHeader.Nonce,
-		ExtraData:     hex.EncodeToString(blockHeader.ExtraData[:]),
-		StakeVersion:  blockHeader.StakeVersion,
 		Difficulty:    getDifficultyRatio(blockHeader.Bits),
 		ChainWork:     fmt.Sprintf("%064x", chainWork),
 		PreviousHash:  blockHeader.PrevBlock.String(),
@@ -2120,24 +1486,18 @@ func handleGetBlockSubsidy(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	c := cmd.(*dcrjson.GetBlockSubsidyCmd)
 
 	height := c.Height
-	voters := c.Voters
 
 	cache := s.chain.FetchSubsidyCache()
 	if cache == nil {
 		return nil, rpcInternalError("empty subsidy cache", "")
 	}
 
-	dev := blockchain.CalcBlockTaxSubsidy(cache, height, voters,
-		s.server.chainParams)
-	pos := blockchain.CalcStakeVoteSubsidy(cache, height,
-		s.server.chainParams) * int64(voters)
-	pow := blockchain.CalcBlockWorkSubsidy(cache, height, voters,
-		s.server.chainParams)
-	total := dev + pos + pow
+	dev := blockchain.CalcBlockTaxSubsidy(cache, height, s.server.chainParams)
+	pow := blockchain.CalcBlockWorkSubsidy(cache, height, s.server.chainParams)
+	total := dev + pow
 
 	rep := dcrjson.GetBlockSubsidyResult{
 		Developer: dev,
-		PoS:       pos,
 		PoW:       pow,
 		Total:     total,
 	}
@@ -2493,19 +1853,6 @@ func (state *gbtWorkState) blockTemplateResult(bm *blockManager, useCoinbaseValu
 			return nil, rpcInternalError(err.Error(), context)
 		}
 
-		var txTypeStr string
-		txType := stake.DetermineTxType(tx)
-		switch txType {
-		case stake.TxTypeRegular:
-			txTypeStr = "regular"
-		case stake.TxTypeSStx:
-			txTypeStr = "error"
-		case stake.TxTypeSSGen:
-			txTypeStr = "error"
-		case stake.TxTypeSSRtx:
-			txTypeStr = "error"
-		}
-
 		fee := template.Fees[i]
 		sigOps := template.SigOpCounts[i]
 		resultTx := dcrjson.GetBlockTemplateResultTx{
@@ -2514,66 +1861,8 @@ func (state *gbtWorkState) blockTemplateResult(bm *blockManager, useCoinbaseValu
 			Depends: depends,
 			Fee:     fee,
 			SigOps:  sigOps,
-			TxType:  txTypeStr,
 		}
 		transactions = append(transactions, resultTx)
-	}
-
-	// Convert each stake transaction in the block template to a template
-	// result transaction.
-	numSTx := len(msgBlock.STransactions)
-	stransactions := make([]dcrjson.GetBlockTemplateResultTx, 0, numSTx)
-	stxIndex := make(map[chainhash.Hash]int64, numSTx)
-	for i, stx := range msgBlock.STransactions {
-		stxHash := stx.TxHashFull()
-		stxIndex[stxHash] = int64(i)
-		// Create an array of 1-based indices to transactions that come
-		// before this one in the transactions list which this one
-		// depends on.  This is necessary since the created block must
-		// ensure proper ordering of the dependencies.  A map is used
-		// before creating the final array to prevent duplicate entries
-		// when mutiple inputs reference the same transaction.
-		dependsMap := make(map[int64]struct{})
-		for _, txIn := range stx.TxIn {
-			if idx, ok := stxIndex[txIn.PreviousOutPoint.Hash]; ok {
-				dependsMap[idx] = struct{}{}
-			}
-		}
-		depends := make([]int64, 0, len(dependsMap))
-		for idx := range dependsMap {
-			depends = append(depends, idx)
-		}
-
-		// Serialize the transaction for later conversion to hex.
-		txBuf := bytes.NewBuffer(make([]byte, 0, stx.SerializeSize()))
-		if err := stx.Serialize(txBuf); err != nil {
-			return nil, err
-		}
-
-		var txTypeStr string
-		txType := stake.DetermineTxType(stx)
-		switch txType {
-		case stake.TxTypeRegular:
-			txTypeStr = "error"
-		case stake.TxTypeSStx:
-			txTypeStr = "ticket"
-		case stake.TxTypeSSGen:
-			txTypeStr = "vote"
-		case stake.TxTypeSSRtx:
-			txTypeStr = "revocation"
-		}
-
-		fee := template.Fees[i+len(msgBlock.Transactions)]
-		sigOps := template.SigOpCounts[i+len(msgBlock.Transactions)]
-		resultTx := dcrjson.GetBlockTemplateResultTx{
-			Data:    hex.EncodeToString(txBuf.Bytes()),
-			Hash:    stxHash.String(),
-			Depends: depends,
-			Fee:     fee,
-			SigOps:  sigOps,
-			TxType:  txTypeStr,
-		}
-		stransactions = append(stransactions, resultTx)
 	}
 
 	headerBytes, err := header.Bytes()
@@ -2598,19 +1887,18 @@ func (state *gbtWorkState) blockTemplateResult(bm *blockManager, useCoinbaseValu
 	targetDifficulty := fmt.Sprintf("%064x", blockchain.CompactToBig(header.Bits))
 	templateID := encodeTemplateID(state.prevHash, state.lastGenerated)
 	reply := dcrjson.GetBlockTemplateResult{
-		Header:        hex.EncodeToString(headerBytes),
-		SigOpLimit:    blockchain.MaxSigOpsPerBlock,
-		SizeLimit:     maxBlockSize,
-		Transactions:  transactions,
-		STransactions: stransactions,
-		LongPollID:    templateID,
-		SubmitOld:     submitOld,
-		Target:        targetDifficulty,
-		MinTime:       state.minTimestamp.Unix(),
-		MaxTime:       maxTime.Unix(),
-		Mutable:       gbtMutableFields,
-		NonceRange:    gbtNonceRange,
-		Capabilities:  gbtCapabilities,
+		Header:       hex.EncodeToString(headerBytes),
+		SigOpLimit:   blockchain.MaxSigOpsPerBlock,
+		SizeLimit:    maxBlockSize,
+		Transactions: transactions,
+		LongPollID:   templateID,
+		SubmitOld:    submitOld,
+		Target:       targetDifficulty,
+		MinTime:      state.minTimestamp.Unix(),
+		MaxTime:      maxTime.Unix(),
+		Mutable:      gbtMutableFields,
+		NonceRange:   gbtNonceRange,
+		Capabilities: gbtCapabilities,
 	}
 	if useCoinbaseValue {
 		reply.CoinbaseAux = gbtCoinbaseAux
@@ -3241,18 +2529,12 @@ func handleGetMiningInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{
 	}
 
 	best := s.chain.BestSnapshot()
-	nextStakeDiff, err := s.chain.CalcNextRequiredStakeDifficulty()
-	if err != nil {
-		return nil, rpcInternalError(err.Error(),
-			"Could not calculate next stake difficulty")
-	}
 
 	result := dcrjson.GetMiningInfoResult{
 		Blocks:           best.Height,
 		CurrentBlockSize: best.BlockSize,
 		CurrentBlockTx:   best.NumTxns,
 		Difficulty:       getDifficultyRatio(best.Bits),
-		StakeDifficulty:  nextStakeDiff,
 		Generate:         s.server.cpuMiner.IsMining(),
 		GenProcLimit:     s.server.cpuMiner.NumWorkers(),
 		HashesPerSec:     int64(s.server.cpuMiner.HashesPerSecond()),
@@ -3412,35 +2694,10 @@ func handleGetPeerInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 func handleGetRawMempool(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*dcrjson.GetRawMempoolCmd)
 
-	// Choose the type to filter the results by based on the provided param.
-	// A filter type of nil means no filtering.
-	var filterType *stake.TxType
-	if c.TxType != nil {
-		switch dcrjson.GetRawMempoolTxTypeCmd(*c.TxType) {
-		case dcrjson.GRMRegular:
-			filterType = new(stake.TxType)
-			*filterType = stake.TxTypeRegular
-		case dcrjson.GRMTickets:
-			filterType = new(stake.TxType)
-			*filterType = stake.TxTypeSStx
-		case dcrjson.GRMVotes:
-			filterType = new(stake.TxType)
-			*filterType = stake.TxTypeSSGen
-		case dcrjson.GRMRevocations:
-			filterType = new(stake.TxType)
-			*filterType = stake.TxTypeSSRtx
-		case dcrjson.GRMAll:
-			// Nothing to do
-		default:
-			return nil, rpcInvalidError("Invalid transaction "+
-				"type: %T", *c.TxType)
-		}
-	}
-
 	// Return verbose results if requested.
 	mp := s.server.txMemPool
 	if c.Verbose != nil && *c.Verbose {
-		return mp.RawMempoolVerbose(filterType), nil
+		return mp.RawMempoolVerbose(), nil
 	}
 
 	// The response is simply an array of the transaction hashes if the
@@ -3448,9 +2705,6 @@ func handleGetRawMempool(s *rpcServer, cmd interface{}, closeChan <-chan struct{
 	descs := mp.TxDescs()
 	hashStrings := make([]string, 0, len(descs))
 	for i := range descs {
-		if filterType != nil && descs[i].Type != *filterType {
-			continue
-		}
 		hashStrings = append(hashStrings, descs[i].Tx.Hash().String())
 	}
 	return hashStrings, nil
@@ -3578,34 +2832,6 @@ func handleGetRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan str
 	return *rawTxn, nil
 }
 
-// handleGetStakeDifficulty implements the getstakedifficulty command.
-func handleGetStakeDifficulty(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	best := s.chain.BestSnapshot()
-	blockHeader, err := s.chain.HeaderByHeight(best.Height)
-	if err != nil {
-		rpcsLog.Errorf("Error getting block: %v", err)
-		return nil, &dcrjson.RPCError{
-			Code:    dcrjson.ErrRPCDifficulty,
-			Message: "Error getting stake difficulty: " + err.Error(),
-		}
-	}
-	currentSdiff := dcrutil.Amount(blockHeader.SBits)
-
-	nextSdiff, err := s.server.blockManager.CalcNextRequiredStakeDifficulty()
-	if err != nil {
-		return nil, rpcInternalError("Could not calculate next stake "+
-			"difficulty "+err.Error(), "")
-	}
-	nextSdiffAmount := dcrutil.Amount(nextSdiff)
-
-	sDiffResult := &dcrjson.GetStakeDifficultyResult{
-		CurrentStakeDifficulty: currentSdiff.ToCoin(),
-		NextStakeDifficulty:    nextSdiffAmount.ToCoin(),
-	}
-
-	return sDiffResult, nil
-}
-
 // convertVersionMap translates a map[int]int into a sorted array of
 // VersionCount that contains the same information.
 func convertVersionMap(m map[int]int) []dcrjson.VersionCount {
@@ -3622,238 +2848,6 @@ func convertVersionMap(m map[int]int) []dcrjson.VersionCount {
 	}
 
 	return sorted
-}
-
-// handleGetStakeVersionInfo implements the getstakeversioninfo command.
-func handleGetStakeVersionInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	count := int32(1)
-	c, ok := cmd.(*dcrjson.GetStakeVersionInfoCmd)
-	if !ok {
-		return nil, rpcInvalidError("Invalid type: %T", c)
-	}
-	if c.Count != nil {
-		count = *c.Count
-		if count <= 0 {
-			return nil, rpcInvalidError("Count must be positive")
-		}
-	}
-
-	snapshot := s.chain.BestSnapshot()
-
-	interval := s.server.chainParams.StakeVersionInterval
-	// Assemble JSON result.
-	result := dcrjson.GetStakeVersionInfoResult{
-		CurrentHeight: snapshot.Height,
-		Hash:          snapshot.Hash.String(),
-		Intervals:     make([]dcrjson.VersionInterval, 0, count),
-	}
-
-	startHeight := snapshot.Height
-	endHeight := s.chain.CalcWantHeight(interval,
-		snapshot.Height) + 1
-	hash := &snapshot.Hash
-	adjust := int32(1) // We are off by one on the initial iteration.
-	for i := int32(0); i < count; i++ {
-		numBlocks := int32(startHeight - endHeight)
-		if numBlocks <= 0 {
-			// Just return what we got.
-			break
-		}
-		sv, err := s.chain.GetStakeVersions(hash, numBlocks+adjust)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(),
-				"handleGetStakeVersionInfo")
-		}
-
-		posVersions := make(map[int]int)
-		voteVersions := make(map[int]int)
-		for _, v := range sv {
-			posVersions[int(v.StakeVersion)]++
-			for _, vote := range v.Votes {
-				voteVersions[int(vote.Version)]++
-			}
-		}
-		versionInterval := dcrjson.VersionInterval{
-			StartHeight:  endHeight,
-			EndHeight:    startHeight,
-			PoSVersions:  convertVersionMap(posVersions),
-			VoteVersions: convertVersionMap(voteVersions),
-		}
-		result.Intervals = append(result.Intervals, versionInterval)
-
-		// Adjust interval.
-		endHeight -= interval
-		startHeight = endHeight + interval
-		adjust = 0
-
-		// Get prior block hash.
-		hash, err = s.chain.BlockHashByHeight(startHeight - 1)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(),
-				"handleGetStakeVersionInfo")
-		}
-	}
-
-	return result, nil
-}
-
-// handleGetStakeVersions implements the getstakeversions command.
-func handleGetStakeVersions(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.GetStakeVersionsCmd)
-
-	hash, err := chainhash.NewHashFromStr(c.Hash)
-	if err != nil {
-		return nil, rpcDecodeHexError(c.Hash)
-	}
-	if c.Count <= 0 {
-		return nil, rpcInvalidError("Invalid parameter, count must " +
-			"be > 0")
-	}
-
-	sv, err := s.chain.GetStakeVersions(hash, c.Count)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(),
-			"Could not obtain stake versions")
-	}
-
-	result := dcrjson.GetStakeVersionsResult{
-		StakeVersions: make([]dcrjson.StakeVersions, 0, len(sv)),
-	}
-	for _, v := range sv {
-		nsv := dcrjson.StakeVersions{
-			Hash:         v.Hash.String(),
-			Height:       v.Height,
-			BlockVersion: v.BlockVersion,
-			StakeVersion: v.StakeVersion,
-			Votes: make([]dcrjson.VersionBits, 0,
-				len(v.Votes)),
-		}
-		for _, vote := range v.Votes {
-			nsv.Votes = append(nsv.Votes,
-				dcrjson.VersionBits{Version: vote.Version,
-					Bits: vote.Bits})
-		}
-
-		result.StakeVersions = append(result.StakeVersions, nsv)
-	}
-
-	return result, nil
-}
-
-// handleGetTicketPoolValue implements the getticketpoolvalue command.
-func handleGetTicketPoolValue(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	amt, err := s.server.blockManager.TicketPoolValue()
-	if err != nil {
-		return nil, rpcInternalError(err.Error(),
-			"Could not obtain ticket pool value")
-	}
-
-	return amt.ToCoin(), nil
-}
-
-// handleGetVoteInfo implements the getvoteinfo command.
-func handleGetVoteInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c, ok := cmd.(*dcrjson.GetVoteInfoCmd)
-	if !ok {
-		return nil, rpcInvalidError("Invalid type: %T", c)
-	}
-
-	snapshot := s.chain.BestSnapshot()
-
-	interval := int64(s.server.chainParams.RuleChangeActivationInterval)
-	quorum := s.server.chainParams.RuleChangeActivationQuorum
-	// Assemble JSON result.
-	result := dcrjson.GetVoteInfoResult{
-		CurrentHeight: snapshot.Height,
-		StartHeight: s.chain.CalcWantHeight(interval,
-			snapshot.Height) + 1,
-		EndHeight: s.chain.CalcWantHeight(interval,
-			snapshot.Height) + interval,
-		Hash:        snapshot.Hash.String(),
-		VoteVersion: c.Version,
-		Quorum:      quorum,
-	}
-
-	// We don't fail, we try to return the totals for this version.
-	var err error
-	result.TotalVotes, err = s.chain.CountVoteVersion(c.Version)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(),
-			"Could not count voter versions")
-	}
-
-	vi, err := s.chain.GetVoteInfo(&snapshot.Hash, c.Version)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(),
-			"Could not obtain vote info")
-	}
-
-	result.Agendas = make([]dcrjson.Agenda, 0, len(vi.Agendas))
-	for _, agenda := range vi.Agendas {
-		a := dcrjson.Agenda{
-			ID:          agenda.Vote.Id,
-			Description: agenda.Vote.Description,
-			Mask:        agenda.Vote.Mask,
-			Choices: make([]dcrjson.Choice, 0,
-				len(agenda.Vote.Choices)),
-			StartTime:  agenda.StartTime,
-			ExpireTime: agenda.ExpireTime,
-		}
-
-		// Handle choices.
-		for _, choice := range agenda.Vote.Choices {
-			c := dcrjson.Choice{
-				ID:          choice.Id,
-				Description: choice.Description,
-				Bits:        choice.Bits,
-				IsAbstain:   choice.IsAbstain,
-				IsNo:        choice.IsNo,
-			}
-			a.Choices = append(a.Choices, c)
-		}
-
-		// Obtain status of agenda.
-		state, err := s.chain.NextThresholdState(&snapshot.Hash, c.Version,
-			agenda.Vote.Id)
-		if err != nil {
-			return nil, err
-		}
-
-		// Save off status.
-		a.Status = state.String()
-
-		if state.State != blockchain.ThresholdStarted {
-			// Append transformed agenda without progress.
-			result.Agendas = append(result.Agendas, a)
-			continue
-		}
-
-		counts, err := s.chain.GetVoteCounts(c.Version, agenda.Vote.Id)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(),
-				"Could not obtain vote count")
-		}
-
-		// Calculate quorum.
-		qmin := quorum
-		totalNonAbstain := counts.Total - counts.TotalAbstain
-		if totalNonAbstain < quorum {
-			qmin = totalNonAbstain
-		}
-		a.QuorumProgress = float64(qmin) / float64(quorum)
-
-		// Calculate choice progress.
-		for k := range a.Choices {
-			a.Choices[k].Count = counts.VoteChoices[k]
-			a.Choices[k].Progress = float64(counts.VoteChoices[k]) /
-				float64(counts.Total)
-		}
-
-		// Append transformed agenda.
-		result.Agendas = append(result.Agendas, a)
-	}
-
-	return result, nil
 }
 
 // bigToLEUint256 returns the passed big integer as an unsigned 256-bit integer
@@ -3992,14 +2986,21 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 
 // pruneOldBlockTemplates prunes all old block templates from the templatePool
 // map. Must be called with the RPC workstate locked to avoid races to the map.
-func pruneOldBlockTemplates(s *rpcServer, bestHeight int64) {
+func pruneOldBlockTemplates(s *rpcServer, bestHeight int64) error {
 	pool := s.templatePool
 	for rootHash, blkData := range pool {
-		height := int64(blkData.msgBlock.Header.Height)
+		hash := blkData.msgBlock.BlockHash()
+		height, err := s.chain.BlockHeightByHash(&hash)
+		if err != nil {
+			context := "Failed to obtain block height"
+			return rpcInternalError(err.Error(), context)
+		}
+
 		if height < bestHeight-getworkExpirationDiff {
 			delete(pool, rootHash)
 		}
 	}
+	return nil
 }
 
 // handleGetWorkRequest is a helper for handleGetWork which deals with
@@ -4129,18 +3130,15 @@ func handleGetWorkRequest(s *rpcServer) (interface{}, error) {
 	// submitted solution.
 	coinbaseTx := msgBlock.Transactions[0]
 
-	// Create the new merkleRootPair key which is MerkleRoot + StakeRoot
-	var merkleRootPair [merkleRootPairSize]byte
-	copy(merkleRootPair[:chainhash.HashSize], msgBlock.Header.MerkleRoot[:])
-	copy(merkleRootPair[chainhash.HashSize:], msgBlock.Header.StakeRoot[:])
-
-	if msgBlock.Header.Height > 1 {
-		s.templatePool[merkleRootPair] = &workStateBlockInfo{
+	if msgBlock.Header.PrevBlock != activeNetParams.GenesisBlock.Header.PrevBlock &&
+		msgBlock.Header.PrevBlock != activeNetParams.GenesisBlock.BlockHash() {
+		// height > 1
+		s.templatePool[msgBlock.Header.MerkleRoot] = &workStateBlockInfo{
 			msgBlock: msgBlock,
 			pkScript: coinbaseTx.TxOut[1].PkScript,
 		}
 	} else {
-		s.templatePool[merkleRootPair] = &workStateBlockInfo{
+		s.templatePool[msgBlock.Header.MerkleRoot] = &workStateBlockInfo{
 			msgBlock: msgBlock,
 		}
 	}
@@ -4210,15 +3208,10 @@ func handleGetWorkSubmission(s *rpcServer, hexData string) (interface{}, error) 
 		return false, rpcInvalidError("Invalid block header: %v", err)
 	}
 
-	// Create the new merkleRootPair key which is MerkleRoot + StakeRoot
-	var merkleRootPair [merkleRootPairSize]byte
-	copy(merkleRootPair[:chainhash.HashSize], submittedHeader.MerkleRoot[:])
-	copy(merkleRootPair[chainhash.HashSize:], submittedHeader.StakeRoot[:])
-
 	// Look up the full block for the provided data based on the merkle
 	// root.  Return false to indicate the solve failed if it's not
 	// available.
-	blockInfo, ok := s.templatePool[merkleRootPair]
+	blockInfo, ok := s.templatePool[submittedHeader.MerkleRoot]
 	if !ok {
 		rpcsLog.Errorf("Block submitted via getwork has no matching "+
 			"template for merkle root %s",
@@ -4235,7 +3228,9 @@ func handleGetWorkSubmission(s *rpcServer, hexData string) (interface{}, error) 
 	tempBlock := dcrutil.NewBlockDeepCopy(blockInfo.msgBlock)
 	msgBlock := tempBlock.MsgBlock()
 	msgBlock.Header = submittedHeader
-	if msgBlock.Header.Height > 1 {
+	if msgBlock.Header.PrevBlock != activeNetParams.GenesisBlock.Header.PrevBlock &&
+		msgBlock.Header.PrevBlock != activeNetParams.GenesisBlock.BlockHash() {
+		// height > 1
 		pkScriptCopy := make([]byte, len(blockInfo.pkScript))
 		copy(pkScriptCopy, blockInfo.pkScript)
 		msgBlock.Transactions[0].TxOut[1].PkScript = blockInfo.pkScript
@@ -4379,38 +3374,6 @@ func handleHelp(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (inter
 	return help, nil
 }
 
-// handleLiveTickets implements the livetickets command.
-func handleLiveTickets(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	lt, err := s.server.blockManager.chain.LiveTickets()
-	if err != nil {
-		return nil, rpcInternalError("Could not get live tickets "+
-			err.Error(), "")
-	}
-
-	ltString := make([]string, len(lt))
-	for i := range lt {
-		ltString[i] = lt[i].String()
-	}
-
-	return dcrjson.LiveTicketsResult{Tickets: ltString}, nil
-}
-
-// handleMissedTickets implements the missedtickets command.
-func handleMissedTickets(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	mt, err := s.server.blockManager.chain.MissedTickets()
-	if err != nil {
-		return nil, rpcInternalError("Could not get missed tickets "+
-			err.Error(), "")
-	}
-
-	mtString := make([]string, len(mt))
-	for i, hash := range mt {
-		mtString[i] = hash.String()
-	}
-
-	return dcrjson.MissedTicketsResult{Tickets: mtString}, nil
-}
-
 // handlePing implements the ping command.
 func handlePing(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	// Ask server to ping \o_
@@ -4420,63 +3383,6 @@ func handlePing(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (inter
 			"generate nonce: "+err.Error(), "")
 	}
 	s.server.BroadcastMessage(wire.NewMsgPing(nonce))
-
-	return nil, nil
-}
-
-// handleRebroadcastMissed implements the rebroadcastmissed command.
-func handleRebroadcastMissed(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	best := s.server.blockManager.chain.BestSnapshot()
-	mt, err := s.server.blockManager.chain.MissedTickets()
-	if err != nil {
-		return nil, rpcInternalError("Could not get missed tickets "+
-			err.Error(), "")
-	}
-
-	stakeDiff, err := s.server.blockManager.CalcNextRequiredStakeDifficulty()
-	if err != nil {
-		return nil, rpcInternalError("Could not calculate next stake "+
-			"difficulty "+err.Error(), "")
-	}
-
-	missedTicketsNtfn := &blockchain.TicketNotificationsData{
-		Hash:            best.Hash,
-		Height:          best.Height,
-		StakeDifficulty: stakeDiff,
-		TicketsSpent:    []chainhash.Hash{},
-		TicketsMissed:   mt,
-		TicketsNew:      []chainhash.Hash{},
-	}
-
-	s.ntfnMgr.NotifySpentAndMissedTickets(missedTicketsNtfn)
-
-	return nil, nil
-}
-
-// handleRebroadcastWinners implements the rebroadcastwinners command.
-func handleRebroadcastWinners(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	bestHeight := s.server.blockManager.chain.BestSnapshot().Height
-	blocks, err := s.server.blockManager.TipGeneration()
-	if err != nil {
-		return nil, rpcInternalError("Could not get generation "+
-			err.Error(), "")
-	}
-
-	for i := range blocks {
-		winningTickets, _, _, err :=
-			s.server.blockManager.chain.LotteryDataForBlock(&blocks[i])
-		if err != nil {
-			return nil, rpcInternalError("Lottery data for block "+
-				"failed: "+err.Error(), "")
-		}
-		ntfnData := &WinningTicketsNtfnData{
-			BlockHash:   blocks[i],
-			BlockHeight: bestHeight,
-			Tickets:     winningTickets,
-		}
-
-		s.ntfnMgr.NotifyWinningTickets(ntfnData)
-	}
 
 	return nil, nil
 }
@@ -4501,13 +3407,7 @@ type retrievedTx struct {
 func fetchInputTxos(s *rpcServer, tx *wire.MsgTx) (map[wire.OutPoint]wire.TxOut, error) {
 	mp := s.server.txMemPool
 	originOutputs := make(map[wire.OutPoint]wire.TxOut)
-	voteTx := stake.IsSSGen(tx)
 	for txInIndex, txIn := range tx.TxIn {
-		// vote tx have null input for vin[0],
-		// skip since it resolvces to an invalid transaction
-		if voteTx && txInIndex == 0 {
-			continue
-		}
 		// Attempt to fetch and use the referenced transaction from the
 		// memory pool.
 		origin := &txIn.PreviousOutPoint
@@ -4603,24 +3503,7 @@ func createVinListPrevOut(s *rpcServer, mtx *wire.MsgTx, chainParams *chaincfg.P
 		}
 	}
 
-	// Stakebase transactions (votes) have two inputs: a null stake base
-	// followed by an input consuming a ticket's stakesubmission.
-	isSSGen := stake.IsSSGen(mtx)
-
 	for i, txIn := range mtx.TxIn {
-		// Handle only the null input of a stakebase differently.
-		if isSSGen && i == 0 {
-			amountIn := dcrutil.Amount(txIn.ValueIn).ToCoin()
-			vinEntry := dcrjson.VinPrevOut{
-				Stakebase: hex.EncodeToString(txIn.SignatureScript),
-				AmountIn:  &amountIn,
-				Sequence:  txIn.Sequence,
-			}
-			vinList = append(vinList, vinEntry)
-			// No previous outpoints to check against the address filter.
-			continue
-		}
-
 		// The disassembled string will contain [error] inline if the
 		// script doesn't fully parse, so ignore the error here.
 		disbuf, _ := txscript.DisasmString(txIn.SignatureScript)
@@ -4633,7 +3516,6 @@ func createVinListPrevOut(s *rpcServer, mtx *wire.MsgTx, chainParams *chaincfg.P
 		vinEntry := dcrjson.VinPrevOut{
 			Txid:        prevOut.Hash.String(),
 			Vout:        prevOut.Index,
-			Tree:        prevOut.Tree,
 			AmountIn:    &amountIn,
 			BlockHeight: &txIn.BlockHeight,
 			BlockIndex:  &txIn.BlockIndex,
@@ -5051,15 +3933,8 @@ func handleSendRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan st
 
 	s.server.AnnounceNewTransactions(acceptedTxs)
 
-	// Keep track of all the regular sendrawtransaction request txns so that
-	// they can be rebroadcast if they don't make their way into a block.
-	//
-	// Note that votes are only valid for a specific block and are time
-	// sensitive, so they should not be added to the rebroadcast logic.
-	if txType := stake.DetermineTxType(msgtx); txType != stake.TxTypeSSGen {
-		iv := wire.NewInvVect(wire.InvTypeTx, tx.Hash())
-		s.server.AddRebroadcastInventory(iv, tx)
-	}
+	iv := wire.NewInvVect(wire.InvTypeTx, tx.Hash())
+	s.server.AddRebroadcastInventory(iv, tx)
 
 	return tx.Hash().String(), nil
 }
@@ -5216,15 +4091,13 @@ func stdDev(s []dcrutil.Amount) dcrutil.Amount {
 
 // feeInfoForMempool returns the fee information for the passed tx type in the
 // memory pool.
-func feeInfoForMempool(s *rpcServer, txType stake.TxType) *dcrjson.FeeInfoMempool {
+func feeInfoForMempool(s *rpcServer) *dcrjson.FeeInfoMempool {
 	txDs := s.server.txMemPool.TxDescs()
 	ticketFees := make([]dcrutil.Amount, 0, len(txDs))
 	for _, txD := range txDs {
-		if txD.Type == txType {
-			feePerKb := (dcrutil.Amount(txD.Fee)) * 1000 /
-				dcrutil.Amount(txD.Tx.MsgTx().SerializeSize())
-			ticketFees = append(ticketFees, feePerKb)
-		}
+		feePerKb := (dcrutil.Amount(txD.Fee)) * 1000 /
+			dcrutil.Amount(txD.Tx.MsgTx().SerializeSize())
+		ticketFees = append(ticketFees, feePerKb)
 	}
 
 	return &dcrjson.FeeInfoMempool{
@@ -5254,44 +4127,21 @@ func calcFeePerKb(tx *dcrutil.Tx) dcrutil.Amount {
 
 // feeInfoForBlock fetches the ticket fee information for a given tx type in a
 // block.
-func ticketFeeInfoForBlock(s *rpcServer, height int64, txType stake.TxType) (*dcrjson.FeeInfoBlock, error) {
+func feeInfoForBlock(s *rpcServer, height int64) (*dcrjson.FeeInfoBlock, error) {
 	bl, err := s.chain.BlockByHeight(height)
 	if err != nil {
 		return nil, err
 	}
 
-	txNum := 0
-	switch txType {
-	case stake.TxTypeRegular:
-		txNum = len(bl.MsgBlock().Transactions) - 1
-	case stake.TxTypeSStx:
-		txNum = int(bl.MsgBlock().Header.FreshStake)
-	case stake.TxTypeSSGen:
-		txNum = int(bl.MsgBlock().Header.Voters)
-	case stake.TxTypeSSRtx:
-		txNum = int(bl.MsgBlock().Header.Revocations)
-	}
-
+	txNum := len(bl.MsgBlock().Transactions) - 1
 	txFees := make([]dcrutil.Amount, txNum)
-	itr := 0
-	if txType == stake.TxTypeRegular {
-		for i, tx := range bl.Transactions() {
-			// Skip the coin base.
-			if i == 0 {
-				continue
-			}
+	for i, tx := range bl.Transactions() {
+		// Skip the coin base.
+		if i == 0 {
+			continue
+		}
 
-			txFees[itr] = calcFeePerKb(tx)
-			itr++
-		}
-	} else {
-		for _, stx := range bl.STransactions() {
-			thisTxType := stake.DetermineTxType(stx.MsgTx())
-			if thisTxType == txType {
-				txFees[itr] = calcFeePerKb(stx)
-				itr++
-			}
-		}
+		txFees[i-1] = calcFeePerKb(tx)
 	}
 
 	return &dcrjson.FeeInfoBlock{
@@ -5305,9 +4155,9 @@ func ticketFeeInfoForBlock(s *rpcServer, height int64, txType stake.TxType) (*dc
 	}, nil
 }
 
-// ticketFeeInfoForRange fetches the ticket fee information for a given range
+// feeInfoForRange fetches the ticket fee information for a given range
 // from [start, end).
-func ticketFeeInfoForRange(s *rpcServer, start int64, end int64, txType stake.TxType) (*dcrjson.FeeInfoWindow, error) {
+func feeInfoForRange(s *rpcServer, start int64, end int64) (*dcrjson.FeeInfoWindow, error) {
 	hashes, err := s.chain.HeightRange(start, end)
 	if err != nil {
 		return nil, err
@@ -5320,22 +4170,13 @@ func ticketFeeInfoForRange(s *rpcServer, start int64, end int64, txType stake.Tx
 			return nil, err
 		}
 
-		if txType == stake.TxTypeRegular {
-			for i, tx := range bl.Transactions() {
-				// Skip the coin base.
-				if i == 0 {
-					continue
-				}
+		for i, tx := range bl.Transactions() {
+			// Skip the coin base.
+			if i == 0 {
+				continue
+			}
 
-				txFees = append(txFees, calcFeePerKb(tx))
-			}
-		} else {
-			for _, stx := range bl.STransactions() {
-				thisTxType := stake.DetermineTxType(stx.MsgTx())
-				if thisTxType == txType {
-					txFees = append(txFees, calcFeePerKb(stx))
-				}
-			}
+			txFees = append(txFees, calcFeePerKb(tx))
 		}
 	}
 
@@ -5351,174 +4192,6 @@ func ticketFeeInfoForRange(s *rpcServer, start int64, end int64, txType stake.Tx
 	}, nil
 }
 
-// handleTicketFeeInfo implements the ticketfeeinfo command.
-func handleTicketFeeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.TicketFeeInfoCmd)
-
-	bestHeight := s.server.blockManager.chain.BestSnapshot().Height
-
-	// Memory pool first.
-	feeInfoMempool := feeInfoForMempool(s, stake.TxTypeSStx)
-
-	// Blocks requested, descending from the chain tip.
-	var feeInfoBlocks []dcrjson.FeeInfoBlock
-	blocks := uint32(0)
-	if c.Blocks != nil {
-		blocks = *c.Blocks
-	}
-	if blocks > 0 {
-		start := bestHeight
-		end := bestHeight - int64(blocks)
-
-		for i := start; i > end; i-- {
-			feeInfo, err := ticketFeeInfoForBlock(s, i, stake.TxTypeSStx)
-			if err != nil {
-				return nil, rpcInternalError(err.Error(),
-					"Could not obtain ticket fee info")
-			}
-			feeInfoBlocks = append(feeInfoBlocks, *feeInfo)
-		}
-	}
-
-	var feeInfoWindows []dcrjson.FeeInfoWindow
-	windows := uint32(0)
-	if c.Windows != nil {
-		windows = *c.Windows
-	}
-	if windows > 0 {
-		// The first window is special because it may not be finished.
-		// Perform this first and return if it's the only window the
-		// user wants. Otherwise, append and continue.
-		winLen := s.server.chainParams.StakeDiffWindowSize
-		lastChange := (bestHeight / winLen) * winLen
-
-		feeInfo, err := ticketFeeInfoForRange(s, lastChange, bestHeight+1,
-			stake.TxTypeSStx)
-		if err != nil {
-			return nil, rpcInternalError(err.Error(),
-				"Could not obtain ticket fee info")
-		}
-		feeInfoWindows = append(feeInfoWindows, *feeInfo)
-
-		// We need data on windows from before this. Start from
-		// the last adjustment and move backwards through window
-		// lengths, calulating the fees data and appending it
-		// each time.
-		if windows > 1 {
-			// Go down to the last height requested, except
-			// in the case that the user has specified to
-			// many windows. In that case, just proceed to the
-			// first block.
-			end := int64(-1)
-			if lastChange-int64(windows)*winLen > end {
-				end = lastChange - int64(windows)*winLen
-			}
-			for i := lastChange; i > end+winLen; i -= winLen {
-				feeInfo, err := ticketFeeInfoForRange(s, i-winLen, i,
-					stake.TxTypeSStx)
-				if err != nil {
-					return nil, rpcInternalError(err.Error(),
-						"Could not obtain ticket fee info")
-				}
-				feeInfoWindows = append(feeInfoWindows, *feeInfo)
-			}
-		}
-	}
-
-	return &dcrjson.TicketFeeInfoResult{
-		FeeInfoMempool: *feeInfoMempool,
-		FeeInfoBlocks:  feeInfoBlocks,
-		FeeInfoWindows: feeInfoWindows,
-	}, nil
-}
-
-// handleTicketsForAddress implements the ticketsforaddress command.
-func handleTicketsForAddress(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.TicketsForAddressCmd)
-
-	addr, err := dcrutil.DecodeAddress(c.Address)
-	if err != nil {
-		return nil, rpcInvalidError("Invalid address: %v", err)
-	}
-
-	tickets, err := s.server.blockManager.chain.TicketsWithAddress(addr)
-	if err != nil {
-		return nil, rpcInternalError(err.Error(),
-			"Could not obtain tickets")
-	}
-
-	ticketStrings := make([]string, len(tickets))
-	itr := 0
-	for _, ticket := range tickets {
-		ticketStrings[itr] = ticket.String()
-		itr++
-	}
-
-	reply := &dcrjson.TicketsForAddressResult{
-		Tickets: ticketStrings,
-	}
-	return reply, nil
-}
-
-// handleTicketVWAP implements the ticketvwap command.
-func handleTicketVWAP(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*dcrjson.TicketVWAPCmd)
-
-	// The default VWAP is for the past WorkDiffWindows * WorkDiffWindowSize
-	// many blocks.
-	bestHeight := s.server.blockManager.chain.BestSnapshot().Height
-	var start uint32
-	if c.Start == nil {
-		toEval := activeNetParams.WorkDiffWindows *
-			activeNetParams.WorkDiffWindowSize
-		startI64 := bestHeight - toEval
-
-		// Use 1 as the first block if there aren't
-		// enough blocks.
-		if startI64 <= 0 {
-			start = 1
-		} else {
-			start = uint32(startI64)
-		}
-	} else {
-		start = *c.Start
-	}
-
-	end := uint32(bestHeight)
-	if c.End != nil {
-		end = *c.End
-	}
-	if start > end {
-		return nil, rpcInvalidError("Start height %v is beyond end "+
-			"height %v", start, end)
-	}
-	if end > uint32(bestHeight) {
-		return nil, rpcInvalidError("End height %v is beyond "+
-			"blockchain tip height %v", end, bestHeight)
-	}
-
-	// Calculate the volume weighted average price of a ticket for the
-	// given range.
-	ticketNum := int64(0)
-	totalValue := int64(0)
-	for i := start; i <= end; i++ {
-		blockHeader, err := s.chain.HeaderByHeight(int64(i))
-		if err != nil {
-			return nil, rpcInternalError(err.Error(),
-				"Could not obtain header")
-		}
-
-		ticketNum += int64(blockHeader.FreshStake)
-		totalValue += blockHeader.SBits * int64(blockHeader.FreshStake)
-	}
-	vwap := int64(0)
-	if ticketNum > 0 {
-		vwap = totalValue / ticketNum
-	}
-
-	return dcrutil.Amount(vwap).ToCoin(), nil
-}
-
 // handleTxFeeInfo implements the txfeeinfo command.
 func handleTxFeeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*dcrjson.TxFeeInfoCmd)
@@ -5526,7 +4199,7 @@ func handleTxFeeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (
 	bestHeight := s.server.blockManager.chain.BestSnapshot().Height
 
 	// Memory pool first.
-	feeInfoMempool := feeInfoForMempool(s, stake.TxTypeRegular)
+	feeInfoMempool := feeInfoForMempool(s)
 
 	// Blocks requested, descending from the chain tip.
 	var feeInfoBlocks []dcrjson.FeeInfoBlock
@@ -5539,8 +4212,7 @@ func handleTxFeeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (
 		end := bestHeight - int64(blocks)
 
 		for i := start; i > end; i-- {
-			feeInfo, err := ticketFeeInfoForBlock(s, i,
-				stake.TxTypeRegular)
+			feeInfo, err := feeInfoForBlock(s, i)
 			if err != nil {
 				return nil, rpcInternalError(err.Error(),
 					"Could not obtain ticket fee info")
@@ -5581,8 +4253,7 @@ func handleTxFeeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (
 			"blockchain tip height %v", end, bestHeight)
 	}
 
-	feeInfo, err := ticketFeeInfoForRange(s, int64(start), int64(end+1),
-		stake.TxTypeRegular)
+	feeInfo, err := feeInfoForRange(s, int64(start), int64(end+1))
 	if err != nil {
 		return nil, rpcInternalError(err.Error(),
 			"Could not obtain ticket fee info")
@@ -5778,7 +4449,7 @@ type rpcServer struct {
 	listeners              []net.Listener
 	workState              *workState
 	gbtWorkState           *gbtWorkState
-	templatePool           map[[merkleRootPairSize]byte]*workStateBlockInfo
+	templatePool           map[chainhash.Hash]*workStateBlockInfo
 	helpCacher             *helpCacher
 	requestProcessShutdown chan struct{}
 	quit                   chan int
@@ -6416,7 +5087,7 @@ func newRPCServer(listenAddrs []string, generator *BlkTmplGenerator, s *server) 
 		chain:                  s.blockManager.chain,
 		statusLines:            make(map[int]string),
 		workState:              newWorkState(),
-		templatePool:           make(map[[merkleRootPairSize]byte]*workStateBlockInfo),
+		templatePool:           make(map[chainhash.Hash]*workStateBlockInfo),
 		gbtWorkState:           newGbtWorkState(s.timeSource),
 		helpCacher:             newHelpCacher(),
 		requestProcessShutdown: make(chan struct{}),

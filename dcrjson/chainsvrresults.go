@@ -67,23 +67,11 @@ type GetBlockVerboseResult struct {
 	Height        int64         `json:"height"`
 	Version       int32         `json:"version"`
 	MerkleRoot    string        `json:"merkleroot"`
-	StakeRoot     string        `json:"stakeroot"`
 	Tx            []string      `json:"tx,omitempty"`
 	RawTx         []TxRawResult `json:"rawtx,omitempty"`
-	STx           []string      `json:"stx,omitempty"`
-	RawSTx        []TxRawResult `json:"rawstx,omitempty"`
 	Time          int64         `json:"time"`
 	Nonce         uint32        `json:"nonce"`
-	VoteBits      uint16        `json:"votebits"`
-	FinalState    string        `json:"finalstate"`
-	Voters        uint16        `json:"voters"`
-	FreshStake    uint8         `json:"freshstake"`
-	Revocations   uint8         `json:"revocations"`
-	PoolSize      uint32        `json:"poolsize"`
 	Bits          string        `json:"bits"`
-	SBits         float64       `json:"sbits"`
-	ExtraData     string        `json:"extradata"`
-	StakeVersion  uint32        `json:"stakeversion"`
 	Difficulty    float64       `json:"difficulty"`
 	ChainWork     string        `json:"chainwork"`
 	PreviousHash  string        `json:"previousblockhash"`
@@ -92,8 +80,8 @@ type GetBlockVerboseResult struct {
 
 // AgendaInfo provides an overview of an agenda in a consensus deployment.
 type AgendaInfo struct {
-	Status     string `json:"status"`
-	Since      int64  `json:"since,omitempty"`
+	// Status     string `json:"status,omitempty"`
+	// Since      int64  `json:"since,omitempty"`
 	StartTime  uint64 `json:"starttime"`
 	ExpireTime uint64 `json:"expiretime"`
 }
@@ -101,17 +89,17 @@ type AgendaInfo struct {
 // GetBlockChainInfoResult models the data returned from the getblockchaininfo
 // command.
 type GetBlockChainInfoResult struct {
-	Chain                string                `json:"chain"`
-	Blocks               int64                 `json:"blocks"`
-	Headers              int64                 `json:"headers"`
-	SyncHeight           int64                 `json:"syncheight"`
-	BestBlockHash        string                `json:"bestblockhash"`
-	Difficulty           uint32                `json:"difficulty"`
-	VerificationProgress float64               `json:"verificationprogress"`
-	ChainWork            string                `json:"chainwork"`
-	InitialBlockDownload bool                  `json:"initialblockdownload"`
-	MaxBlockSize         int64                 `json:"maxblocksize"`
-	Deployments          map[string]AgendaInfo `json:"deployments"`
+	Chain                string       `json:"chain"`
+	Blocks               int64        `json:"blocks"`
+	Headers              int64        `json:"headers"`
+	SyncHeight           int64        `json:"syncheight"`
+	BestBlockHash        string       `json:"bestblockhash"`
+	Difficulty           uint32       `json:"difficulty"`
+	VerificationProgress float64      `json:"verificationprogress"`
+	ChainWork            string       `json:"chainwork"`
+	InitialBlockDownload bool         `json:"initialblockdownload"`
+	MaxBlockSize         int64        `json:"maxblocksize"`
+	Deployments          []AgendaInfo `json:"deployments"`
 }
 
 // GetBlockHeaderVerboseResult models the data from the getblockheader command when
@@ -122,21 +110,10 @@ type GetBlockHeaderVerboseResult struct {
 	Confirmations int64   `json:"confirmations"`
 	Version       int32   `json:"version"`
 	MerkleRoot    string  `json:"merkleroot"`
-	StakeRoot     string  `json:"stakeroot"`
-	VoteBits      uint16  `json:"votebits"`
-	FinalState    string  `json:"finalstate"`
-	Voters        uint16  `json:"voters"`
-	FreshStake    uint8   `json:"freshstake"`
-	Revocations   uint8   `json:"revocations"`
-	PoolSize      uint32  `json:"poolsize"`
 	Bits          string  `json:"bits"`
-	SBits         float64 `json:"sbits"`
 	Height        uint32  `json:"height"`
-	Size          uint32  `json:"size"`
 	Time          int64   `json:"time"`
 	Nonce         uint32  `json:"nonce"`
-	ExtraData     string  `json:"extradata"`
-	StakeVersion  uint32  `json:"stakeversion"`
 	Difficulty    float64 `json:"difficulty"`
 	ChainWork     string  `json:"chainwork"`
 	PreviousHash  string  `json:"previousblockhash,omitempty"`
@@ -147,7 +124,6 @@ type GetBlockHeaderVerboseResult struct {
 // command.
 type GetBlockSubsidyResult struct {
 	Developer int64 `json:"developer"`
-	PoS       int64 `json:"pos"`
 	PoW       int64 `json:"pow"`
 	Total     int64 `json:"total"`
 }
@@ -160,7 +136,6 @@ type GetBlockTemplateResultTx struct {
 	Depends []int64 `json:"depends"`
 	Fee     int64   `json:"fee"`
 	SigOps  int64   `json:"sigops"`
-	TxType  string  `json:"txtype"`
 }
 
 // GetBlockTemplateResultAux models the coinbaseaux field of the
@@ -181,7 +156,6 @@ type GetBlockTemplateResult struct {
 	SigOpLimit    int64                      `json:"sigoplimit,omitempty"`
 	SizeLimit     int64                      `json:"sizelimit,omitempty"`
 	Transactions  []GetBlockTemplateResultTx `json:"transactions"`
-	STransactions []GetBlockTemplateResultTx `json:"stransactions"`
 	CoinbaseAux   *GetBlockTemplateResultAux `json:"coinbaseaux,omitempty"`
 	CoinbaseTxn   *GetBlockTemplateResultTx  `json:"coinbasetxn,omitempty"`
 	CoinbaseValue *int64                     `json:"coinbasevalue,omitempty"`
@@ -249,7 +223,6 @@ type GetMiningInfoResult struct {
 	CurrentBlockSize uint64  `json:"currentblocksize"`
 	CurrentBlockTx   uint64  `json:"currentblocktx"`
 	Difficulty       float64 `json:"difficulty"`
-	StakeDifficulty  int64   `json:"stakedifficulty"`
 	Errors           string  `json:"errors"`
 	Generate         bool    `json:"generate"`
 	GenProcLimit     int32   `json:"genproclimit"`
@@ -510,14 +483,6 @@ type FeeInfoWindow struct {
 	StdDev      float64 `json:"stddev"`
 }
 
-// TicketFeeInfoResult models the data returned from the ticketfeeinfo command.
-// command.
-type TicketFeeInfoResult struct {
-	FeeInfoMempool FeeInfoMempool  `json:"feeinfomempool"`
-	FeeInfoBlocks  []FeeInfoBlock  `json:"feeinfoblocks"`
-	FeeInfoWindows []FeeInfoWindow `json:"feeinfowindows"`
-}
-
 // SearchRawTransactionsResult models the data from the searchrawtransaction
 // command.
 type SearchRawTransactionsResult struct {
@@ -592,10 +557,8 @@ type ScriptSig struct {
 // same structure.
 type Vin struct {
 	Coinbase    string     `json:"coinbase"`
-	Stakebase   string     `json:"stakebase"`
 	Txid        string     `json:"txid"`
 	Vout        uint32     `json:"vout"`
-	Tree        int8       `json:"tree"`
 	Sequence    uint32     `json:"sequence"`
 	AmountIn    float64    `json:"amountin"`
 	BlockHeight uint32     `json:"blockheight"`
@@ -606,11 +569,6 @@ type Vin struct {
 // IsCoinBase returns a bool to show if a Vin is a Coinbase one or not.
 func (v *Vin) IsCoinBase() bool {
 	return len(v.Coinbase) > 0
-}
-
-// IsStakeBase returns a bool to show if a Vin is a StakeBase one or not.
-func (v *Vin) IsStakeBase() bool {
-	return len(v.Stakebase) > 0
 }
 
 // MarshalJSON provides a custom Marshal method for Vin.
@@ -632,27 +590,9 @@ func (v *Vin) MarshalJSON() ([]byte, error) {
 		return json.Marshal(coinbaseStruct)
 	}
 
-	if v.IsStakeBase() {
-		stakebaseStruct := struct {
-			AmountIn    float64 `json:"amountin"`
-			BlockHeight uint32  `json:"blockheight"`
-			BlockIndex  uint32  `json:"blockindex"`
-			Stakebase   string  `json:"stakebase"`
-			Sequence    uint32  `json:"sequence"`
-		}{
-			AmountIn:    v.AmountIn,
-			BlockHeight: v.BlockHeight,
-			BlockIndex:  v.BlockIndex,
-			Stakebase:   v.Stakebase,
-			Sequence:    v.Sequence,
-		}
-		return json.Marshal(stakebaseStruct)
-	}
-
 	txStruct := struct {
 		Txid        string     `json:"txid"`
 		Vout        uint32     `json:"vout"`
-		Tree        int8       `json:"tree"`
 		Sequence    uint32     `json:"sequence"`
 		AmountIn    float64    `json:"amountin"`
 		BlockHeight uint32     `json:"blockheight"`
@@ -661,7 +601,6 @@ func (v *Vin) MarshalJSON() ([]byte, error) {
 	}{
 		Txid:        v.Txid,
 		Vout:        v.Vout,
-		Tree:        v.Tree,
 		Sequence:    v.Sequence,
 		AmountIn:    v.AmountIn,
 		BlockHeight: v.BlockHeight,
@@ -680,10 +619,8 @@ type PrevOut struct {
 // VinPrevOut is like Vin except it includes PrevOut.  It is used by searchrawtransaction
 type VinPrevOut struct {
 	Coinbase    string     `json:"coinbase"`
-	Stakebase   string     `json:"stakebase"`
 	Txid        string     `json:"txid"`
 	Vout        uint32     `json:"vout"`
-	Tree        int8       `json:"tree"`
 	AmountIn    *float64   `json:"amountin,omitempty"`
 	BlockHeight *uint32    `json:"blockheight,omitempty"`
 	BlockIndex  *uint32    `json:"blockindex,omitempty"`
@@ -695,11 +632,6 @@ type VinPrevOut struct {
 // IsCoinBase returns a bool to show if a Vin is a Coinbase one or not.
 func (v *VinPrevOut) IsCoinBase() bool {
 	return len(v.Coinbase) > 0
-}
-
-// IsStakeBase returns a bool to show if a Vin is a StakeBase one or not.
-func (v *VinPrevOut) IsStakeBase() bool {
-	return len(v.Stakebase) > 0
 }
 
 // MarshalJSON provides a custom Marshal method for VinPrevOut.
@@ -717,23 +649,9 @@ func (v *VinPrevOut) MarshalJSON() ([]byte, error) {
 		return json.Marshal(coinbaseStruct)
 	}
 
-	if v.IsStakeBase() {
-		stakebaseStruct := struct {
-			Stakebase string   `json:"stakebase"`
-			AmountIn  *float64 `json:"amountin,omitempty"`
-			Sequence  uint32   `json:"sequence"`
-		}{
-			Stakebase: v.Stakebase,
-			AmountIn:  v.AmountIn,
-			Sequence:  v.Sequence,
-		}
-		return json.Marshal(stakebaseStruct)
-	}
-
 	txStruct := struct {
 		Txid        string     `json:"txid"`
 		Vout        uint32     `json:"vout"`
-		Tree        int8       `json:"tree"`
 		AmountIn    *float64   `json:"amountin,omitempty"`
 		BlockHeight *uint32    `json:"blockheight,omitempty"`
 		BlockIndex  *uint32    `json:"blockindex,omitempty"`
@@ -743,7 +661,6 @@ func (v *VinPrevOut) MarshalJSON() ([]byte, error) {
 	}{
 		Txid:        v.Txid,
 		Vout:        v.Vout,
-		Tree:        v.Tree,
 		AmountIn:    v.AmountIn,
 		BlockHeight: v.BlockHeight,
 		BlockIndex:  v.BlockIndex,
