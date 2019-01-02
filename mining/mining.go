@@ -64,19 +64,4 @@ type TxSource interface {
 	// HaveAllTransactions returns whether or not all of the passed
 	// transaction hashes exist in the source pool.
 	HaveAllTransactions(hashes []chainhash.Hash) bool
-
-	// VoteHashesForBlock returns the hashes for all votes on the provided
-	// block hash that are currently available in the source pool.
-	VoteHashesForBlock(hash *chainhash.Hash) []chainhash.Hash
-
-	// VotesForBlocks returns a slice of vote descriptors for all votes on
-	// the provided block hashes that are currently available in the source
-	// pool.
-	VotesForBlocks(hashes []chainhash.Hash) [][]VoteDesc
-
-	// IsRegTxTreeKnownDisapproved returns whether or not the regular
-	// transaction tree of the block represented by the provided hash is
-	// known to be disapproved according to the votes currently in the
-	// source pool.
-	IsRegTxTreeKnownDisapproved(hash *chainhash.Hash) bool
 }

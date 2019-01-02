@@ -94,8 +94,7 @@ var (
 // is set.
 func isNullOutpoint(outpoint *wire.OutPoint) bool {
 	if outpoint.Index == math.MaxUint32 &&
-		outpoint.Hash.IsEqual(zeroHash) &&
-		outpoint.Tree == wire.TxTreeRegular {
+		outpoint.Hash.IsEqual(zeroHash) {
 		return true
 	}
 	return false

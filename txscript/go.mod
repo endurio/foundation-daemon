@@ -1,6 +1,7 @@
 module github.com/endurio/ndrd/txscript
 
 require (
+	github.com/decred/slog v1.0.0
 	github.com/endurio/ndrd/chaincfg v1.2.0
 	github.com/endurio/ndrd/chaincfg/chainhash v1.0.1
 	github.com/endurio/ndrd/dcrec v0.0.0-20180721031028-5369a485acf6
@@ -8,7 +9,6 @@ require (
 	github.com/endurio/ndrd/dcrec/secp256k1 v1.0.1
 	github.com/endurio/ndrd/dcrutil v1.1.1
 	github.com/endurio/ndrd/wire v1.2.0
-	github.com/decred/slog v1.0.0
 	golang.org/x/crypto v0.0.0-20180718160520-a2144134853f
 )
 

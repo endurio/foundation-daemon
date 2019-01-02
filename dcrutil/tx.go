@@ -30,7 +30,6 @@ const TxIndexUnknown = -1
 type Tx struct {
 	hash    chainhash.Hash // Cached transaction hash
 	msgTx   *wire.MsgTx    // Underlying MsgTx
-	txTree  int8           // Indicates which tx tree the tx is found in
 	txIndex int            // Position within a block or TxIndexUnknown
 }
 
@@ -68,24 +67,12 @@ func (t *Tx) SetIndex(index int) {
 	t.txIndex = index
 }
 
-// Tree returns the saved tree of the transaction within a block.  This value
-// will be TxTreeUnknown if it hasn't already explicitly been set.
-func (t *Tx) Tree() int8 {
-	return t.txTree
-}
-
-// SetTree sets the tree of the transaction in within a block.
-func (t *Tx) SetTree(tree int8) {
-	t.txTree = tree
-}
-
 // NewTx returns a new instance of a transaction given an underlying
 // wire.MsgTx.  See Tx.
 func NewTx(msgTx *wire.MsgTx) *Tx {
 	return &Tx{
 		hash:    msgTx.TxHash(),
 		msgTx:   msgTx,
-		txTree:  wire.TxTreeUnknown,
 		txIndex: TxIndexUnknown,
 	}
 }
@@ -106,7 +93,6 @@ func NewTxDeep(msgTx *wire.MsgTx) *Tx {
 			PreviousOutPoint: wire.OutPoint{
 				Hash:  txin.PreviousOutPoint.Hash,
 				Index: txin.PreviousOutPoint.Index,
-				Tree:  txin.PreviousOutPoint.Tree,
 			},
 			Sequence:        txin.Sequence,
 			ValueIn:         txin.ValueIn,
@@ -140,7 +126,6 @@ func NewTxDeep(msgTx *wire.MsgTx) *Tx {
 	return &Tx{
 		hash:    mtx.TxHash(),
 		msgTx:   mtx,
-		txTree:  wire.TxTreeUnknown,
 		txIndex: TxIndexUnknown,
 	}
 }
@@ -169,7 +154,6 @@ func NewTxDeepTxIns(msgTx *wire.MsgTx) *Tx {
 		txInCopy := new(wire.TxIn)
 		txInCopy.PreviousOutPoint.Hash = txIn.PreviousOutPoint.Hash
 		txInCopy.PreviousOutPoint.Index = txIn.PreviousOutPoint.Index
-		txInCopy.PreviousOutPoint.Tree = txIn.PreviousOutPoint.Tree
 
 		txInCopy.Sequence = txIn.Sequence
 		txInCopy.ValueIn = txIn.ValueIn
@@ -189,7 +173,6 @@ func NewTxDeepTxIns(msgTx *wire.MsgTx) *Tx {
 	return &Tx{
 		hash:    msgTx.TxHash(),
 		msgTx:   msgTx,
-		txTree:  wire.TxTreeUnknown,
 		txIndex: TxIndexUnknown,
 	}
 }
@@ -214,7 +197,6 @@ func NewTxFromReader(r io.Reader) (*Tx, error) {
 	t := Tx{
 		hash:    msgTx.TxHash(),
 		msgTx:   &msgTx,
-		txTree:  wire.TxTreeUnknown,
 		txIndex: TxIndexUnknown,
 	}
 

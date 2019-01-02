@@ -25,7 +25,6 @@ var genesisCoinbaseTx = wire.MsgTx{
 			PreviousOutPoint: wire.OutPoint{
 				Hash:  chainhash.Hash{},
 				Index: 0xffffffff,
-				Tree:  0,
 			},
 			SignatureScript: []byte{
 				0x00, 0x00,

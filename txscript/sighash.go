@@ -350,7 +350,6 @@ func calcSignatureHash(prevOutScript []parsedOpcode, hashType SigHashType, tx *w
 			prevOut := &txIn.PreviousOutPoint
 			offset += copy(prefixBuf[offset:], prevOut.Hash[:])
 			offset += putUint32LE(prefixBuf[offset:], prevOut.Index)
-			offset += putByte(prefixBuf[offset:], byte(prevOut.Tree))
 
 			// Commit to the sequence.  In the case of SigHashNone
 			// and SigHashSingle, commit to 0 for everything that is

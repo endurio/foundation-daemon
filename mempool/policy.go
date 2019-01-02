@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/endurio/ndrd/blockchain"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/dcrutil"
 	"github.com/endurio/ndrd/txscript"
 	"github.com/endurio/ndrd/wire"
@@ -103,16 +102,12 @@ func calcMinRequiredTxRelayFee(serializedSize int64, minRelayTxFee dcrutil.Amoun
 // not perform those checks because the script engine already does this more
 // accurately and concisely via the txscript.ScriptVerifyCleanStack and
 // txscript.ScriptVerifySigPushOnly flags.
-func checkInputsStandard(tx *dcrutil.Tx, txType stake.TxType, utxoView *blockchain.UtxoViewpoint) error {
+func checkInputsStandard(tx *dcrutil.Tx, utxoView *blockchain.UtxoViewpoint) error {
 	// NOTE: The reference implementation also does a coinbase check here,
 	// but coinbases have already been rejected prior to calling this
 	// function so no need to recheck.
 
 	for i, txIn := range tx.MsgTx().TxIn {
-		if i == 0 && txType == stake.TxTypeSSGen {
-			continue
-		}
-
 		// It is safe to elide existence and index checks here since
 		// they have already been checked prior to calling this
 		// function.
@@ -282,7 +277,7 @@ func isDust(txOut *wire.TxOut, minRelayTxFee dcrutil.Amount) bool {
 // finalized, conforming to more stringent size constraints, having scripts
 // of recognized forms, and not containing "dust" outputs (those that are
 // so small it costs more to process them than they are worth).
-func checkTransactionStandard(tx *dcrutil.Tx, txType stake.TxType, height int64,
+func checkTransactionStandard(tx *dcrutil.Tx, height int64,
 	medianTime time.Time, minRelayTxFee dcrutil.Amount,
 	maxTxVersion uint16) error {
 
@@ -364,7 +359,7 @@ func checkTransactionStandard(tx *dcrutil.Tx, txType stake.TxType, height int64,
 		// "dust".
 		if scriptClass == txscript.NullDataTy {
 			numNullDataOutputs++
-		} else if txType == stake.TxTypeRegular && isDust(txOut, minRelayTxFee) {
+		} else if isDust(txOut, minRelayTxFee) {
 			str := fmt.Sprintf("transaction output %d: payment "+
 				"of %d is dust", i, txOut.Value)
 			return txRuleError(wire.RejectDust, str)
@@ -375,7 +370,7 @@ func checkTransactionStandard(tx *dcrutil.Tx, txType stake.TxType, height int64,
 	// only carries data. However, certain types of standard stake transactions
 	// are allowed to have multiple OP_RETURN outputs, so only throw an error here
 	// if the tx is TxTypeRegular.
-	if numNullDataOutputs > maxNullDataOutputs && txType == stake.TxTypeRegular {
+	if numNullDataOutputs > maxNullDataOutputs {
 		str := "more than one transaction output in a nulldata script for a " +
 			"regular type tx"
 		return txRuleError(wire.RejectNonstandard, str)

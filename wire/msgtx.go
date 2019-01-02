@@ -243,16 +243,14 @@ func readScript(r io.Reader, pver uint32, maxAllowed uint32, fieldName string) (
 type OutPoint struct {
 	Hash  chainhash.Hash
 	Index uint32
-	Tree  int8
 }
 
 // NewOutPoint returns a new Decred transaction outpoint point with the
 // provided hash and index.
-func NewOutPoint(hash *chainhash.Hash, index uint32, tree int8) *OutPoint {
+func NewOutPoint(hash *chainhash.Hash, index uint32) *OutPoint {
 	return &OutPoint{
 		Hash:  *hash,
 		Index: index,
-		Tree:  tree,
 	}
 }
 
@@ -470,7 +468,6 @@ func (msg *MsgTx) Copy() *MsgTx {
 		newOutPoint := OutPoint{}
 		newOutPoint.Hash.SetBytes(oldOutPoint.Hash[:])
 		newOutPoint.Index = oldOutPoint.Index
-		newOutPoint.Tree = oldOutPoint.Tree
 
 		// Deep copy the old signature script.
 		var newScript []byte
@@ -1125,12 +1122,6 @@ func ReadOutPoint(r io.Reader, pver uint32, version uint16, op *OutPoint) error 
 		return err
 	}
 
-	tree, err := binarySerializer.Uint8(r)
-	if err != nil {
-		return err
-	}
-	op.Tree = int8(tree)
-
 	return nil
 }
 
@@ -1147,7 +1138,7 @@ func WriteOutPoint(w io.Writer, pver uint32, version uint16, op *OutPoint) error
 		return err
 	}
 
-	return binarySerializer.PutUint8(w, uint8(op.Tree))
+	return nil
 }
 
 // readTxInPrefix reads the next sequence of bytes from r as a transaction input

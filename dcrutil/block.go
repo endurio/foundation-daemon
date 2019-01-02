@@ -142,7 +142,6 @@ func (b *Block) Tx(txNum int) (*Tx, error) {
 	// Generate and cache the wrapped transaction and return it.
 	newTx := NewTx(b.msgBlock.Transactions[txNum])
 	newTx.SetIndex(txNum)
-	newTx.SetTree(wire.TxTreeRegular)
 	b.transactions[txNum] = newTx
 	return newTx, nil
 }
@@ -170,7 +169,6 @@ func (b *Block) Transactions() []*Tx {
 		if tx == nil {
 			newTx := NewTx(b.msgBlock.Transactions[i])
 			newTx.SetIndex(i)
-			newTx.SetTree(wire.TxTreeRegular)
 			b.transactions[i] = newTx
 		}
 	}
