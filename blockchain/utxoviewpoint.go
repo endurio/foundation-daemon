@@ -8,7 +8,6 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
 	"github.com/endurio/ndrd/dcrutil"
@@ -57,7 +56,6 @@ func (o *utxoOutput) maybeDecompress(compressionVersion uint32) {
 // The struct is aligned for memory efficiency.
 type UtxoEntry struct {
 	sparseOutputs map[uint32]*utxoOutput // Sparse map of unspent outputs.
-	stakeExtra    []byte                 // Extra data for the staking system.
 
 	height    uint32 // Height of block containing tx.
 	index     uint32 // Index of containing tx in block.
@@ -96,12 +94,6 @@ func (entry *UtxoEntry) BlockHeight() int64 {
 // utxo entry represents.
 func (entry *UtxoEntry) BlockIndex() uint32 {
 	return entry.index
-}
-
-// TransactionType returns the transaction type of the transaction the utxo entry
-// represents.
-func (entry *UtxoEntry) TransactionType() stake.TxType {
-	return entry.txType
 }
 
 // IsOutputSpent returns whether or not the provided output index has been
@@ -202,16 +194,13 @@ func (entry *UtxoEntry) Clone() *UtxoEntry {
 	}
 
 	newEntry := &UtxoEntry{
-		stakeExtra:    make([]byte, len(entry.stakeExtra)),
 		txVersion:     entry.txVersion,
 		height:        entry.height,
 		index:         entry.index,
-		txType:        entry.txType,
 		isCoinBase:    entry.isCoinBase,
 		hasExpiry:     entry.hasExpiry,
 		sparseOutputs: make(map[uint32]*utxoOutput),
 	}
-	copy(newEntry.stakeExtra, entry.stakeExtra)
 	for outputIndex, output := range entry.sparseOutputs {
 		newEntry.sparseOutputs[outputIndex] = &utxoOutput{
 			pkScript:      output.pkScript,
@@ -226,7 +215,7 @@ func (entry *UtxoEntry) Clone() *UtxoEntry {
 
 // newUtxoEntry returns a new unspent transaction output entry with the provided
 // coinbase flag and block height ready to have unspent outputs added.
-func newUtxoEntry(txVersion uint16, height uint32, index uint32, isCoinBase bool, hasExpiry bool, txType stake.TxType) *UtxoEntry {
+func newUtxoEntry(txVersion uint16, height uint32, index uint32, isCoinBase bool, hasExpiry bool) *UtxoEntry {
 	return &UtxoEntry{
 		sparseOutputs: make(map[uint32]*utxoOutput),
 		txVersion:     txVersion,
@@ -234,7 +223,6 @@ func newUtxoEntry(txVersion uint16, height uint32, index uint32, isCoinBase bool
 		index:         index,
 		isCoinBase:    isCoinBase,
 		hasExpiry:     hasExpiry,
-		txType:        txType,
 	}
 }
 
@@ -285,14 +273,8 @@ func (view *UtxoViewpoint) AddTxOuts(tx *dcrutil.Tx, blockHeight int64, blockInd
 	entry := view.LookupEntry(tx.Hash())
 	if entry == nil {
 		msgTx := tx.MsgTx()
-		txType := stake.DetermineTxType(msgTx)
 		entry = newUtxoEntry(msgTx.Version, uint32(blockHeight),
-			blockIndex, IsCoinBaseTx(msgTx), msgTx.Expiry != 0, txType)
-		if txType == stake.TxTypeSStx {
-			stakeExtra := make([]byte, serializeSizeForMinimalOutputs(tx))
-			putTxToMinimalOutputs(stakeExtra, tx)
-			entry.stakeExtra = stakeExtra
-		}
+			blockIndex, IsCoinBaseTx(msgTx), msgTx.Expiry != 0)
 		view.entries[*tx.Hash()] = entry
 	} else {
 		entry.height = uint32(blockHeight)
@@ -350,13 +332,7 @@ func (view *UtxoViewpoint) connectTransaction(tx *dcrutil.Tx, blockHeight int64,
 	// if a slice was provided for the spent txout details, append an entry
 	// to it.
 	msgTx := tx.MsgTx()
-	isVote := stake.IsSSGen(msgTx)
 	for txInIdx, txIn := range msgTx.TxIn {
-		// Ignore stakebase since it has no input.
-		if isVote && txInIdx == 0 {
-			continue
-		}
-
 		// Ensure the referenced utxo exists in the view.  This should
 		// never happen unless there is a bug is introduced in the code.
 		originIndex := txIn.PreviousOutPoint.Index
@@ -388,12 +364,7 @@ func (view *UtxoViewpoint) connectTransaction(tx *dcrutil.Tx, blockHeight int64,
 			stxo.index = entry.BlockIndex()
 			stxo.isCoinBase = entry.IsCoinBase()
 			stxo.hasExpiry = entry.HasExpiry()
-			stxo.txType = entry.TransactionType()
 			stxo.txFullySpent = true
-
-			if entry.txType == stake.TxTypeSStx {
-				stxo.stakeExtra = entry.stakeExtra
-			}
 		}
 
 		// Append the entry to the provided spent txouts slice.
@@ -410,7 +381,7 @@ func (view *UtxoViewpoint) connectTransaction(tx *dcrutil.Tx, blockHeight int64,
 // the transactions in either the regular or stake tree of the block, depending
 // on the flag, and unspending all of the txos spent by those same transactions
 // by using the provided spent txo information.
-func (view *UtxoViewpoint) disconnectTransactions(block *dcrutil.Block, stxos []spentTxOut, stakeTree bool) error {
+func (view *UtxoViewpoint) disconnectTransactions(block *dcrutil.Block, stxos []spentTxOut) error {
 	// Choose which transaction tree to use and the appropriate offset into the
 	// spent transaction outputs that corresponds to them depending on the flag.
 	// Transactions in the stake tree are spent before transactions in the
@@ -418,29 +389,20 @@ func (view *UtxoViewpoint) disconnectTransactions(block *dcrutil.Block, stxos []
 	// disconnecting stake transactions.
 	stxoIdx := len(stxos) - 1
 	transactions := block.Transactions()
-	if stakeTree {
-		stxoIdx = len(stxos) - countSpentRegularOutputs(block) - 1
-		transactions = block.STransactions()
-	}
 
 	for txIdx := len(transactions) - 1; txIdx > -1; txIdx-- {
 		tx := transactions[txIdx]
 		msgTx := tx.MsgTx()
-		txType := stake.TxTypeRegular
-		if stakeTree {
-			txType = stake.DetermineTxType(msgTx)
-		}
-		isVote := txType == stake.TxTypeSSGen
 
 		// Clear this transaction from the view if it already exists or create a
 		// new empty entry for when it does not.  This is done because the code
 		// relies on its existence in the view in order to signal modifications
 		// have happened.
-		isCoinbase := !stakeTree && txIdx == 0
+		isCoinbase := txIdx == 0
 		entry := view.entries[*tx.Hash()]
 		if entry == nil {
 			entry = newUtxoEntry(msgTx.Version, uint32(block.Height()),
-				uint32(txIdx), isCoinbase, msgTx.Expiry != 0, txType)
+				uint32(txIdx), isCoinbase, msgTx.Expiry != 0)
 			view.entries[*tx.Hash()] = entry
 		}
 		entry.modified = true
@@ -453,11 +415,6 @@ func (view *UtxoViewpoint) disconnectTransactions(block *dcrutil.Block, stxos []
 			continue
 		}
 		for txInIdx := len(msgTx.TxIn) - 1; txInIdx > -1; txInIdx-- {
-			// Ignore stakebase since it has no input.
-			if isVote && txInIdx == 0 {
-				continue
-			}
-
 			// Ensure the spent txout index is decremented to stay in sync with
 			// the transaction input.
 			stxo := &stxos[stxoIdx]
@@ -476,10 +433,7 @@ func (view *UtxoViewpoint) disconnectTransactions(block *dcrutil.Block, stxos []
 						"tx %v from non-fully spent stx entry", originHash))
 				}
 				entry = newUtxoEntry(msgTx.Version, stxo.height, stxo.index,
-					stxo.isCoinBase, stxo.hasExpiry, stxo.txType)
-				if stxo.txType == stake.TxTypeSStx {
-					entry.stakeExtra = stxo.stakeExtra
-				}
+					stxo.isCoinBase, stxo.hasExpiry)
 				view.entries[*originHash] = entry
 			}
 
@@ -515,15 +469,7 @@ func (view *UtxoViewpoint) disconnectTransactions(block *dcrutil.Block, stxos []
 // of the txos spent by those same transactions by using the provided spent txo
 // information.
 func (view *UtxoViewpoint) disconnectRegularTransactions(block *dcrutil.Block, stxos []spentTxOut) error {
-	return view.disconnectTransactions(block, stxos, false)
-}
-
-// disconnectStakeTransactions updates the view by removing all utxos created
-// by the transactions in stake tree of the provided block and unspending all
-// of the txos spent by those same transactions by using the provided spent txo
-// information.
-func (view *UtxoViewpoint) disconnectStakeTransactions(block *dcrutil.Block, stxos []spentTxOut) error {
-	return view.disconnectTransactions(block, stxos, true)
+	return view.disconnectTransactions(block, stxos)
 }
 
 // disconnectDisapprovedBlock updates the view by disconnecting all of the
@@ -600,12 +546,6 @@ func (view *UtxoViewpoint) connectBlock(db database.DB, block, parent *dcrutil.B
 	// of transactions created in the regular tree of the same block, which is
 	// important since the regular tree may be disapproved by the subsequent
 	// block while the stake tree must remain valid.
-	for i, stx := range block.STransactions() {
-		err := view.connectTransaction(stx, block.Height(), uint32(i), stxos)
-		if err != nil {
-			return err
-		}
-	}
 	for i, tx := range block.Transactions() {
 		err := view.connectTransaction(tx, block.Height(), uint32(i), stxos)
 		if err != nil {
@@ -654,10 +594,6 @@ func (view *UtxoViewpoint) disconnectBlock(db database.DB, block, parent *dcruti
 	// the block.  Notice that the regular tree is disconnected before the stake
 	// tree since that is the reverse of how they are connected.
 	err = view.disconnectRegularTransactions(block, stxos)
-	if err != nil {
-		return err
-	}
-	err = view.disconnectStakeTransactions(block, stxos)
 	if err != nil {
 		return err
 	}
@@ -828,28 +764,6 @@ func (view *UtxoViewpoint) fetchInputUtxos(db database.DB, block *dcrutil.Block)
 	// and thus need to be fetched from the database.
 	filteredSet := view.addRegularInputUtxos(block)
 
-	// Loop through all of the inputs of the transaction in the stake tree and
-	// add those that aren't already known to the set of what is needed.
-	//
-	// Note that, unlike in the regular transaction tree, transactions in the
-	// stake tree are not allowed to access outputs of transactions earlier in
-	// the block.  This applies to both transactions earlier in the stake tree
-	// as well as those in the regular tree.
-	for _, stx := range block.STransactions() {
-		isVote := stake.IsSSGen(stx.MsgTx())
-		for txInIdx, txIn := range stx.MsgTx().TxIn {
-			// Ignore stakebase since it has no input.
-			if isVote && txInIdx == 0 {
-				continue
-			}
-
-			// Only request entries that are not already in the view
-			// from the database.
-			originHash := &txIn.PreviousOutPoint.Hash
-			filteredSet.add(view, originHash)
-		}
-	}
-
 	// Request the input utxos from the database.
 	return view.fetchUtxosMain(db, filteredSet)
 }
@@ -939,13 +853,7 @@ func (b *BlockChain) FetchUtxoView(tx *dcrutil.Tx, includePrevRegularTxns bool) 
 	filteredSet.add(view, tx.Hash())
 	msgTx := tx.MsgTx()
 	if !IsCoinBaseTx(msgTx) {
-		isVote := stake.IsSSGen(msgTx)
 		for txInIdx, txIn := range msgTx.TxIn {
-			// Ignore stakebase since it has no input.
-			if isVote && txInIdx == 0 {
-				continue
-			}
-
 			filteredSet.add(view, &txIn.PreviousOutPoint.Hash)
 		}
 	}
