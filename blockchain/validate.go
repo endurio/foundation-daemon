@@ -281,7 +281,7 @@ func CheckTransactionSanity(tx *wire.MsgTx, params *chaincfg.Params) error {
 	}
 
 	var totalAtom int64
-	for txOutIdx, txOut := range tx.TxOut {
+	for _, txOut := range tx.TxOut {
 		atom := txOut.Value
 		if atom < 0 {
 			str := fmt.Sprintf("transaction output has negative value of %v",
@@ -475,7 +475,7 @@ func checkBlockSanity(block *dcrutil.Block, timeSource MedianTimeSource, flags B
 
 	// Do some preliminary checks on each regular transaction to ensure they
 	// are sane before continuing.
-	for i, tx := range transactions {
+	for _, tx := range transactions {
 		// A block must not have stake transactions in the regular
 		// transaction tree.
 		msgTx := tx.MsgTx()
@@ -1101,7 +1101,7 @@ func CountSigOps(tx *dcrutil.Tx, isCoinBaseTx bool) int {
 	// Accumulate the number of signature operations in all transaction
 	// inputs.
 	totalSigOps := 0
-	for i, txIn := range msgTx.TxIn {
+	for _, txIn := range msgTx.TxIn {
 		// Skip coinbase inputs.
 		if isCoinBaseTx {
 			continue
@@ -1181,7 +1181,6 @@ func CountP2SHSigOps(tx *dcrutil.Tx, isCoinBaseTx bool, view *UtxoViewpoint) (in
 // ops as an argument and increments will each call.
 // TxTree true == Regular, false == Stake
 func checkNumSigOps(tx *dcrutil.Tx, view *UtxoViewpoint, index int, cumulativeSigOps int) (int, error) {
-	msgTx := tx.MsgTx()
 	numsigOps := CountSigOps(tx, index == 0)
 
 	// Since the first (and only the first) transaction has already been

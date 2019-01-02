@@ -156,7 +156,7 @@ func upgradeToVersion2(db database.DB, chainParams *chaincfg.Params, dbInfo *dat
 
 			// Iteratively connect the stake nodes in memory.
 			header := block.MsgBlock().Header
-			hB, errLocal := header.Bytes()
+			_, errLocal = header.Bytes()
 			if errLocal != nil {
 				return errLocal
 			}

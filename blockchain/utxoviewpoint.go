@@ -332,7 +332,7 @@ func (view *UtxoViewpoint) connectTransaction(tx *dcrutil.Tx, blockHeight int64,
 	// if a slice was provided for the spent txout details, append an entry
 	// to it.
 	msgTx := tx.MsgTx()
-	for txInIdx, txIn := range msgTx.TxIn {
+	for _, txIn := range msgTx.TxIn {
 		// Ensure the referenced utxo exists in the view.  This should
 		// never happen unless there is a bug is introduced in the code.
 		originIndex := txIn.PreviousOutPoint.Index
@@ -757,7 +757,7 @@ func (b *BlockChain) FetchUtxoView(tx *dcrutil.Tx) (*UtxoViewpoint, error) {
 	filteredSet.add(view, tx.Hash())
 	msgTx := tx.MsgTx()
 	if !IsCoinBaseTx(msgTx) {
-		for txInIdx, txIn := range msgTx.TxIn {
+		for _, txIn := range msgTx.TxIn {
 			filteredSet.add(view, &txIn.PreviousOutPoint.Hash)
 		}
 	}
