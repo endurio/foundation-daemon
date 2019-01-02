@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/endurio/ndrd/blockchain"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/database"
 	"github.com/endurio/ndrd/dcrutil"
@@ -228,13 +227,10 @@ func (idx *ExistsAddrIndex) ConnectBlock(dbTx database.Tx, block, parent *dcruti
 	// becoming unused, they were still seen.
 
 	usedAddrs := make(map[[addrKeySize]byte]struct{})
-	blockTxns := make([]*dcrutil.Tx, 0, len(block.Transactions())+
-		len(block.STransactions()))
+	blockTxns := make([]*dcrutil.Tx, 0, len(block.Transactions()))
 	blockTxns = append(blockTxns, block.Transactions()...)
-	blockTxns = append(blockTxns, block.STransactions()...)
 	for _, tx := range blockTxns {
 		msgTx := tx.MsgTx()
-		isSStx := stake.IsSStx(msgTx)
 		for _, txIn := range msgTx.TxIn {
 			if txscript.IsMultisigSigScript(txIn.SignatureScript) {
 				rs, err :=
@@ -267,22 +263,11 @@ func (idx *ExistsAddrIndex) ConnectBlock(dbTx database.Tx, block, parent *dcruti
 		}
 
 		for _, txOut := range tx.MsgTx().TxOut {
-			class, addrs, _, err := txscript.ExtractPkScriptAddrs(
+			_, addrs, _, err := txscript.ExtractPkScriptAddrs(
 				txOut.Version, txOut.PkScript, idx.chainParams)
 			if err != nil {
 				// Non-standard outputs are skipped.
 				continue
-			}
-
-			if isSStx && class == txscript.NullDataTy {
-				addr, err := stake.AddrFromSStxPkScrCommitment(txOut.PkScript,
-					idx.chainParams)
-				if err != nil {
-					// Ignore unsupported address types.
-					continue
-				}
-
-				addrs = append(addrs, addr)
 			}
 
 			for _, addr := range addrs {
@@ -354,7 +339,6 @@ func (idx *ExistsAddrIndex) DisconnectBlock(dbTx database.Tx, block, parent *dcr
 //
 // This function MUST be called with the unconfirmed lock held.
 func (idx *ExistsAddrIndex) addUnconfirmedTx(tx *wire.MsgTx) {
-	isSStx := stake.IsSStx(tx)
 	for _, txIn := range tx.TxIn {
 		if txscript.IsMultisigSigScript(txIn.SignatureScript) {
 			rs, err :=
@@ -389,22 +373,11 @@ func (idx *ExistsAddrIndex) addUnconfirmedTx(tx *wire.MsgTx) {
 	}
 
 	for _, txOut := range tx.TxOut {
-		class, addrs, _, err := txscript.ExtractPkScriptAddrs(txOut.Version,
+		_, addrs, _, err := txscript.ExtractPkScriptAddrs(txOut.Version,
 			txOut.PkScript, idx.chainParams)
 		if err != nil {
 			// Non-standard outputs are skipped.
 			continue
-		}
-
-		if isSStx && class == txscript.NullDataTy {
-			addr, err := stake.AddrFromSStxPkScrCommitment(txOut.PkScript,
-				idx.chainParams)
-			if err != nil {
-				// Ignore unsupported address types.
-				continue
-			}
-
-			addrs = append(addrs, addr)
 		}
 
 		for _, addr := range addrs {

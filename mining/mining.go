@@ -8,7 +8,6 @@ package mining
 import (
 	"time"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/dcrutil"
 )
@@ -24,9 +23,6 @@ const (
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
 	Tx *dcrutil.Tx
-
-	// Type is the type of the transaction associated with the entry.
-	Type stake.TxType
 
 	// Added is the time when the entry was added to the source pool.
 	Added time.Time

@@ -2,9 +2,9 @@ module github.com/endurio/ndrd/mining
 
 require (
 	github.com/endurio/ndrd/blockchain v1.0.1
-	github.com/endurio/ndrd/blockchain/stake v1.0.1
+	github.com/endurio/ndrd/blockchain/stake v1.1.0
 	github.com/endurio/ndrd/chaincfg/chainhash v1.0.1
-	github.com/endurio/ndrd/dcrutil v1.1.1
+	github.com/endurio/ndrd/dcrutil v1.2.0
 	github.com/endurio/ndrd/wire v1.2.0
 )
 

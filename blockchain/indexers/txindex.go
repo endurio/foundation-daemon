@@ -252,7 +252,7 @@ func dbFetchTxIndexEntry(dbTx database.Tx, txHash *chainhash.Hash) (*TxIndexEntr
 // block (if they were valid) and every stake transaction in the passed block.
 func dbAddTxIndexEntries(dbTx database.Tx, block *dcrutil.Block, blockID uint32) error {
 	// The offset and length of the transactions within the serialized block.
-	txLocs, stakeTxLocs, err := block.TxLoc()
+	txLocs, err := block.TxLoc()
 	if err != nil {
 		return err
 	}
@@ -280,13 +280,7 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *dcrutil.Block, blockID uint32)
 	}
 
 	// Add the regular tree transactions.
-	err = addEntries(block.Transactions(), txLocs, blockID)
-	if err != nil {
-		return err
-	}
-
-	// Add the stake tree transactions.
-	return addEntries(block.STransactions(), stakeTxLocs, blockID)
+	return addEntries(block.Transactions(), txLocs, blockID)
 }
 
 // dbRemoveTxIndexEntry uses an existing database transaction to remove the most
@@ -318,10 +312,7 @@ func dbRemoveTxIndexEntries(dbTx database.Tx, block *dcrutil.Block) error {
 
 	// Remove the regular and stake tree transactions from the block being
 	// disconnected.
-	if err := removeEntries(block.Transactions()); err != nil {
-		return err
-	}
-	return removeEntries(block.STransactions())
+	return removeEntries(block.Transactions())
 }
 
 // TxIndex implements a transaction by hash index.  That is to say, it supports

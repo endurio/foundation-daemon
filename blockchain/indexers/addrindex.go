@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/endurio/ndrd/blockchain"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
@@ -681,22 +680,13 @@ type writeIndexData map[[addrKeySize]byte][]int
 // indexPkScript extracts all standard addresses from the passed public key
 // script and maps each of them to the associated transaction using the passed
 // map.
-func (idx *AddrIndex) indexPkScript(data writeIndexData, scriptVersion uint16, pkScript []byte, txIdx int, isSStx bool) {
+func (idx *AddrIndex) indexPkScript(data writeIndexData, scriptVersion uint16, pkScript []byte, txIdx int) {
 	// Nothing to index if the script is non-standard or otherwise doesn't
 	// contain any addresses.
-	class, addrs, _, err := txscript.ExtractPkScriptAddrs(scriptVersion, pkScript,
+	_, addrs, _, err := txscript.ExtractPkScriptAddrs(scriptVersion, pkScript,
 		idx.chainParams)
 	if err != nil {
 		return
-	}
-
-	if isSStx && class == txscript.NullDataTy {
-		addr, err := stake.AddrFromSStxPkScrCommitment(pkScript, idx.chainParams)
-		if err != nil {
-			return
-		}
-
-		addrs = append(addrs, addr)
 	}
 
 	if len(addrs) == 0 {
@@ -750,52 +740,12 @@ func (idx *AddrIndex) indexBlock(data writeIndexData, block *dcrutil.Block, view
 
 				version := entry.ScriptVersionByIndex(origin.Index)
 				pkScript := entry.PkScriptByIndex(origin.Index)
-				txType := entry.TransactionType()
-				idx.indexPkScript(data, version, pkScript, txIdx,
-					txType == stake.TxTypeSStx)
+				idx.indexPkScript(data, version, pkScript, txIdx)
 			}
 		}
 
 		for _, txOut := range tx.MsgTx().TxOut {
-			idx.indexPkScript(data, txOut.Version, txOut.PkScript, txIdx,
-				false)
-		}
-	}
-
-	for txIdx, tx := range block.STransactions() {
-		msgTx := tx.MsgTx()
-		thisTxOffset := txIdx + len(regularTxns)
-
-		isSSGen := stake.IsSSGen(msgTx)
-		for i, txIn := range msgTx.TxIn {
-			// Skip stakebases.
-			if isSSGen && i == 0 {
-				continue
-			}
-
-			// The view should always have the input since
-			// the index contract requires it, however, be
-			// safe and simply ignore any missing entries.
-			origin := &txIn.PreviousOutPoint
-			entry := view.LookupEntry(&origin.Hash)
-			if entry == nil {
-				log.Warnf("Missing input %v for tx %v while "+
-					"indexing block %v (height %v)\n", origin.Hash,
-					tx.Hash(), block.Hash(), block.Height())
-				continue
-			}
-
-			version := entry.ScriptVersionByIndex(origin.Index)
-			pkScript := entry.PkScriptByIndex(origin.Index)
-			txType := entry.TransactionType()
-			idx.indexPkScript(data, version, pkScript, thisTxOffset,
-				txType == stake.TxTypeSStx)
-		}
-
-		isSStx := stake.IsSStx(msgTx)
-		for _, txOut := range msgTx.TxOut {
-			idx.indexPkScript(data, txOut.Version, txOut.PkScript,
-				thisTxOffset, isSStx)
+			idx.indexPkScript(data, txOut.Version, txOut.PkScript, txIdx)
 		}
 	}
 }
@@ -813,7 +763,7 @@ func (idx *AddrIndex) ConnectBlock(dbTx database.Tx, block, parent *dcrutil.Bloc
 	// block disapproves them.
 
 	// The offset and length of the transactions within the serialized block.
-	txLocs, stakeTxLocs, err := block.TxLoc()
+	txLocs, err := block.TxLoc()
 	if err != nil {
 		return err
 	}
@@ -829,7 +779,6 @@ func (idx *AddrIndex) ConnectBlock(dbTx database.Tx, block, parent *dcrutil.Bloc
 	idx.indexBlock(addrsToTxns, block, view)
 
 	// Add all of the index entries for each address.
-	stakeIdxsStart := len(txLocs)
 	addrIdxBucket := dbTx.Metadata().Bucket(addrIndexKey)
 	for addrKey, txIdxs := range addrsToTxns {
 		for _, txIdx := range txIdxs {
@@ -837,10 +786,6 @@ func (idx *AddrIndex) ConnectBlock(dbTx database.Tx, block, parent *dcrutil.Bloc
 			// based on the regular or stake tree.
 			txLocations := txLocs
 			blockIndex := txIdx
-			if txIdx >= stakeIdxsStart {
-				txLocations = stakeTxLocs
-				blockIndex -= stakeIdxsStart
-			}
 
 			err := dbPutAddrIndexEntry(addrIdxBucket, addrKey, blockID,
 				txLocations[blockIndex], uint32(blockIndex))
@@ -924,22 +869,12 @@ func (idx *AddrIndex) EntriesForAddress(dbTx database.Tx, addr dcrutil.Address, 
 // script to the transaction.
 //
 // This function is safe for concurrent access.
-func (idx *AddrIndex) indexUnconfirmedAddresses(scriptVersion uint16, pkScript []byte, tx *dcrutil.Tx, isSStx bool) {
+func (idx *AddrIndex) indexUnconfirmedAddresses(scriptVersion uint16, pkScript []byte, tx *dcrutil.Tx) {
 	// The error is ignored here since the only reason it can fail is if the
 	// script fails to parse and it was already validated before being
 	// admitted to the mempool.
-	class, addresses, _, _ := txscript.ExtractPkScriptAddrs(scriptVersion,
+	_, addresses, _, _ := txscript.ExtractPkScriptAddrs(scriptVersion,
 		pkScript, idx.chainParams)
-
-	if isSStx && class == txscript.NullDataTy {
-		addr, err := stake.AddrFromSStxPkScrCommitment(pkScript, idx.chainParams)
-		if err != nil {
-			// Fail if this fails to decode. It should.
-			return
-		}
-
-		addresses = append(addresses, addr)
-	}
 
 	for _, addr := range addresses {
 		// Ignore unsupported address types.
@@ -984,13 +919,7 @@ func (idx *AddrIndex) AddUnconfirmedTx(tx *dcrutil.Tx, utxoView *blockchain.Utxo
 	// transaction has already been validated and thus all inputs are
 	// already known to exist.
 	msgTx := tx.MsgTx()
-	isSSGen := stake.IsSSGen(msgTx)
-	for i, txIn := range msgTx.TxIn {
-		// Skip stakebase.
-		if i == 0 && isSSGen {
-			continue
-		}
-
+	for _, txIn := range msgTx.TxIn {
 		entry := utxoView.LookupEntry(&txIn.PreviousOutPoint.Hash)
 		if entry == nil {
 			// Ignore missing entries.  This should never happen
@@ -1000,16 +929,12 @@ func (idx *AddrIndex) AddUnconfirmedTx(tx *dcrutil.Tx, utxoView *blockchain.Utxo
 		}
 		version := entry.ScriptVersionByIndex(txIn.PreviousOutPoint.Index)
 		pkScript := entry.PkScriptByIndex(txIn.PreviousOutPoint.Index)
-		txType := entry.TransactionType()
-		idx.indexUnconfirmedAddresses(version, pkScript, tx,
-			txType == stake.TxTypeSStx)
+		idx.indexUnconfirmedAddresses(version, pkScript, tx)
 	}
 
 	// Index addresses of all created outputs.
-	isSStx := stake.IsSStx(msgTx)
 	for _, txOut := range msgTx.TxOut {
-		idx.indexUnconfirmedAddresses(txOut.Version, txOut.PkScript, tx,
-			isSStx)
+		idx.indexUnconfirmedAddresses(txOut.Version, txOut.PkScript, tx)
 	}
 }
 

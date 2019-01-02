@@ -11,7 +11,6 @@ import (
 
 	"github.com/endurio/ndrd/blockchain"
 	"github.com/endurio/ndrd/blockchain/internal/progresslog"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
@@ -688,16 +687,10 @@ func makeUtxoView(dbTx database.Tx, block *dcrutil.Block, interrupt <-chan struc
 				continue
 			}
 			msgTx := tx.MsgTx()
-			isVote := !regularTree && stake.IsSSGen(msgTx)
 
 			// Use the transaction index to load all of the referenced inputs
 			// and add their outputs to the view.
-			for txInIdx, txIn := range msgTx.TxIn {
-				// Ignore stakebase since it has no input.
-				if isVote && txInIdx == 0 {
-					continue
-				}
-
+			for _, txIn := range msgTx.TxIn {
 				// Skip already fetched outputs.
 				originOut := &txIn.PreviousOutPoint
 				if view.LookupEntry(&originOut.Hash) != nil {
@@ -721,9 +714,6 @@ func makeUtxoView(dbTx database.Tx, block *dcrutil.Block, interrupt <-chan struc
 		return nil
 	}
 
-	if err := processTxns(block.STransactions(), false); err != nil {
-		return nil, err
-	}
 	if err := processTxns(block.Transactions(), true); err != nil {
 		return nil, err
 	}
