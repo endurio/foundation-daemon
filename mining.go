@@ -849,7 +849,7 @@ func handleTooFewVoters(subsidyCache *blockchain.SubsidyCache, nextHeight int64,
 				coinbaseScript := make([]byte, len(coinbaseFlags)+2)
 				copy(coinbaseScript[2:], coinbaseFlags)
 				opReturnPkScript, err :=
-					standardCoinbaseOpReturn(topBlock.MsgBlock().Header.Height,
+					standardCoinbaseOpReturn(topBlock.MsgBlock().SerializeSize(),
 						rand)
 				if err != nil {
 					return nil, err
@@ -899,7 +899,7 @@ func handleTooFewVoters(subsidyCache *blockchain.SubsidyCache, nextHeight int64,
 					Block:           btMsgBlock,
 					Fees:            []int64{0},
 					SigOpCounts:     []int64{0},
-					Height:          int64(topBlock.MsgBlock().Header.Height),
+					Height:          int64(topBlock.MsgBlock().SerializeSize()),
 					ValidPayAddress: miningAddress != nil,
 				}
 

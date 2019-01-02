@@ -59,10 +59,9 @@ type UtxoEntry struct {
 	sparseOutputs map[uint32]*utxoOutput // Sparse map of unspent outputs.
 	stakeExtra    []byte                 // Extra data for the staking system.
 
-	txType    stake.TxType // The stake type of the transaction.
-	height    uint32       // Height of block containing tx.
-	index     uint32       // Index of containing tx in block.
-	txVersion uint16       // The tx version of this tx.
+	height    uint32 // Height of block containing tx.
+	index     uint32 // Index of containing tx in block.
+	txVersion uint16 // The tx version of this tx.
 
 	isCoinBase bool // Whether entry is a coinbase tx.
 	hasExpiry  bool // Whether entry has an expiry.
@@ -556,7 +555,7 @@ func (view *UtxoViewpoint) disconnectDisapprovedBlock(db database.DB, block *dcr
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
 		panicf("provided %v stxos for block %v (height %v) which spends %v "+
-			"outputs", len(stxos), block.Hash(), block.MsgBlock().Header.Height,
+			"outputs", len(stxos), block.Hash(), block.MsgBlock().SerializeSize(),
 			countSpentOutputs(block))
 	}
 
@@ -640,7 +639,7 @@ func (view *UtxoViewpoint) disconnectBlock(db database.DB, block, parent *dcruti
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
 		panicf("provided %v stxos for block %v (height %v) which spends %v "+
-			"outputs", len(stxos), block.Hash(), block.MsgBlock().Header.Height,
+			"outputs", len(stxos), block.Hash(), block.MsgBlock().SerializeSize(),
 			countSpentOutputs(block))
 	}
 

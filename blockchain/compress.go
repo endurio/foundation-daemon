@@ -8,7 +8,6 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/dcrec/secp256k1"
 	"github.com/endurio/ndrd/txscript"
 )
@@ -713,20 +712,9 @@ func decodeCompressedTxOut(serialized []byte, compressionVersion uint32,
 //
 // -----------------------------------------------------------------------------
 
-const (
-	// txTypeBitmask describes the bitmask that yields the 3rd and 4th bits
-	// from the flags byte.
-	txTypeBitmask = 0x0c
-
-	// txTypeShift is the number of bits to shift falgs to the right to yield the
-	// correct integer value after applying the bitmask with AND.
-	txTypeShift = 2
-)
-
 // encodeFlags encodes transaction flags into a single byte.
-func encodeFlags(isCoinBase bool, hasExpiry bool, txType stake.TxType, fullySpent bool) byte {
-	b := uint8(txType)
-	b <<= txTypeShift
+func encodeFlags(isCoinBase bool, hasExpiry bool, fullySpent bool) byte {
+	var b byte
 
 	if isCoinBase {
 		b |= 0x01 // Set bit 0
@@ -743,13 +731,12 @@ func encodeFlags(isCoinBase bool, hasExpiry bool, txType stake.TxType, fullySpen
 
 // decodeFlags decodes transaction flags from a single byte into their respective
 // data types.
-func decodeFlags(b byte) (bool, bool, stake.TxType, bool) {
+func decodeFlags(b byte) (bool, bool, bool) {
 	isCoinBase := b&0x01 != 0
 	hasExpiry := b&(1<<1) != 0
 	fullySpent := b&(1<<4) != 0
-	txType := stake.TxType((b & txTypeBitmask) >> txTypeShift)
 
-	return isCoinBase, hasExpiry, txType, fullySpent
+	return isCoinBase, hasExpiry, fullySpent
 }
 
 // decodeFlagsFullySpent decodes whether or not a transaction was fully spent.

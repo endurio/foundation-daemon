@@ -6,13 +6,11 @@
 package blockchain
 
 import (
-	"bytes"
 	"math/big"
 	"sort"
 	"sync"
 	"time"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
@@ -85,27 +83,19 @@ type blockNode struct {
 	// this node.
 	workSum *big.Int
 
+	// height is the position in the block chain.
+	height int64
+
 	// Some fields from block headers to aid in best chain selection and
 	// reconstructing headers from memory.  These must be treated as
 	// immutable and are intentionally ordered to avoid padding on 64-bit
 	// platforms.
-	height       int64
-	voteBits     uint16
-	finalState   [6]byte
-	blockVersion int32
-	voters       uint16
-	freshStake   uint8
-	revocations  uint8
-	poolSize     uint32
-	bits         uint32
-	sbits        int64
-	timestamp    int64
-	merkleRoot   chainhash.Hash
-	stakeRoot    chainhash.Hash
-	blockSize    uint32
-	nonce        uint32
-	extraData    [32]byte
-	stakeVersion uint32
+	version    int32
+	bits       uint32
+	timestamp  int64
+	merkleRoot chainhash.Hash
+	blockSize  uint32
+	nonce      uint32
 
 	// status is a bitfield representing the validation state of the block.
 	// This field, unlike the other fields, may be changed after the block
@@ -113,19 +103,6 @@ type blockNode struct {
 	// concurrent-safe NodeStatus, SetStatusFlags, and UnsetStatusFlags
 	// methods on blockIndex once the node has been added to the index.
 	status blockStatus
-
-	// stakeNode contains all the consensus information required for the
-	// staking system.  The node also caches information required to add or
-	// remove stake nodes, so that the stake node itself may be pruneable
-	// to save memory while maintaining high throughput efficiency for the
-	// evaluation of sidechains.
-	stakeNode      *stake.Node
-	newTickets     []chainhash.Hash
-	ticketsVoted   []chainhash.Hash
-	ticketsRevoked []chainhash.Hash
-
-	// Keep track of all vote version and bits in this block.
-	votes []stake.VoteVersionTuple
 }
 
 // initBlockNode initializes a block node from the given header, initialization
@@ -137,28 +114,17 @@ type blockNode struct {
 // initially creating a node.
 func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *blockNode) {
 	*node = blockNode{
-		hash:         blockHeader.BlockHash(),
-		workSum:      CalcWork(blockHeader.Bits),
-		height:       int64(blockHeader.Height),
-		blockVersion: blockHeader.Version,
-		voteBits:     blockHeader.VoteBits,
-		finalState:   blockHeader.FinalState,
-		voters:       blockHeader.Voters,
-		freshStake:   blockHeader.FreshStake,
-		poolSize:     blockHeader.PoolSize,
-		bits:         blockHeader.Bits,
-		sbits:        blockHeader.SBits,
-		timestamp:    blockHeader.Timestamp.Unix(),
-		merkleRoot:   blockHeader.MerkleRoot,
-		stakeRoot:    blockHeader.StakeRoot,
-		revocations:  blockHeader.Revocations,
-		blockSize:    blockHeader.Size,
-		nonce:        blockHeader.Nonce,
-		extraData:    blockHeader.ExtraData,
-		stakeVersion: blockHeader.StakeVersion,
+		hash:       blockHeader.BlockHash(),
+		workSum:    CalcWork(blockHeader.Bits),
+		version:    blockHeader.Version,
+		bits:       blockHeader.Bits,
+		timestamp:  blockHeader.Timestamp.Unix(),
+		merkleRoot: blockHeader.MerkleRoot,
+		nonce:      blockHeader.Nonce,
 	}
 	if parent != nil {
 		node.parent = parent
+		node.height = parent.height + 1
 		node.workSum = node.workSum.Add(parent.workSum, node.workSum)
 	}
 }
@@ -182,55 +148,13 @@ func (node *blockNode) Header() wire.BlockHeader {
 		prevHash = &node.parent.hash
 	}
 	return wire.BlockHeader{
-		Version:      node.blockVersion,
-		PrevBlock:    *prevHash,
-		MerkleRoot:   node.merkleRoot,
-		StakeRoot:    node.stakeRoot,
-		VoteBits:     node.voteBits,
-		FinalState:   node.finalState,
-		Voters:       node.voters,
-		FreshStake:   node.freshStake,
-		Revocations:  node.revocations,
-		PoolSize:     node.poolSize,
-		Bits:         node.bits,
-		SBits:        node.sbits,
-		Height:       uint32(node.height),
-		Size:         node.blockSize,
-		Timestamp:    time.Unix(node.timestamp, 0),
-		Nonce:        node.nonce,
-		ExtraData:    node.extraData,
-		StakeVersion: node.stakeVersion,
+		Version:    node.version,
+		PrevBlock:  *prevHash,
+		MerkleRoot: node.merkleRoot,
+		Bits:       node.bits,
+		Timestamp:  time.Unix(node.timestamp, 0),
+		Nonce:      node.nonce,
 	}
-}
-
-// lotteryIV returns the initialization vector for the deterministic PRNG used
-// to determine winning tickets.
-//
-// This function is safe for concurrent access.
-func (node *blockNode) lotteryIV() chainhash.Hash {
-	// Serialize the block header for use in calculating the initialization
-	// vector for the ticket lottery.  The only way this can fail is if the
-	// process is out of memory in which case it would panic anyways, so
-	// although panics are generally frowned upon in package code, it is
-	// acceptable here.
-	buf := bytes.NewBuffer(make([]byte, 0, wire.MaxBlockHeaderPayload))
-	header := node.Header()
-	if err := header.Serialize(buf); err != nil {
-		panic(err)
-	}
-
-	return stake.CalcHash256PRNGIV(buf.Bytes())
-}
-
-// populateTicketInfo sets prunable ticket information in the provided block
-// node.
-//
-// This function is NOT safe for concurrent access.  It must only be called when
-// initially creating a node or when protected by the chain lock.
-func (node *blockNode) populateTicketInfo(spentTickets *stake.SpentTicketsInBlock) {
-	node.ticketsVoted = spentTickets.VotedTickets
-	node.ticketsRevoked = spentTickets.RevokedTickets
-	node.votes = spentTickets.Votes
 }
 
 // Ancestor returns the ancestor block node at the provided height by following

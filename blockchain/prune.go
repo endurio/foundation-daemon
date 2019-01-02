@@ -35,5 +35,5 @@ func (c *chainPruner) pruneChainIfNeeded() {
 	}
 
 	c.lastNodeInsertTime = now
-	c.chain.pruneStakeNodes()
+	//c.chain.pruneStakeNodes()
 }

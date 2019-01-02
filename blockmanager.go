@@ -811,7 +811,7 @@ func (b *blockManager) checkBlockForHiddenVotes(block *dcrutil.Block) {
 	if err != nil {
 		return
 	}
-	height := block.MsgBlock().Header.Height
+	height := block.MsgBlock().SerializeSize()
 	opReturnPkScript, err := standardCoinbaseOpReturn(height, random)
 	if err != nil {
 		// Stopping at this step will lead to a corrupted block template
@@ -1756,7 +1756,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		// namely blocks 101, 102, 103, 104, 105, and 106.
 		blockHash := block.Hash()
 		bestHeight := band.BestHeight
-		blockHeight := int64(block.MsgBlock().Header.Height)
+		blockHeight := int64(block.MsgBlock().SerializeSize())
 		reorgDepth := bestHeight - (blockHeight - band.ForkLen)
 		if b.server.rpcServer != nil &&
 			blockHeight >= b.server.chainParams.StakeValidationHeight-1 &&

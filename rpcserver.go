@@ -1874,7 +1874,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		StakeVersion:  blockHeader.StakeVersion,
 		Confirmations: confirmations,
 		Height:        int64(blockHeader.Height),
-		Size:          int32(blk.MsgBlock().Header.Size),
+		Size:          int32(blk.MsgBlock().SerializeSize()),
 		Bits:          strconv.FormatInt(int64(blockHeader.Bits), 16),
 		SBits:         sbitsFloat,
 		Difficulty:    getDifficultyRatio(blockHeader.Bits),

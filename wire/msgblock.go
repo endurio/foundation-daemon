@@ -51,9 +51,8 @@ type TxLoc struct {
 // block message.  It is used to deliver block and transaction information in
 // response to a getdata message (MsgGetData) for a given block hash.
 type MsgBlock struct {
-	Header        BlockHeader
-	Transactions  []*MsgTx
-	STransactions []*MsgTx
+	Header       BlockHeader
+	Transactions []*MsgTx
 }
 
 // AddTransaction adds a transaction to the message.
@@ -63,20 +62,9 @@ func (msg *MsgBlock) AddTransaction(tx *MsgTx) error {
 
 }
 
-// AddSTransaction adds a stake transaction to the message.
-func (msg *MsgBlock) AddSTransaction(tx *MsgTx) error {
-	msg.STransactions = append(msg.STransactions, tx)
-	return nil
-}
-
 // ClearTransactions removes all transactions from the message.
 func (msg *MsgBlock) ClearTransactions() {
 	msg.Transactions = make([]*MsgTx, 0, defaultTransactionAlloc)
-}
-
-// ClearSTransactions removes all stake transactions from the message.
-func (msg *MsgBlock) ClearSTransactions() {
-	msg.STransactions = make([]*MsgTx, 0, defaultTransactionAlloc)
 }
 
 // BtcDecode decodes r using the Decred protocol encoding into the receiver.
@@ -129,16 +117,6 @@ func (msg *MsgBlock) BtcDecode(r io.Reader, pver uint32) error {
 		return messageError("MsgBlock.BtcDecode", str)
 	}
 
-	msg.STransactions = make([]*MsgTx, 0, stakeTxCount)
-	for i := uint64(0); i < stakeTxCount; i++ {
-		var tx MsgTx
-		err := tx.BtcDecode(r, pver)
-		if err != nil {
-			return err
-		}
-		msg.STransactions = append(msg.STransactions, &tx)
-	}
-
 	return nil
 }
 
@@ -168,7 +146,7 @@ func (msg *MsgBlock) FromBytes(b []byte) error {
 // a byte buffer instead of a generic reader and returns a slice containing the
 // start and length of each transaction within the raw data that is being
 // deserialized.
-func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, []TxLoc, error) {
+func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 	fullLen := r.Len()
 
 	// At the current time, there is no difference between the wire encoding
@@ -176,12 +154,12 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, []TxLoc, error)
 	// a result, make use of existing wire protocol functions.
 	err := readBlockHeader(r, 0, &msg.Header)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	txCount, err := ReadVarInt(r, 0)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	// Prevent more transactions than could possibly fit into a normal tx
 	// tree.  It would be possible to cause memory exhaustion and panics
@@ -193,7 +171,7 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, []TxLoc, error)
 	if txCount > maxTxPerTree {
 		str := fmt.Sprintf("too many transactions to fit into a block "+
 			"[count %d, max %d]", txCount, maxTxPerTree)
-		return nil, nil, messageError("MsgBlock.DeserializeTxLoc", str)
+		return nil, messageError("MsgBlock.DeserializeTxLoc", str)
 	}
 
 	// Deserialize each transaction while keeping track of its location
@@ -205,7 +183,7 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, []TxLoc, error)
 		var tx MsgTx
 		err := tx.Deserialize(r)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		msg.Transactions = append(msg.Transactions, &tx)
 		txLocs[i].TxLen = (fullLen - r.Len()) - txLocs[i].TxStart
@@ -213,7 +191,7 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, []TxLoc, error)
 
 	stakeTxCount, err := ReadVarInt(r, 0)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Prevent more transactions than could possibly fit into a stake tx
@@ -225,25 +203,10 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, []TxLoc, error)
 	if stakeTxCount > maxTxPerTree {
 		str := fmt.Sprintf("too many transactions to fit into a stake tx tree "+
 			"[count %d, max %d]", stakeTxCount, maxTxPerTree)
-		return nil, nil, messageError("MsgBlock.DeserializeTxLoc", str)
+		return nil, messageError("MsgBlock.DeserializeTxLoc", str)
 	}
 
-	// Deserialize each transaction while keeping track of its location
-	// within the byte stream.
-	msg.STransactions = make([]*MsgTx, 0, stakeTxCount)
-	sTxLocs := make([]TxLoc, stakeTxCount)
-	for i := uint64(0); i < stakeTxCount; i++ {
-		sTxLocs[i].TxStart = fullLen - r.Len()
-		var tx MsgTx
-		err := tx.Deserialize(r)
-		if err != nil {
-			return nil, nil, err
-		}
-		msg.STransactions = append(msg.STransactions, &tx)
-		sTxLocs[i].TxLen = (fullLen - r.Len()) - sTxLocs[i].TxStart
-	}
-
-	return txLocs, sTxLocs, nil
+	return txLocs, nil
 }
 
 // BtcEncode encodes the receiver to w using the Decred protocol encoding.
@@ -262,18 +225,6 @@ func (msg *MsgBlock) BtcEncode(w io.Writer, pver uint32) error {
 	}
 
 	for _, tx := range msg.Transactions {
-		err = tx.BtcEncode(w, pver)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = WriteVarInt(w, pver, uint64(len(msg.STransactions)))
-	if err != nil {
-		return err
-	}
-
-	for _, tx := range msg.STransactions {
 		err = tx.BtcEncode(w, pver)
 		if err != nil {
 			return err
@@ -319,14 +270,9 @@ func (msg *MsgBlock) SerializeSize() int {
 	// transactions + Serialized varint size for the number of
 	// stake transactions
 
-	n := blockHeaderLen + VarIntSerializeSize(uint64(len(msg.Transactions))) +
-		VarIntSerializeSize(uint64(len(msg.STransactions)))
+	n := blockHeaderLen + VarIntSerializeSize(uint64(len(msg.Transactions)))
 
 	for _, tx := range msg.Transactions {
-		n += tx.SerializeSize()
-	}
-
-	for _, tx := range msg.STransactions {
 		n += tx.SerializeSize()
 	}
 
@@ -367,22 +313,11 @@ func (msg *MsgBlock) TxHashes() []chainhash.Hash {
 	return hashList
 }
 
-// STxHashes returns a slice of hashes of all of stake transactions in this
-// block.
-func (msg *MsgBlock) STxHashes() []chainhash.Hash {
-	hashList := make([]chainhash.Hash, 0, len(msg.STransactions))
-	for _, tx := range msg.STransactions {
-		hashList = append(hashList, tx.TxHash())
-	}
-	return hashList
-}
-
 // NewMsgBlock returns a new Decred block message that conforms to the
 // Message interface.  See MsgBlock for details.
 func NewMsgBlock(blockHeader *BlockHeader) *MsgBlock {
 	return &MsgBlock{
-		Header:        *blockHeader,
-		Transactions:  make([]*MsgTx, 0, defaultTransactionAlloc),
-		STransactions: make([]*MsgTx, 0, defaultTransactionAlloc),
+		Header:       *blockHeader,
+		Transactions: make([]*MsgTx, 0, defaultTransactionAlloc),
 	}
 }

@@ -1,6 +1,7 @@
 module github.com/endurio/ndrd/blockchain
 
 require (
+	github.com/decred/slog v1.0.0
 	github.com/endurio/ndrd/blockchain/stake v1.1.0
 	github.com/endurio/ndrd/chaincfg v1.2.0
 	github.com/endurio/ndrd/chaincfg/chainhash v1.0.1
@@ -11,7 +12,6 @@ require (
 	github.com/endurio/ndrd/gcs v1.0.1
 	github.com/endurio/ndrd/txscript v1.0.2
 	github.com/endurio/ndrd/wire v1.2.0
-	github.com/decred/slog v1.0.0
 )
 
 replace (

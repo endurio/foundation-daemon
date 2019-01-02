@@ -15,7 +15,6 @@ import (
 
 	"github.com/btcsuite/goleveldb/leveldb"
 	ldbutil "github.com/btcsuite/goleveldb/leveldb/util"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/dcrutil"
@@ -145,7 +144,6 @@ type memPoolTxDesc struct {
 	addedHeight int64
 	bucketIndex int32
 	fees        feeRate
-	isTicket    bool
 }
 
 // Estimator tracks historical data for published and mined transactions in
@@ -769,7 +767,7 @@ func (stats *Estimator) IsEnabled() bool {
 // with the provided size (in bytes).
 //
 // This is safe to be called from multiple goroutines.
-func (stats *Estimator) AddMemPoolTransaction(txHash *chainhash.Hash, fee, size int64, txType stake.TxType) {
+func (stats *Estimator) AddMemPoolTransaction(txHash *chainhash.Hash, fee, size int64) {
 	stats.lock.Lock()
 	defer stats.lock.Unlock()
 
@@ -808,7 +806,6 @@ func (stats *Estimator) AddMemPoolTransaction(txHash *chainhash.Hash, fee, size 
 		addedHeight: stats.bestHeight,
 		bucketIndex: stats.lowerBucket(rate),
 		fees:        rate,
-		isTicket:    txType == stake.TxTypeSStx,
 	}
 	stats.memPoolTxs[*txHash] = tx
 	stats.newMemPoolTx(tx.bucketIndex, rate)
@@ -865,17 +862,6 @@ func (stats *Estimator) processMinedTransaction(blockHeight int64, txh *chainhas
 
 	mineDelay := int32(blockHeight - desc.addedHeight)
 
-	if desc.isTicket && mineDelay > 1 {
-		// This is needed due to tickets being published along with a split
-		// transaction which causes them to take one additional block to confirm
-		// after entering the mempool. Technically, the mempool should have been
-		// tracking tickets (and other chains of dependent transactions) in such
-		// a way as to not make them part of the mempool until the conditions
-		// for them being mineable were met. Once this is fixed in the mempool
-		// code, this can be dropped.
-		mineDelay--
-	}
-
 	log.Debugf("Processing mined tx %s (rate %.8f, delay %d)", txh,
 		desc.fees/1e8, mineDelay)
 	stats.newMinedTx(mineDelay, desc.fees)
@@ -904,10 +890,6 @@ func (stats *Estimator) ProcessBlock(block *dcrutil.Block) error {
 	stats.updateMovingAverages(blockHeight)
 
 	for _, tx := range block.Transactions() {
-		stats.processMinedTransaction(blockHeight, tx.Hash())
-	}
-
-	for _, tx := range block.STransactions() {
 		stats.processMinedTransaction(blockHeight, tx.Hash())
 	}
 

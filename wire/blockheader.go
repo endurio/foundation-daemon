@@ -14,13 +14,10 @@ import (
 )
 
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
-// Version 4 bytes + PrevBlock 32 bytes + MerkleRoot 32 bytes + StakeRoot 32
-// bytes + VoteBits 2 bytes + FinalState 6 bytes + Voters 2 bytes + FreshStake 1
-// byte + Revocations 1 bytes + PoolSize 4 bytes + Bits 4 bytes + SBits 8 bytes
-// + Height 4 bytes + Size 4 bytes + Timestamp 4 bytes + Nonce 4 bytes +
-// ExtraData 32 bytes + StakeVersion 4 bytes.
-// --> Total 180 bytes.
-const MaxBlockHeaderPayload = 84 + (chainhash.HashSize * 3)
+// Version 4 bytes + PrevBlock 32 bytes + MerkleRoot 32 bytes + Bits 4 bytes
+// + Timestamp 4 bytes + Nonce 4 bytes +
+// --> Total 80 bytes.
+const MaxBlockHeaderPayload = 80
 
 // BlockHeader defines information about a block and is used in the endurio
 // block (MsgBlock) and headers (MsgHeaders) messages.
@@ -34,38 +31,8 @@ type BlockHeader struct {
 	// Merkle tree reference to hash of all transactions for the block.
 	MerkleRoot chainhash.Hash
 
-	// Merkle tree reference to hash of all stake transactions for the block.
-	StakeRoot chainhash.Hash
-
-	// Votes on the previous merkleroot and yet undecided parameters.
-	VoteBits uint16
-
-	// Final state of the PRNG used for ticket selection in the lottery.
-	FinalState [6]byte
-
-	// Number of participating voters for this block.
-	Voters uint16
-
-	// Number of new sstx in this block.
-	FreshStake uint8
-
-	// Number of ssrtx present in this block.
-	Revocations uint8
-
-	// Size of the ticket pool.
-	PoolSize uint32
-
 	// Difficulty target for the block.
 	Bits uint32
-
-	// Stake difficulty target.
-	SBits int64
-
-	// Height is the block height in the block chain.
-	Height uint32
-
-	// Size is the size of the serialized block in its entirety.
-	Size uint32
 
 	// Time the block was created.  This is, unfortunately, encoded as a
 	// uint32 on the wire and therefore is limited to 2106.
@@ -74,18 +41,11 @@ type BlockHeader struct {
 	// Nonce is technically a part of ExtraData, but we use it as the
 	// classical 4-byte nonce here.
 	Nonce uint32
-
-	// ExtraData is used to encode the nonce or any other extra data
-	// that might be used later on in consensus.
-	ExtraData [32]byte
-
-	// StakeVersion used for voting.
-	StakeVersion uint32
 }
 
 // blockHeaderLen is a constant that represents the number of bytes for a block
 // header.
-const blockHeaderLen = 180
+const blockHeaderLen = 80
 
 // BlockHash computes the block identifier hash for the given block header.
 func (h *BlockHeader) BlockHash() chainhash.Hash {
@@ -164,24 +124,12 @@ func NewBlockHeader(version int32, prevHash *chainhash.Hash,
 	// Limit the timestamp to one second precision since the protocol
 	// doesn't support better.
 	return &BlockHeader{
-		Version:      version,
-		PrevBlock:    *prevHash,
-		MerkleRoot:   *merkleRootHash,
-		StakeRoot:    *stakeRoot,
-		VoteBits:     voteBits,
-		FinalState:   finalState,
-		Voters:       voters,
-		FreshStake:   freshStake,
-		Revocations:  revocations,
-		PoolSize:     poolsize,
-		Bits:         bits,
-		SBits:        sbits,
-		Height:       height,
-		Size:         size,
-		Timestamp:    time.Unix(time.Now().Unix(), 0),
-		Nonce:        nonce,
-		ExtraData:    extraData,
-		StakeVersion: stakeVersion,
+		Version:    version,
+		PrevBlock:  *prevHash,
+		MerkleRoot: *merkleRootHash,
+		Bits:       bits,
+		Timestamp:  time.Unix(time.Now().Unix(), 0),
+		Nonce:      nonce,
 	}
 }
 
@@ -190,10 +138,7 @@ func NewBlockHeader(version int32, prevHash *chainhash.Hash,
 // decoding from the wire.
 func readBlockHeader(r io.Reader, pver uint32, bh *BlockHeader) error {
 	return readElements(r, &bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
-		&bh.StakeRoot, &bh.VoteBits, &bh.FinalState, &bh.Voters,
-		&bh.FreshStake, &bh.Revocations, &bh.PoolSize, &bh.Bits,
-		&bh.SBits, &bh.Height, &bh.Size, (*uint32Time)(&bh.Timestamp),
-		&bh.Nonce, &bh.ExtraData, &bh.StakeVersion)
+		&bh.Bits, (*uint32Time)(&bh.Timestamp), &bh.Nonce)
 }
 
 // writeBlockHeader writes a Decred block header to w.  See Serialize for
@@ -202,8 +147,5 @@ func readBlockHeader(r io.Reader, pver uint32, bh *BlockHeader) error {
 func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint32(bh.Timestamp.Unix())
 	return writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
-		&bh.StakeRoot, bh.VoteBits, bh.FinalState, bh.Voters,
-		bh.FreshStake, bh.Revocations, bh.PoolSize, bh.Bits, bh.SBits,
-		bh.Height, bh.Size, sec, bh.Nonce, bh.ExtraData,
-		bh.StakeVersion)
+		bh.Bits, sec, bh.Nonce)
 }

@@ -48,7 +48,6 @@ func (b *BlockProgressLogger) LogBlockHeight(block, parent *wire.MsgBlock) {
 
 	b.receivedLogBlocks++
 	b.receivedLogTx += int64(len(block.Transactions))
-	b.receivedLogTx += int64(len(block.STransactions))
 
 	now := time.Now()
 	duration := now.Sub(b.lastBlockLogTime)
@@ -69,9 +68,9 @@ func (b *BlockProgressLogger) LogBlockHeight(block, parent *wire.MsgBlock) {
 	if b.receivedLogTx == 1 {
 		txStr = "transaction"
 	}
-	b.subsystemLogger.Infof("%s %d %s in the last %s (%d %s, height %d, %s)",
+	b.subsystemLogger.Infof("%s %d %s in the last %s (%d %s, %s)",
 		b.progressAction, b.receivedLogBlocks, blockStr, tDuration,
-		b.receivedLogTx, txStr, block.Header.Height,
+		b.receivedLogTx, txStr,
 		block.Header.Timestamp)
 
 	b.receivedLogBlocks = 0

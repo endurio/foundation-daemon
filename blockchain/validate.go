@@ -1226,7 +1226,7 @@ func checkCoinbaseUniqueHeight(blockHeight int64, block *dcrutil.Block) error {
 		str := fmt.Sprintf("block %v output 1 has wrong height in "+
 			"coinbase; want %v, got %v; prevBlock %v, header height %v",
 			block.Hash(), blockHeight, cbHeight, prevBlock,
-			block.MsgBlock().Header.Height)
+			block.MsgBlock().SerializeSize())
 		return ruleError(ErrCoinbaseHeight, str)
 	}
 
@@ -1334,7 +1334,7 @@ func (b *BlockChain) checkBlockContext(block *dcrutil.Block, prevNode *blockNode
 		if err != nil {
 			return err
 		}
-		serializedSize := int64(block.MsgBlock().Header.Size)
+		serializedSize := int64(block.MsgBlock().SerializeSize())
 		if serializedSize > maxBlockSize {
 			str := fmt.Sprintf("serialized block is too big - "+
 				"got %d, max %d", serializedSize,

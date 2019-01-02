@@ -21,7 +21,6 @@ package blockcf
 import (
 	"encoding/binary"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/gcs"
 	"github.com/endurio/ndrd/txscript"
@@ -84,54 +83,6 @@ func Key(hash *chainhash.Hash) [gcs.KeySize]byte {
 func Regular(block *wire.MsgBlock) (*gcs.Filter, error) {
 	var data Entries
 
-	// Add "regular" data from stake transactions.  For each class of stake
-	// transaction, the following data is committed to the regular filter:
-	//
-	//   ticket purchases:
-	//     - all previous outpoints
-	//     - all change output scripts
-	//
-	//   votes:
-	//     - all OP_SSGEN-tagged output scripts (all outputs after the first
-	//       two -- these describe the block voted on and the vote choices)
-	//
-	//   revocations:
-	//     - all output scripts
-	//
-	// Because change outputs are required in a ticket purchase, even when
-	// unused, a special case is made that excludes their commitment when the
-	// output value is zero (provably unspendable).
-	//
-	// Output scripts are handled specially for stake transactions by slicing
-	// off the stake opcode tag (OP_SS*).  This tag always appears as the first
-	// byte of the script and removing it allows users of the filter to only
-	// match against a normal P2PKH or P2SH script, instead of many extra
-	// matches for each tag.
-	for _, tx := range block.STransactions {
-		switch stake.DetermineTxType(tx) {
-		case stake.TxTypeSStx: // Ticket purchase
-			for _, in := range tx.TxIn {
-				data.AddOutPoint(&in.PreviousOutPoint)
-			}
-			for i := 2; i < len(tx.TxOut); i += 2 { // Iterate change outputs
-				out := tx.TxOut[i]
-				if out.Value != 0 {
-					data.AddStakePkScript(out.PkScript)
-				}
-			}
-
-		case stake.TxTypeSSGen: // Vote
-			for _, out := range tx.TxOut[2:] { // Iterate generated coins
-				data.AddStakePkScript(out.PkScript)
-			}
-
-		case stake.TxTypeSSRtx: // Revocation
-			for _, out := range tx.TxOut {
-				data.AddStakePkScript(out.PkScript)
-			}
-		}
-	}
-
 	// For regular transactions, all previous outpoints except the coinbase's
 	// are committed, and all output scripts are committed.
 	for i, tx := range block.Transactions {
@@ -158,20 +109,6 @@ func Regular(block *wire.MsgBlock) (*gcs.Filter, error) {
 // signature script) found within every non-coinbase regular transaction.
 func Extended(block *wire.MsgBlock) (*gcs.Filter, error) {
 	var data Entries
-
-	// For each stake transaction, commit the transaction hash.  If the
-	// transaction is a ticket purchase, commit pushes from the signature script
-	// (witness).
-	for _, tx := range block.STransactions {
-		txHash := tx.TxHash()
-		data.AddHash(&txHash)
-
-		if stake.IsSStx(tx) {
-			for _, in := range tx.TxIn {
-				data.AddSigScript(in.SignatureScript)
-			}
-		}
-	}
 
 	// For each regular transaction, commit the transaction hash.  For all
 	// regular transactions except the coinbase, commit pushes to the signature

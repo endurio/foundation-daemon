@@ -8,7 +8,6 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/database"
 	"github.com/endurio/ndrd/dcrutil"
 )
@@ -84,7 +83,6 @@ func (b *BlockChain) maybeAcceptBlock(block *dcrutil.Block, flags BehaviorFlags)
 	// starts off as a side chain regardless.
 	blockHeader := &block.MsgBlock().Header
 	newNode := newBlockNode(blockHeader, prevNode)
-	newNode.populateTicketInfo(stake.FindSpentTicketsInBlock(block.MsgBlock()))
 	newNode.status = statusDataStored
 	b.index.AddNode(newNode)
 
@@ -111,15 +109,6 @@ func (b *BlockChain) maybeAcceptBlock(block *dcrutil.Block, flags BehaviorFlags)
 	// understanding why!
 	if b.isCurrent() && b.bestChain.Tip() == prevNode {
 		b.sendNotification(NTNewTipBlockChecked, block)
-	}
-
-	// Fetching a stake node could enable a new DoS vector, so restrict
-	// this only to blocks that are recent in history.
-	if newNode.height < b.bestChain.Tip().height-minMemoryNodes {
-		newNode.stakeNode, err = b.fetchStakeNode(newNode)
-		if err != nil {
-			return 0, err
-		}
 	}
 
 	// Grab the parent block since it is required throughout the block

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/endurio/ndrd/blockchain/internal/dbnamespace"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
 	"github.com/endurio/ndrd/dcrutil"
@@ -62,107 +61,6 @@ func isDeserializeErr(err error) bool {
 }
 
 // -----------------------------------------------------------------------------
-// The staking system requires some extra information to be stored for tickets
-// to maintain consensus rules. The full set of minimal outputs are thus required
-// in order for the chain to work correctly. A 'minimal output' is simply the
-// script version, pubkey script, and amount.
-
-// serializeSizeForMinimalOutputs calculates the number of bytes needed to
-// serialize a transaction to its minimal outputs.
-func serializeSizeForMinimalOutputs(tx *dcrutil.Tx) int {
-	sz := serializeSizeVLQ(uint64(len(tx.MsgTx().TxOut)))
-	for _, out := range tx.MsgTx().TxOut {
-		sz += serializeSizeVLQ(compressTxOutAmount(uint64(out.Value)))
-		sz += serializeSizeVLQ(uint64(out.Version))
-		sz += serializeSizeVLQ(uint64(len(out.PkScript)))
-		sz += len(out.PkScript)
-	}
-
-	return sz
-}
-
-// putTxToMinimalOutputs serializes a transaction to its minimal outputs.
-// It returns the amount of data written. The function will panic if it writes
-// beyond the bounds of the passed memory.
-func putTxToMinimalOutputs(target []byte, tx *dcrutil.Tx) int {
-	offset := putVLQ(target, uint64(len(tx.MsgTx().TxOut)))
-	for _, out := range tx.MsgTx().TxOut {
-		offset += putVLQ(target[offset:], compressTxOutAmount(uint64(out.Value)))
-		offset += putVLQ(target[offset:], uint64(out.Version))
-		offset += putVLQ(target[offset:], uint64(len(out.PkScript)))
-		copy(target[offset:], out.PkScript)
-		offset += len(out.PkScript)
-	}
-
-	return offset
-}
-
-// deserializeToMinimalOutputs deserializes a series of minimal outputs to their
-// decompressed, deserialized state and stores them in a slice. It also returns
-// the amount of data read. The function will panic if it reads beyond the bounds
-// of the passed memory.
-func deserializeToMinimalOutputs(serialized []byte) ([]*stake.MinimalOutput, int) {
-	numOutputs, offset := deserializeVLQ(serialized)
-	minOuts := make([]*stake.MinimalOutput, int(numOutputs))
-	for i := 0; i < int(numOutputs); i++ {
-		amountComp, bytesRead := deserializeVLQ(serialized[offset:])
-		amount := decompressTxOutAmount(amountComp)
-		offset += bytesRead
-
-		version, bytesRead := deserializeVLQ(serialized[offset:])
-		offset += bytesRead
-
-		scriptSize, bytesRead := deserializeVLQ(serialized[offset:])
-		offset += bytesRead
-
-		pkScript := make([]byte, int(scriptSize))
-		copy(pkScript, serialized[offset:offset+int(scriptSize)])
-		offset += int(scriptSize)
-
-		minOuts[i] = &stake.MinimalOutput{
-			Value:    int64(amount),
-			Version:  uint16(version),
-			PkScript: pkScript,
-		}
-	}
-
-	return minOuts, offset
-}
-
-// readDeserializeSizeOfMinimalOutputs reads the size of the stored set of
-// minimal outputs without allocating memory for the structs themselves. It
-// will panic if the function reads outside of memory bounds.
-func readDeserializeSizeOfMinimalOutputs(serialized []byte) int {
-	numOutputs, offset := deserializeVLQ(serialized)
-	for i := 0; i < int(numOutputs); i++ {
-		// Amount
-		_, bytesRead := deserializeVLQ(serialized[offset:])
-		offset += bytesRead
-
-		// Script version
-		_, bytesRead = deserializeVLQ(serialized[offset:])
-		offset += bytesRead
-
-		// Script
-		var scriptSize uint64
-		scriptSize, bytesRead = deserializeVLQ(serialized[offset:])
-		offset += bytesRead
-		offset += int(scriptSize)
-	}
-
-	return offset
-}
-
-// ConvertUtxosToMinimalOutputs converts the contents of a UTX to a series of
-// minimal outputs. It does this so that these can be passed to stake subpackage
-// functions, where they will be evaluated for correctness.
-func ConvertUtxosToMinimalOutputs(entry *UtxoEntry) []*stake.MinimalOutput {
-	minOuts, _ := deserializeToMinimalOutputs(entry.stakeExtra)
-
-	return minOuts
-}
-
-// -----------------------------------------------------------------------------
 // The block index consists of an entry for every known block.  It consists of
 // information such as the block header and hashes of tickets voted and revoked.
 //
@@ -193,11 +91,8 @@ func ConvertUtxosToMinimalOutputs(entry *UtxoEntry) []*stake.MinimalOutput {
 
 // blockIndexEntry represents a block index database entry.
 type blockIndexEntry struct {
-	header         wire.BlockHeader
-	status         blockStatus
-	voteInfo       []stake.VoteVersionTuple
-	ticketsVoted   []chainhash.Hash
-	ticketsRevoked []chainhash.Hash
+	header wire.BlockHeader
+	status blockStatus
 }
 
 // blockIndexKey generates the binary key for an entry in the block index
@@ -215,16 +110,7 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 // serialize the passed block index entry according to the format described
 // above.
 func blockIndexEntrySerializeSize(entry *blockIndexEntry) int {
-	voteInfoSize := 0
-	for i := range entry.voteInfo {
-		voteInfoSize += chainhash.HashSize +
-			serializeSizeVLQ(uint64(entry.voteInfo[i].Version)) +
-			serializeSizeVLQ(uint64(entry.voteInfo[i].Bits))
-	}
-
-	return blockHdrSize + 1 + serializeSizeVLQ(uint64(len(entry.voteInfo))) +
-		voteInfoSize + serializeSizeVLQ(uint64(len(entry.ticketsRevoked))) +
-		chainhash.HashSize*len(entry.ticketsRevoked)
+	return blockHdrSize + 1
 }
 
 // putBlockIndexEntry serializes the passed block index entry according to the
@@ -232,11 +118,6 @@ func blockIndexEntrySerializeSize(entry *blockIndexEntry) int {
 // target byte slice must be at least large enough to handle the number of bytes
 // returned by the blockIndexEntrySerializeSize function or it will panic.
 func putBlockIndexEntry(target []byte, entry *blockIndexEntry) (int, error) {
-	if len(entry.voteInfo) != len(entry.ticketsVoted) {
-		return 0, AssertError("putBlockIndexEntry called with " +
-			"mismatched number of tickets voted and vote info")
-	}
-
 	// Serialize the entire block header.
 	w := bytes.NewBuffer(target[0:0])
 	if err := entry.header.Serialize(w); err != nil {
@@ -247,21 +128,6 @@ func putBlockIndexEntry(target []byte, entry *blockIndexEntry) (int, error) {
 	offset := blockHdrSize
 	target[offset] = byte(entry.status)
 	offset++
-
-	// Serialize the number of votes and associated vote information.
-	offset += putVLQ(target[offset:], uint64(len(entry.voteInfo)))
-	for i := range entry.voteInfo {
-		offset += copy(target[offset:], entry.ticketsVoted[i][:])
-		offset += putVLQ(target[offset:], uint64(entry.voteInfo[i].Version))
-		offset += putVLQ(target[offset:], uint64(entry.voteInfo[i].Bits))
-	}
-
-	// Serialize the number of revocations and associated revocation
-	// information.
-	offset += putVLQ(target[offset:], uint64(len(entry.ticketsRevoked)))
-	for i := range entry.ticketsRevoked {
-		offset += copy(target[offset:], entry.ticketsRevoked[i][:])
-	}
 
 	return offset, nil
 }
@@ -300,79 +166,8 @@ func decodeBlockIndexEntry(serialized []byte, entry *blockIndexEntry) (int, erro
 	status := blockStatus(serialized[offset])
 	offset++
 
-	// Deserialize the number of tickets spent.
-	var ticketsVoted []chainhash.Hash
-	var votes []stake.VoteVersionTuple
-	numVotes, bytesRead := deserializeVLQ(serialized[offset:])
-	if bytesRead == 0 {
-		return offset, errDeserialize("unexpected end of data while " +
-			"reading num votes")
-	}
-	offset += bytesRead
-	if numVotes > 0 {
-		ticketsVoted = make([]chainhash.Hash, numVotes)
-		votes = make([]stake.VoteVersionTuple, numVotes)
-		for i := uint64(0); i < numVotes; i++ {
-			// Deserialize the ticket hash associated with the vote.
-			if offset+chainhash.HashSize > len(serialized) {
-				return offset, errDeserialize(fmt.Sprintf("unexpected "+
-					"end of data while reading vote #%d hash",
-					i))
-			}
-			copy(ticketsVoted[i][:], serialized[offset:])
-			offset += chainhash.HashSize
-
-			// Deserialize the vote version.
-			version, bytesRead := deserializeVLQ(serialized[offset:])
-			if bytesRead == 0 {
-				return offset, errDeserialize(fmt.Sprintf("unexpected "+
-					"end of data while reading vote #%d version",
-					i))
-			}
-			offset += bytesRead
-
-			// Deserialize the vote bits.
-			voteBits, bytesRead := deserializeVLQ(serialized[offset:])
-			if bytesRead == 0 {
-				return offset, errDeserialize(fmt.Sprintf("unexpected "+
-					"end of data while reading vote #%d bits",
-					i))
-			}
-			offset += bytesRead
-
-			votes[i].Version = uint32(version)
-			votes[i].Bits = uint16(voteBits)
-		}
-	}
-
-	// Deserialize the number of tickets revoked.
-	var ticketsRevoked []chainhash.Hash
-	numTicketsRevoked, bytesRead := deserializeVLQ(serialized[offset:])
-	if bytesRead == 0 {
-		return offset, errDeserialize("unexpected end of data while " +
-			"reading num tickets revoked")
-	}
-	offset += bytesRead
-	if numTicketsRevoked > 0 {
-		ticketsRevoked = make([]chainhash.Hash, numTicketsRevoked)
-		for i := uint64(0); i < numTicketsRevoked; i++ {
-			// Deserialize the ticket hash associated with the
-			// revocation.
-			if offset+chainhash.HashSize > len(serialized) {
-				return offset, errDeserialize(fmt.Sprintf("unexpected "+
-					"end of data while reading revocation "+
-					"#%d", i))
-			}
-			copy(ticketsRevoked[i][:], serialized[offset:])
-			offset += chainhash.HashSize
-		}
-	}
-
 	entry.header = header
 	entry.status = status
-	entry.voteInfo = votes
-	entry.ticketsVoted = ticketsVoted
-	entry.ticketsRevoked = ticketsRevoked
 	return offset, nil
 }
 
@@ -390,11 +185,8 @@ func deserializeBlockIndexEntry(serialized []byte) (*blockIndexEntry, error) {
 // block node in the block index according to the format described above.
 func dbPutBlockNode(dbTx database.Tx, node *blockNode) error {
 	serialized, err := serializeBlockIndexEntry(&blockIndexEntry{
-		header:         node.Header(),
-		status:         node.status,
-		voteInfo:       node.votes,
-		ticketsVoted:   node.ticketsVoted,
-		ticketsRevoked: node.ticketsRevoked,
+		header: node.Header(),
+		status: node.status,
 	})
 	if err != nil {
 		return err
@@ -485,15 +277,13 @@ func dbMaybeStoreBlock(dbTx database.Tx, block *dcrutil.Block) error {
 //
 // The struct is aligned for memory efficiency.
 type spentTxOut struct {
-	pkScript   []byte // The public key script for the output.
-	stakeExtra []byte // Extra information for the staking system.
+	pkScript []byte // The public key script for the output.
 
-	amount        int64        // The amount of the output.
-	txType        stake.TxType // The stake type of the transaction.
-	height        uint32       // Height of the the block containing the tx.
-	index         uint32       // Index in the block of the transaction.
-	scriptVersion uint16       // The version of the scripting language.
-	txVersion     uint16       // The version of creating tx.
+	amount        int64  // The amount of the output.
+	height        uint32 // Height of the the block containing the tx.
+	index         uint32 // Index in the block of the transaction.
+	scriptVersion uint16 // The version of the scripting language.
+	txVersion     uint16 // The version of creating tx.
 
 	txFullySpent bool // Whether or not the transaction is fully spent.
 	isCoinBase   bool // Whether creating tx is a coinbase.
@@ -507,7 +297,7 @@ type spentTxOut struct {
 // because they're already encoded into the transactions, so skip them when
 // determining the serialization size.
 func spentTxOutSerializeSize(stxo *spentTxOut) int {
-	flags := encodeFlags(stxo.isCoinBase, stxo.hasExpiry, stxo.txType,
+	flags := encodeFlags(stxo.isCoinBase, stxo.hasExpiry,
 		stxo.txFullySpent)
 	size := serializeSizeVLQ(uint64(flags))
 
@@ -519,9 +309,6 @@ func spentTxOutSerializeSize(stxo *spentTxOut) int {
 	// data for UTX resurrection.
 	if stxo.txFullySpent {
 		size += serializeSizeVLQ(uint64(stxo.txVersion))
-		if stxo.txType == stake.TxTypeSStx {
-			size += len(stxo.stakeExtra)
-		}
 	}
 
 	return size
@@ -532,7 +319,7 @@ func spentTxOutSerializeSize(stxo *spentTxOut) int {
 // be at least large enough to handle the number of bytes returned by the
 // spentTxOutSerializeSize function or it will panic.
 func putSpentTxOut(target []byte, stxo *spentTxOut) int {
-	flags := encodeFlags(stxo.isCoinBase, stxo.hasExpiry, stxo.txType,
+	flags := encodeFlags(stxo.isCoinBase, stxo.hasExpiry,
 		stxo.txFullySpent)
 	offset := putVLQ(target, uint64(flags))
 
@@ -544,10 +331,6 @@ func putSpentTxOut(target []byte, stxo *spentTxOut) int {
 	// data for UTX resurrection.
 	if stxo.txFullySpent {
 		offset += putVLQ(target[offset:], uint64(stxo.txVersion))
-		if stxo.txType == stake.TxTypeSStx {
-			copy(target[offset:], stxo.stakeExtra)
-			offset += len(stxo.stakeExtra)
-		}
 	}
 	return offset
 }
@@ -580,11 +363,10 @@ func decodeSpentTxOut(serialized []byte, stxo *spentTxOut, amount int64, height 
 	// Decode the flags. If the flags are non-zero, it means that the
 	// transaction was fully spent at this spend.
 	if decodeFlagsFullySpent(byte(flags)) {
-		isCoinBase, hasExpiry, txType, _ := decodeFlags(byte(flags))
+		isCoinBase, hasExpiry, _ := decodeFlags(byte(flags))
 
 		stxo.isCoinBase = isCoinBase
 		stxo.hasExpiry = hasExpiry
-		stxo.txType = txType
 		stxo.txFullySpent = true
 	}
 
@@ -617,19 +399,6 @@ func decodeSpentTxOut(serialized []byte, stxo *spentTxOut, amount int64, height 
 		}
 
 		stxo.txVersion = uint16(txVersion)
-
-		if stxo.txType == stake.TxTypeSStx {
-			sz := readDeserializeSizeOfMinimalOutputs(serialized[offset:])
-			if sz == 0 || sz > len(serialized[offset:]) {
-				return offset, errDeserialize("corrupt data for ticket " +
-					"fully spent stxo stakeextra")
-			}
-
-			stakeExtra := make([]byte, sz)
-			copy(stakeExtra, serialized[offset:offset+sz])
-			stxo.stakeExtra = stakeExtra
-			offset += sz
-		}
 	}
 
 	return offset, nil
@@ -646,10 +415,6 @@ func deserializeSpendJournalEntry(serialized []byte, txns []*wire.MsgTx) ([]spen
 	// Calculate the total number of stxos.
 	var numStxos int
 	for _, tx := range txns {
-		if stake.IsSSGen(tx) {
-			numStxos++
-			continue
-		}
 		numStxos += len(tx.TxIn)
 	}
 
@@ -674,16 +439,10 @@ func deserializeSpendJournalEntry(serialized []byte, txns []*wire.MsgTx) ([]spen
 	stxos := make([]spentTxOut, numStxos)
 	for txIdx := len(txns) - 1; txIdx > -1; txIdx-- {
 		tx := txns[txIdx]
-		isVote := stake.IsSSGen(tx)
 
 		// Loop backwards through all of the transaction inputs and read
 		// the associated stxo.
 		for txInIdx := len(tx.TxIn) - 1; txInIdx > -1; txInIdx-- {
-			// Skip stakebase since it has no input.
-			if isVote && txInIdx == 0 {
-				continue
-			}
-
 			txIn := tx.TxIn[txInIdx]
 			stxo := &stxos[stxoIdx]
 			stxoIdx--
@@ -763,7 +522,6 @@ func dbFetchSpendJournalEntry(dbTx database.Tx, block *dcrutil.Block) ([]spentTx
 	spendBucket := dbTx.Metadata().Bucket(dbnamespace.SpendJournalBucketName)
 	serialized := spendBucket.Get(block.Hash()[:])
 	var blockTxns []*wire.MsgTx
-	blockTxns = append(blockTxns, block.MsgBlock().STransactions...)
 	blockTxns = append(blockTxns, block.MsgBlock().Transactions[1:]...)
 	if len(blockTxns) > 0 && len(serialized) == 0 {
 		panicf("missing spend journal data for %s", block.Hash())
@@ -926,7 +684,7 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 	}
 
 	// Calculate the size needed to serialize the entry.
-	flags := encodeFlags(entry.isCoinBase, entry.hasExpiry, entry.txType, false)
+	flags := encodeFlags(entry.isCoinBase, entry.hasExpiry, false)
 	size := serializeSizeVLQ(uint64(entry.txVersion)) +
 		serializeSizeVLQ(uint64(entry.height)) +
 		serializeSizeVLQ(uint64(entry.index)) +
@@ -939,9 +697,6 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 		}
 		size += compressedTxOutSize(uint64(out.amount), out.scriptVersion,
 			out.pkScript, currentCompressionVersion, out.compressed, true)
-	}
-	if entry.txType == stake.TxTypeSStx {
-		size += len(entry.stakeExtra)
 	}
 
 	// Serialize the version, block height, block index, and flags of the
@@ -981,10 +736,6 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 			currentCompressionVersion, out.compressed, true)
 	}
 
-	if entry.txType == stake.TxTypeSStx {
-		copy(serialized[offset:], entry.stakeExtra)
-	}
-
 	return serialized, nil
 }
 
@@ -1019,7 +770,7 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 	if offset >= len(serialized) {
 		return nil, errDeserialize("unexpected end of data after flags")
 	}
-	isCoinBase, hasExpiry, txType, _ := decodeFlags(byte(flags))
+	isCoinBase, hasExpiry, _ := decodeFlags(byte(flags))
 
 	// Deserialize the header code.
 	code, bytesRead := deserializeVLQ(serialized[offset:])
@@ -1051,7 +802,7 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 	// Create a new utxo entry with the details deserialized above to house
 	// all of the utxos.
 	entry := newUtxoEntry(uint16(version), uint32(blockHeight),
-		uint32(blockIndex), isCoinBase, hasExpiry, txType)
+		uint32(blockIndex), isCoinBase, hasExpiry)
 
 	// Add sparse output for unspent outputs 0 and 1 as needed based on the
 	// details provided by the header code.
@@ -1106,13 +857,6 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 			pkScript:      compScript,
 			amount:        amount,
 		}
-	}
-
-	// Copy the stake extra data if this was a ticket.
-	if entry.txType == stake.TxTypeSStx {
-		stakeExtra := make([]byte, len(serialized[offset:]))
-		copy(stakeExtra, serialized[offset:])
-		entry.stakeExtra = stakeExtra
 	}
 
 	return entry, nil
@@ -1451,8 +1195,7 @@ func (b *BlockChain) createChainState() error {
 	numTxns := uint64(len(genesisBlock.MsgBlock().Transactions))
 	blockSize := uint64(genesisBlock.MsgBlock().SerializeSize())
 	stateSnapshot := newBestState(node, blockSize, numTxns, numTxns,
-		time.Unix(node.timestamp, 0), 0, 0, b.chainParams.MinimumStakeDiff,
-		nil, nil, earlyFinalState)
+		time.Unix(node.timestamp, 0), 0)
 
 	// Create the initial the database chain state including creating the
 	// necessary index buckets and inserting the genesis block.
@@ -1505,13 +1248,6 @@ func (b *BlockChain) createChainState() error {
 
 		// Store the current best chain state into the database.
 		err = dbPutBestState(dbTx, stateSnapshot, node.workSum)
-		if err != nil {
-			return err
-		}
-
-		// Initialize the stake buckets in the database, along with
-		// the best state for the stake database.
-		_, err = stake.InitDatabaseState(dbTx, b.chainParams)
 		if err != nil {
 			return err
 		}
@@ -1694,9 +1430,6 @@ func (b *BlockChain) initChainState() error {
 			node := &blockNodes[i]
 			initBlockNode(node, header, parent)
 			node.status = entry.status
-			node.ticketsVoted = entry.ticketsVoted
-			node.ticketsRevoked = entry.ticketsRevoked
-			node.votes = entry.voteInfo
 			b.index.addNode(node)
 
 			lastNode = node
@@ -1712,18 +1445,6 @@ func (b *BlockChain) initChainState() error {
 		b.bestChain.SetTip(tip)
 
 		log.Debugf("Block index loaded in %v", time.Since(bidxStart))
-
-		// Exception for version 1 blockchains: skip loading the stake
-		// node, as the upgrade path handles ensuring this is correctly
-		// set.
-		if b.dbInfo.version >= 2 {
-			tip.stakeNode, err = stake.LoadBestNode(dbTx, uint32(tip.height),
-				tip.hash, tip.Header(), b.chainParams)
-			if err != nil {
-				return err
-			}
-			tip.newTickets = tip.stakeNode.NewTickets()
-		}
 
 		// Load the best and parent blocks and cache them.
 		utilBlock, err := dbFetchBlockByNode(dbTx, tip)
@@ -1744,17 +1465,9 @@ func (b *BlockChain) initChainState() error {
 		blockSize := uint64(block.SerializeSize())
 		numTxns := uint64(len(block.Transactions))
 
-		// Calculate the next stake difficulty.
-		nextStakeDiff, err := b.calcNextRequiredStakeDifficulty(tip)
-		if err != nil {
-			return err
-		}
-
 		b.stateSnapshot = newBestState(tip, blockSize, numTxns,
 			state.totalTxns, tip.CalcPastMedianTime(),
-			state.totalSubsidy, uint32(tip.stakeNode.PoolSize()),
-			nextStakeDiff, tip.stakeNode.Winners(),
-			tip.stakeNode.MissedTickets(), tip.stakeNode.FinalState())
+			state.totalSubsidy)
 
 		return nil
 	})

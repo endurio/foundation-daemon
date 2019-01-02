@@ -6,13 +6,11 @@
 package blockchain
 
 import (
-	"container/list"
 	"fmt"
 	"math/big"
 	"sync"
 	"time"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
@@ -105,28 +103,21 @@ type BestState struct {
 
 // newBestState returns a new best stats instance for the given parameters.
 func newBestState(node *blockNode, blockSize, numTxns, totalTxns uint64,
-	medianTime time.Time, totalSubsidy int64, nextPoolSize uint32,
-	nextStakeDiff int64, nextWinners, missed []chainhash.Hash,
-	nextFinalState [6]byte) *BestState {
+	medianTime time.Time, totalSubsidy int64) *BestState {
 	prevHash := *zeroHash
 	if node.parent != nil {
 		prevHash = node.parent.hash
 	}
 	return &BestState{
-		Hash:               node.hash,
-		PrevHash:           prevHash,
-		Height:             node.height,
-		Bits:               node.bits,
-		NextPoolSize:       nextPoolSize,
-		NextStakeDiff:      nextStakeDiff,
-		BlockSize:          blockSize,
-		NumTxns:            numTxns,
-		TotalTxns:          totalTxns,
-		MedianTime:         medianTime,
-		TotalSubsidy:       totalSubsidy,
-		NextWinningTickets: nextWinners,
-		MissedTickets:      missed,
-		NextFinalState:     nextFinalState,
+		Hash:         node.hash,
+		PrevHash:     prevHash,
+		Height:       node.height,
+		Bits:         node.bits,
+		BlockSize:    blockSize,
+		NumTxns:      numTxns,
+		TotalTxns:    totalTxns,
+		MedianTime:   medianTime,
+		TotalSubsidy: totalSubsidy,
 	}
 }
 
@@ -247,100 +238,6 @@ const (
 	// add 4 to the overall size.
 	stakeMajorityCacheKeySize = 4 + chainhash.HashSize
 )
-
-// StakeVersions is a condensed form of a dcrutil.Block that is used to prevent
-// using gigabytes of memory.
-type StakeVersions struct {
-	Hash         chainhash.Hash
-	Height       int64
-	BlockVersion int32
-	StakeVersion uint32
-	Votes        []stake.VoteVersionTuple
-}
-
-// GetStakeVersions returns a cooked array of StakeVersions.  We do this in
-// order to not bloat memory by returning raw blocks.
-func (b *BlockChain) GetStakeVersions(hash *chainhash.Hash, count int32) ([]StakeVersions, error) {
-	// NOTE: The requirement for the node being fully validated here is strictly
-	// stronger than what is actually required.  In reality, all that is needed
-	// is for the block data for the node and all of its ancestors to be
-	// available, but there is not currently any tracking to be able to
-	// efficiently determine that state.
-	startNode := b.index.LookupNode(hash)
-	if startNode == nil || !b.index.NodeStatus(startNode).KnownValid() {
-		return nil, fmt.Errorf("block %s is not known", hash)
-	}
-
-	// Nothing to do if no count requested.
-	if count == 0 {
-		return nil, nil
-	}
-
-	if count < 0 {
-		return nil, fmt.Errorf("count must not be less than zero - "+
-			"got %d", count)
-	}
-
-	// Limit the requested count to the max possible for the requested block.
-	if count > int32(startNode.height+1) {
-		count = int32(startNode.height + 1)
-	}
-
-	result := make([]StakeVersions, 0, count)
-	prevNode := startNode
-	for i := int32(0); prevNode != nil && i < count; i++ {
-		sv := StakeVersions{
-			Hash:         prevNode.hash,
-			Height:       prevNode.height,
-			BlockVersion: prevNode.blockVersion,
-			StakeVersion: prevNode.stakeVersion,
-			Votes:        prevNode.votes,
-		}
-
-		result = append(result, sv)
-
-		prevNode = prevNode.parent
-	}
-
-	return result, nil
-}
-
-// VoteInfo represents information on agendas and their respective states for
-// a consensus deployment.
-type VoteInfo struct {
-	Agendas      []chaincfg.ConsensusDeployment
-	AgendaStatus []ThresholdStateTuple
-}
-
-// GetVoteInfo returns information on consensus deployment agendas
-// and their respective states at the provided hash, for the provided
-// deployment version.
-func (b *BlockChain) GetVoteInfo(hash *chainhash.Hash, version uint32) (*VoteInfo, error) {
-	deployments, ok := b.chainParams.Deployments[version]
-	if !ok {
-		return nil, VoteVersionError(version)
-	}
-
-	if !ok {
-		return nil, HashError(hash.String())
-	}
-
-	vi := VoteInfo{
-		Agendas: make([]chaincfg.ConsensusDeployment,
-			0, len(deployments)),
-		AgendaStatus: make([]ThresholdStateTuple, 0, len(deployments)),
-	}
-	for _, deployment := range deployments {
-		vi.Agendas = append(vi.Agendas, deployment)
-		status, err := b.NextThresholdState(hash, version, deployment.Vote.Id)
-		if err != nil {
-			return nil, err
-		}
-		vi.AgendaStatus = append(vi.AgendaStatus, status)
-	}
-
-	return &vi, nil
-}
 
 // DisableVerify provides a mechanism to disable transaction script validation
 // which you DO NOT want to do in production as it could allow double spends
@@ -602,51 +499,6 @@ func (b *BlockChain) fetchBlockByNode(node *blockNode) (*dcrutil.Block, error) {
 	return block, err
 }
 
-// pruneStakeNodes removes references to old stake nodes which should no
-// longer be held in memory so as to keep the maximum memory usage down.
-// It proceeds from the bestNode back to the determined minimum height node,
-// finds all the relevant children, and then drops the the stake nodes from
-// them by assigning nil and allowing the memory to be recovered by GC.
-//
-// This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) pruneStakeNodes() {
-	// Find the height to prune to.
-	pruneToNode := b.bestChain.Tip()
-	for i := int64(0); i < minMemoryStakeNodes-1 && pruneToNode != nil; i++ {
-		pruneToNode = pruneToNode.parent
-	}
-
-	// Nothing to do if there are not enough nodes.
-	if pruneToNode == nil || pruneToNode.parent == nil {
-		return
-	}
-
-	// Push the nodes to delete on a list in reverse order since it's easier
-	// to prune them going forwards than it is backwards.  This will
-	// typically end up being a single node since pruning is currently done
-	// just before each new node is created.  However, that might be tuned
-	// later to only prune at intervals, so the code needs to account for
-	// the possibility of multiple nodes.
-	deleteNodes := list.New()
-	for node := pruneToNode.parent; node != nil; node = node.parent {
-		deleteNodes.PushFront(node)
-	}
-
-	// Loop through each node to prune, unlink its children, remove it from
-	// the dependency index, and remove it from the node index.
-	for e := deleteNodes.Front(); e != nil; e = e.Next() {
-		node := e.Value.(*blockNode)
-		// Do not attempt to prune if the node should already have been pruned,
-		// for example if you're adding an old side chain block.
-		if node.height > b.bestChain.Tip().height-minMemoryNodes {
-			node.stakeNode = nil
-			node.newTickets = nil
-			node.ticketsVoted = nil
-			node.ticketsRevoked = nil
-		}
-	}
-}
-
 // BestPrevHash returns the hash of the previous block of the block at HEAD.
 //
 // This function is safe for concurrent access.
@@ -673,7 +525,7 @@ func (b *BlockChain) isMajorityVersion(minVer int32, startNode *blockNode, numRe
 		numFound < numRequired && iterNode != nil; i++ {
 
 		// This node has a version that is at least the minimum version.
-		if iterNode.blockVersion >= minVer {
+		if iterNode.version >= minVer {
 			numFound++
 		}
 
@@ -732,21 +584,6 @@ func (b *BlockChain) connectBlock(node *blockNode, block, parent *dcrutil.Block,
 		return err
 	}
 
-	// Get the stake node for this node, filling in any data that
-	// may have yet to have been filled in.  In all cases this
-	// should simply give a pointer to data already prepared, but
-	// run this anyway to be safe.
-	stakeNode, err := b.fetchStakeNode(node)
-	if err != nil {
-		return err
-	}
-
-	// Calculate the next stake difficulty.
-	nextStakeDiff, err := b.calcNextRequiredStakeDifficulty(node)
-	if err != nil {
-		return err
-	}
-
 	// Generate a new best state snapshot that will be used to update the
 	// database and later memory if all database updates are successful.
 	b.stateLock.RLock()
@@ -754,16 +591,13 @@ func (b *BlockChain) connectBlock(node *blockNode, block, parent *dcrutil.Block,
 	curTotalSubsidy := b.stateSnapshot.TotalSubsidy
 	b.stateLock.RUnlock()
 	subsidy := CalculateAddedSubsidy(block, parent)
-	numTxns := uint64(len(block.Transactions()) + len(block.STransactions()))
-	blockSize := uint64(block.MsgBlock().Header.Size)
+	numTxns := uint64(len(block.Transactions()))
+	blockSize := uint64(block.MsgBlock().SerializeSize())
 	state := newBestState(node, blockSize, numTxns, curTotalTxns+numTxns,
-		node.CalcPastMedianTime(), curTotalSubsidy+subsidy,
-		uint32(node.stakeNode.PoolSize()), nextStakeDiff,
-		node.stakeNode.Winners(), node.stakeNode.MissedTickets(),
-		node.stakeNode.FinalState())
+		node.CalcPastMedianTime(), curTotalSubsidy+subsidy)
 
 	// Atomically insert info into the database.
-	err = b.db.Update(func(dbTx database.Tx) error {
+	err := b.db.Update(func(dbTx database.Tx) error {
 		// Update best block state.
 		err := dbPutBestState(dbTx, state, node.workSum)
 		if err != nil {
@@ -781,12 +615,6 @@ func (b *BlockChain) connectBlock(node *blockNode, block, parent *dcrutil.Block,
 		// Update the transaction spend journal by adding a record for
 		// the block that contains all txos spent by it.
 		err = dbPutSpendJournalEntry(dbTx, block.Hash(), stxos)
-		if err != nil {
-			return err
-		}
-
-		// Insert the block into the stake database.
-		err = stake.WriteConnectedBestNode(dbTx, stakeNode, node.hash)
 		if err != nil {
 			return err
 		}
@@ -833,45 +661,6 @@ func (b *BlockChain) connectBlock(node *blockNode, block, parent *dcrutil.Block,
 	b.sendNotification(NTBlockConnected, blockAndParent)
 	b.chainLock.Lock()
 
-	// Send stake notifications about the new block.
-	if node.height >= b.chainParams.StakeEnabledHeight {
-		nextStakeDiff, err := b.calcNextRequiredStakeDifficulty(node)
-		if err != nil {
-			return err
-		}
-
-		// Notify of spent and missed tickets
-		b.sendNotification(NTSpentAndMissedTickets,
-			&TicketNotificationsData{
-				Hash:            node.hash,
-				Height:          node.height,
-				StakeDifficulty: nextStakeDiff,
-				TicketsSpent:    node.stakeNode.SpentByBlock(),
-				TicketsMissed:   node.stakeNode.MissedByBlock(),
-				TicketsNew:      []chainhash.Hash{},
-			})
-		// Notify of new tickets
-		b.sendNotification(NTNewTickets,
-			&TicketNotificationsData{
-				Hash:            node.hash,
-				Height:          node.height,
-				StakeDifficulty: nextStakeDiff,
-				TicketsSpent:    []chainhash.Hash{},
-				TicketsMissed:   []chainhash.Hash{},
-				TicketsNew:      node.stakeNode.NewTickets(),
-			})
-	}
-
-	// Optimization: Before checkpoints, immediately dump the parent's stake
-	// node because we no longer need it.
-	if node.height < b.chainParams.LatestCheckpointHeight() {
-		parent := b.bestChain.Tip().parent
-		parent.stakeNode = nil
-		parent.newTickets = nil
-		parent.ticketsVoted = nil
-		parent.ticketsRevoked = nil
-	}
-
 	b.pushMainChainBlockCache(block)
 
 	return nil
@@ -904,37 +693,23 @@ func (b *BlockChain) disconnectBlock(node *blockNode, block, parent *dcrutil.Blo
 		return err
 	}
 
-	// Prepare the information required to update the stake database
-	// contents.
-	childStakeNode, err := b.fetchStakeNode(node)
-	if err != nil {
-		return err
-	}
-	parentStakeNode, err := b.fetchStakeNode(node.parent)
-	if err != nil {
-		return err
-	}
-
 	// Generate a new best state snapshot that will be used to update the
 	// database and later memory if all database updates are successful.
 	b.stateLock.RLock()
 	curTotalTxns := b.stateSnapshot.TotalTxns
 	curTotalSubsidy := b.stateSnapshot.TotalSubsidy
 	b.stateLock.RUnlock()
-	parentBlockSize := uint64(parent.MsgBlock().Header.Size)
-	numParentTxns := uint64(len(parent.Transactions()) + len(parent.STransactions()))
-	numBlockTxns := uint64(len(block.Transactions()) + len(block.STransactions()))
+	parentBlockSize := uint64(parent.MsgBlock().SerializeSize())
+	numParentTxns := uint64(len(parent.Transactions()))
+	numBlockTxns := uint64(len(block.Transactions()))
 	newTotalTxns := curTotalTxns - numBlockTxns
 	subsidy := CalculateAddedSubsidy(block, parent)
 	newTotalSubsidy := curTotalSubsidy - subsidy
 	prevNode := node.parent
 	state := newBestState(prevNode, parentBlockSize, numParentTxns,
-		newTotalTxns, prevNode.CalcPastMedianTime(), newTotalSubsidy,
-		uint32(prevNode.stakeNode.PoolSize()), node.sbits,
-		prevNode.stakeNode.Winners(), prevNode.stakeNode.MissedTickets(),
-		prevNode.stakeNode.FinalState())
+		newTotalTxns, prevNode.CalcPastMedianTime(), newTotalSubsidy)
 
-	err = b.db.Update(func(dbTx database.Tx) error {
+	err := b.db.Update(func(dbTx database.Tx) error {
 		// Update best block state.
 		err := dbPutBestState(dbTx, state, node.workSum)
 		if err != nil {
@@ -952,12 +727,6 @@ func (b *BlockChain) disconnectBlock(node *blockNode, block, parent *dcrutil.Blo
 		// Update the transaction spend journal by removing the record
 		// that contains all txos spent by the block .
 		err = dbRemoveSpendJournalEntry(dbTx, block.Hash())
-		if err != nil {
-			return err
-		}
-
-		err = stake.WriteDisconnectedBestNode(dbTx, parentStakeNode,
-			node.parent.hash, childStakeNode.UndoData())
 		if err != nil {
 			return err
 		}
@@ -1020,24 +789,9 @@ func countSpentRegularOutputs(block *dcrutil.Block) int {
 	return numSpent
 }
 
-// countSpentStakeOutputs returns the number of utxos the stake transactions in
-// the passed block spend.
-func countSpentStakeOutputs(block *dcrutil.Block) int {
-	var numSpent int
-	for _, stx := range block.MsgBlock().STransactions {
-		// Exclude the vote stakebase since it has no input.
-		if stake.IsSSGen(stx) {
-			numSpent++
-			continue
-		}
-		numSpent += len(stx.TxIn)
-	}
-	return numSpent
-}
-
 // countSpentOutputs returns the number of utxos the passed block spends.
 func countSpentOutputs(block *dcrutil.Block) int {
-	return countSpentRegularOutputs(block) + countSpentStakeOutputs(block)
+	return countSpentRegularOutputs(block)
 }
 
 // reorganizeChainInternal attempts to reorganize the block chain to the
@@ -1380,15 +1134,6 @@ func (b *BlockChain) ForceHeadReorganization(formerBest chainhash.Hash, newBest 
 // block nodes, writes those nodes to the database and clears the set of
 // modified nodes if it succeeds.
 func (b *BlockChain) flushBlockIndex() error {
-	b.index.RLock()
-	for node := range b.index.modified {
-		if err := b.maybeFetchTicketInfo(node); err != nil {
-			b.index.RUnlock()
-			return err
-		}
-	}
-	b.index.RUnlock()
-
 	return b.index.flush()
 }
 
@@ -1427,7 +1172,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block, parent *dcrutil.Bl
 	// Ensure the passed parent is actually the parent of the block.
 	if *parent.Hash() != node.parent.hash {
 		panicf("parent block %v (height %v) does not match expected parent %v "+
-			"(height %v)", parent.Hash(), parent.MsgBlock().Header.Height,
+			"(height %v)", parent.Hash(), parent.MsgBlock().SerializeSize(),
 			node.parent.hash, node.height-1)
 	}
 
@@ -1489,14 +1234,8 @@ func (b *BlockChain) connectBestChain(node *blockNode, block, parent *dcrutil.Bl
 			return 0, err
 		}
 
-		validateStr := "validating"
-		if !voteBitsApproveParent(node.voteBits) {
-			validateStr = "invalidating"
-		}
-
-		log.Debugf("Block %v (height %v) connected to the main chain, "+
-			"%v the previous block", node.hash, node.height,
-			validateStr)
+		log.Debugf("Block %v (height %v) connected to the main chain",
+			node.hash, node.height)
 
 		// The fork length is zero since the block is now the tip of the
 		// best chain.

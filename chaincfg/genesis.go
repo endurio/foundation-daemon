@@ -72,15 +72,12 @@ var genesisMerkleRoot = genesisCoinbaseTx.TxHashFull()
 // it are validated for correctness.
 var genesisBlock = wire.MsgBlock{
 	Header: wire.BlockHeader{
-		Version:      1,
-		PrevBlock:    chainhash.Hash{},
-		MerkleRoot:   genesisMerkleRoot,
-		StakeRoot:    chainhash.Hash{},
-		Timestamp:    time.Unix(1454954400, 0), // Mon, 08 Feb 2016 18:00:00 GMT
-		Bits:         0x1b01ffff,               // Difficulty 32767
-		SBits:        2 * 1e8,                  // 2 Coin
-		Nonce:        0x00000000,
-		StakeVersion: 0,
+		Version:    1,
+		PrevBlock:  chainhash.Hash{},
+		MerkleRoot: genesisMerkleRoot,
+		Timestamp:  time.Unix(1454954400, 0), // Mon, 08 Feb 2016 18:00:00 GMT
+		Bits:       0x1b01ffff,               // Difficulty 32767
+		Nonce:      0x00000000,
 	},
 	Transactions: []*wire.MsgTx{&genesisCoinbaseTx},
 }
@@ -141,14 +138,12 @@ var genesisCoinbaseTxLegacy = wire.MsgTx{
 // serves as the public transaction ledger for the test network (version 3).
 var testNet3GenesisBlock = wire.MsgBlock{
 	Header: wire.BlockHeader{
-		Version:      6,
-		PrevBlock:    chainhash.Hash{},
-		MerkleRoot:   genesisCoinbaseTx.TxHash(),
-		Timestamp:    time.Unix(1533513600, 0), // 2018-08-06 00:00:00 +0000 UTC
-		Bits:         0x1e00ffff,               // Difficulty 1 [000000ffff000000000000000000000000000000000000000000000000000000]
-		SBits:        20000000,
-		Nonce:        0x18aea41a,
-		StakeVersion: 6,
+		Version:    6,
+		PrevBlock:  chainhash.Hash{},
+		MerkleRoot: genesisCoinbaseTx.TxHash(),
+		Timestamp:  time.Unix(1533513600, 0), // 2018-08-06 00:00:00 +0000 UTC
+		Bits:       0x1e00ffff,               // Difficulty 1 [000000ffff000000000000000000000000000000000000000000000000000000]
+		Nonce:      0x18aea41a,
 	},
 	Transactions: []*wire.MsgTx{&genesisCoinbaseTx},
 }
@@ -220,24 +215,9 @@ var simNetGenesisBlock = wire.MsgBlock{
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		}),
 		MerkleRoot: simNetGenesisMerkleRoot,
-		StakeRoot: chainhash.Hash([chainhash.HashSize]byte{ // Make go vet happy.
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		}),
-		VoteBits:     0,
-		FinalState:   [6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		Voters:       0,
-		FreshStake:   0,
-		Revocations:  0,
-		Timestamp:    time.Unix(1401292357, 0), // 2009-01-08 20:54:25 -0600 CST
-		PoolSize:     0,
-		Bits:         0x207fffff, // 545259519 [7fffff0000000000000000000000000000000000000000000000000000000000]
-		SBits:        0,
-		Nonce:        0,
-		StakeVersion: 0,
-		Height:       0,
+		Timestamp:  time.Unix(1401292357, 0), // 2009-01-08 20:54:25 -0600 CST
+		Bits:       0x207fffff,               // 545259519 [7fffff0000000000000000000000000000000000000000000000000000000000]
+		Nonce:      0,
 	},
 	Transactions: []*wire.MsgTx{&simNetGenesisCoinbaseTx},
 }
@@ -265,24 +245,9 @@ var regNetGenesisBlock = wire.MsgBlock{
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		}),
 		MerkleRoot: simNetGenesisMerkleRoot,
-		StakeRoot: chainhash.Hash([chainhash.HashSize]byte{ // Make go vet happy.
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		}),
-		VoteBits:     0,
-		FinalState:   [6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		Voters:       0,
-		FreshStake:   0,
-		Revocations:  0,
-		Timestamp:    time.Unix(1538524800, 0), // 2018-10-03 00:00:00 +0000 UTC
-		PoolSize:     0,
-		Bits:         0x207fffff, // 545259519 [7fffff0000000000000000000000000000000000000000000000000000000000]
-		SBits:        0,
-		Nonce:        0,
-		StakeVersion: 0,
-		Height:       0,
+		Timestamp:  time.Unix(1538524800, 0), // 2018-10-03 00:00:00 +0000 UTC
+		Bits:       0x207fffff,               // 545259519 [7fffff0000000000000000000000000000000000000000000000000000000000]
+		Nonce:      0,
 	},
 	Transactions: []*wire.MsgTx{&genesisCoinbaseTx},
 }
