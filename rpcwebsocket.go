@@ -24,7 +24,6 @@ import (
 	"golang.org/x/crypto/ripemd160"
 
 	"github.com/endurio/ndrd/blockchain"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/dcrjson"
 	"github.com/endurio/ndrd/dcrutil"
@@ -688,7 +687,6 @@ func (m *wsNotificationManager) subscribedClients(tx *dcrutil.Tx, clients map[ch
 					op := wire.OutPoint{
 						Hash:  *tx.Hash(),
 						Index: uint32(i),
-						Tree:  tx.Tree(),
 					}
 					f.addUnspentOutPoint(&op)
 				}
@@ -721,15 +719,6 @@ func (m *wsNotificationManager) notifyBlockConnected(clients map[chan struct{}]*
 	// Search for relevant transactions for each client and save them
 	// serialized in hex encoding for the notification.
 	subscribedTxs := make(map[chan struct{}][]string)
-	for _, tx := range block.STransactions() {
-		var txHex string
-		for quitChan := range m.subscribedClients(tx, clients) {
-			if txHex == "" {
-				txHex = txHexString(tx.MsgTx())
-			}
-			subscribedTxs[quitChan] = append(subscribedTxs[quitChan], txHex)
-		}
-	}
 	for _, tx := range block.Transactions() {
 		var txHex string
 		for quitChan := range m.subscribedClients(tx, clients) {
@@ -1077,7 +1066,6 @@ func (m *wsNotificationManager) notifyRelevantTxAccepted(tx *dcrutil.Tx,
 					op := wire.OutPoint{
 						Hash:  *tx.Hash(),
 						Index: uint32(i),
-						Tree:  tx.Tree(),
 					}
 					f.addUnspentOutPoint(&op)
 				}
@@ -1987,7 +1975,6 @@ func handleLoadTxFilter(wsc *wsClient, icmd interface{}) (interface{}, error) {
 		outPoints[i] = &wire.OutPoint{
 			Hash:  *hash,
 			Index: cmd.OutPoints[i].Index,
-			Tree:  cmd.OutPoints[i].Tree,
 		}
 	}
 
@@ -2093,25 +2080,18 @@ func rescanBlock(filter *wsClientFilter, block *dcrutil.Block) []string {
 	//
 	// This makes unsynchronized calls to the filter and thus must only be
 	// called with the filter mutex held.
-	checkTransaction := func(tx *wire.MsgTx, tree int8) {
+	checkTransaction := func(tx *wire.MsgTx) {
 		// Keep track of whether the transaction has already been added
 		// to the result.  It shouldn't be added twice.
 		added := false
 
 		inputs := tx.TxIn
-		if tree == wire.TxTreeRegular {
-			// Skip previous output checks for coinbase inputs.  These do
-			// not reference a previous output.
-			if blockchain.IsCoinBaseTx(tx) {
-				goto LoopOutputs
-			}
-		} else {
-			if stake.DetermineTxType(tx) == stake.TxTypeSSGen {
-				// Skip the first stakebase input.  These do not
-				// reference a previous output.
-				inputs = inputs[1:]
-			}
+		// Skip previous output checks for coinbase inputs.  These do
+		// not reference a previous output.
+		if blockchain.IsCoinBaseTx(tx) {
+			goto LoopOutputs
 		}
+
 		for _, input := range inputs {
 			if !filter.existsUnspentOutPoint(&input.PreviousOutPoint) {
 				continue
@@ -2138,7 +2118,6 @@ func rescanBlock(filter *wsClientFilter, block *dcrutil.Block) []string {
 				op := wire.OutPoint{
 					Hash:  tx.TxHash(),
 					Index: uint32(i),
-					Tree:  tree,
 				}
 				filter.addUnspentOutPoint(&op)
 
@@ -2152,11 +2131,8 @@ func rescanBlock(filter *wsClientFilter, block *dcrutil.Block) []string {
 
 	msgBlock := block.MsgBlock()
 	filter.mu.Lock()
-	for _, tx := range msgBlock.STransactions {
-		checkTransaction(tx, wire.TxTreeStake)
-	}
 	for _, tx := range msgBlock.Transactions {
-		checkTransaction(tx, wire.TxTreeRegular)
+		checkTransaction(tx)
 	}
 	filter.mu.Unlock()
 
