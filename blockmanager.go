@@ -770,7 +770,7 @@ func (b *blockManager) handleBlockMsg(bmsg *blockMsg) {
 		// block height from the scriptSig of the coinbase transaction.
 		// Extraction is only attempted if the block's version is
 		// high enough (ver 2+).
-		header := &bmsg.block.MsgBlock().Header
+		//header := &bmsg.block.MsgBlock().Header
 		cbHeight := bmsg.block.Height()
 		heightUpdate = int64(cbHeight)
 		blkHashUpdate = blockHash
@@ -1527,9 +1527,9 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		// best chain, it would result in a a reorg that would remove 6 blocks,
 		// namely blocks 101, 102, 103, 104, 105, and 106.
 		blockHash := block.Hash()
-		bestHeight := band.BestHeight
-		blockHeight := int64(block.MsgBlock().SerializeSize())
-		reorgDepth := bestHeight - (blockHeight - band.ForkLen)
+		//bestHeight := band.BestHeight
+		//blockHeight := int64(block.MsgBlock().SerializeSize())
+		//reorgDepth := bestHeight - (blockHeight - band.ForkLen)
 
 		// Generate the inventory vector and relay it immediately if not already
 		// known to have been sent in NTNewTipBlockChecked.
@@ -1563,7 +1563,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		}
 
 		block := blockSlice[0]
-		parentBlock := blockSlice[1]
+		//parentBlock := blockSlice[1]
 
 		// Account for transactions mined in the newly connected block for fee
 		// estimation. This must be done before attempting to remove
@@ -1663,7 +1663,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		}
 
 		block := blockSlice[0]
-		parentBlock := blockSlice[1]
+		//parentBlock := blockSlice[1]
 
 		// In the case the regular tree of the previous block was disapproved,
 		// disconnecting the current block makes all of those transactions valid

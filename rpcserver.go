@@ -3503,7 +3503,7 @@ func createVinListPrevOut(s *rpcServer, mtx *wire.MsgTx, chainParams *chaincfg.P
 		}
 	}
 
-	for i, txIn := range mtx.TxIn {
+	for _, txIn := range mtx.TxIn {
 		// The disassembled string will contain [error] inline if the
 		// script doesn't fully parse, so ignore the error here.
 		disbuf, _ := txscript.DisasmString(txIn.SignatureScript)

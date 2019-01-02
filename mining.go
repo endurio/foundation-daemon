@@ -801,7 +801,7 @@ mempoolLoop:
 		// other transactions in the mempool so they can be properly
 		// ordered below.
 		prioItem := &txPrioItem{tx: txDesc.Tx}
-		for i, txIn := range tx.MsgTx().TxIn {
+		for _, txIn := range tx.MsgTx().TxIn {
 			originHash := &txIn.PreviousOutPoint.Hash
 			originIndex := txIn.PreviousOutPoint.Index
 			utxoEntry := utxos.LookupEntry(originHash)
