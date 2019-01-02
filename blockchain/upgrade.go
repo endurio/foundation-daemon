@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/endurio/ndrd/blockchain/internal/progresslog"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
@@ -81,32 +80,6 @@ func deserializeDatabaseInfoV2(dbInfoBytes []byte) (*databaseInfo, error) {
 	}, nil
 }
 
-// ticketsVotedInBlock fetches a list of tickets that were voted in the
-// block.
-func ticketsVotedInBlock(bl *dcrutil.Block) []chainhash.Hash {
-	var tickets []chainhash.Hash
-	for _, stx := range bl.MsgBlock().STransactions {
-		if stake.IsSSGen(stx) {
-			tickets = append(tickets, stx.TxIn[1].PreviousOutPoint.Hash)
-		}
-	}
-
-	return tickets
-}
-
-// ticketsRevokedInBlock fetches a list of tickets that were revoked in the
-// block.
-func ticketsRevokedInBlock(bl *dcrutil.Block) []chainhash.Hash {
-	var tickets []chainhash.Hash
-	for _, stx := range bl.MsgBlock().STransactions {
-		if stake.DetermineTxType(stx) == stake.TxTypeSSRtx {
-			tickets = append(tickets, stx.TxIn[0].PreviousOutPoint.Hash)
-		}
-	}
-
-	return tickets
-}
-
 // upgradeToVersion2 upgrades a version 1 blockchain to version 2, allowing
 // use of the new on-disk ticket database.
 func upgradeToVersion2(db database.DB, chainParams *chaincfg.Params, dbInfo *databaseInfo) error {
@@ -170,11 +143,6 @@ func upgradeToVersion2(db database.DB, chainParams *chaincfg.Params, dbInfo *dat
 			return err
 		}
 
-		bestStakeNode, errLocal := stake.InitDatabaseState(dbTx, chainParams)
-		if errLocal != nil {
-			return errLocal
-		}
-
 		parent, errLocal := dbFetchBlockByHeight(dbTx, 0)
 		if errLocal != nil {
 			return errLocal
@@ -186,38 +154,9 @@ func upgradeToVersion2(db database.DB, chainParams *chaincfg.Params, dbInfo *dat
 				return errLocal
 			}
 
-			// If we need the tickets, fetch them too.
-			var newTickets []chainhash.Hash
-			if i >= chainParams.StakeEnabledHeight {
-				matureHeight := i - int64(chainParams.TicketMaturity)
-				matureBlock, errLocal := dbFetchBlockByHeight(dbTx, matureHeight)
-				if errLocal != nil {
-					return errLocal
-				}
-				for _, stx := range matureBlock.MsgBlock().STransactions {
-					if stake.IsSStx(stx) {
-						h := stx.TxHash()
-						newTickets = append(newTickets, h)
-					}
-				}
-			}
-
 			// Iteratively connect the stake nodes in memory.
 			header := block.MsgBlock().Header
 			hB, errLocal := header.Bytes()
-			if errLocal != nil {
-				return errLocal
-			}
-			bestStakeNode, errLocal = bestStakeNode.ConnectNode(
-				stake.CalcHash256PRNGIV(hB), ticketsVotedInBlock(block),
-				ticketsRevokedInBlock(block), newTickets)
-			if errLocal != nil {
-				return errLocal
-			}
-
-			// Write the top block stake node to the database.
-			errLocal = stake.WriteConnectedBestNode(dbTx, bestStakeNode,
-				best.hash)
 			if errLocal != nil {
 				return errLocal
 			}
@@ -357,13 +296,9 @@ func migrateBlockIndex(db database.DB, interrupt <-chan struct{}) error {
 
 			// Write the serialized block index entry to the new bucket keyed by
 			// its hash and height.
-			ticketInfo := stake.FindSpentTicketsInBlock(&block)
 			serialized, err := serializeBlockIndexEntry(&blockIndexEntry{
-				header:         block.Header,
-				status:         status,
-				voteInfo:       ticketInfo.Votes,
-				ticketsVoted:   ticketInfo.VotedTickets,
-				ticketsRevoked: ticketInfo.RevokedTickets,
+				header: block.Header,
+				status: status,
 			})
 			if err != nil {
 				return err
@@ -582,12 +517,6 @@ func upgradeToVersion5(db database.DB, chainParams *chaincfg.Params, dbInfo *dat
 	}
 
 	err = db.Update(func(dbTx database.Tx) error {
-		// Reset the ticket database to the genesis block.
-		log.Infof("Resetting the ticket database.  This might take a while...")
-		if err := stake.ResetDatabase(dbTx, chainParams); err != nil {
-			return err
-		}
-
 		// Fetch the stored best chain state from the database metadata.
 		meta := dbTx.Metadata()
 		serializedData := meta.Get(chainStateKeyName)
