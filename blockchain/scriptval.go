@@ -222,7 +222,7 @@ func ValidateTransactionScripts(tx *dcrutil.Tx, utxoView *UtxoViewpoint, flags t
 // checkBlockScripts executes and validates the scripts for all transactions in
 // the passed block using multiple goroutines.
 // txTree = true is TxTreeRegular, txTree = false is TxTreeStake.
-func checkBlockScripts(block *dcrutil.Block, utxoView *UtxoViewpoint, txTree bool,
+func checkBlockScripts(block *dcrutil.Block, utxoView *UtxoViewpoint,
 	scriptFlags txscript.ScriptFlags, sigCache *txscript.SigCache) error {
 
 	// Collect all of the transaction inputs and required information for
@@ -231,11 +231,7 @@ func checkBlockScripts(block *dcrutil.Block, utxoView *UtxoViewpoint, txTree boo
 	var txs []*dcrutil.Tx
 
 	// TxTreeRegular handling.
-	if txTree {
-		txs = block.Transactions()
-	} else { // TxTreeStake
-		txs = block.STransactions()
-	}
+	txs = block.Transactions()
 
 	for _, tx := range txs {
 		numInputs += len(tx.MsgTx().TxIn)

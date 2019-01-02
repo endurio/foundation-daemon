@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	errDuplicateVoteId  = errors.New("duplicate vote id")
-	errInvalidMask      = errors.New("invalid mask")
-	errNotConsecutive   = errors.New("choices not consecutive")
-	errTooManyChoices   = errors.New("too many choices")
-	errInvalidAbstain   = errors.New("invalid abstain bits")
-	errInvalidBits      = errors.New("invalid vote bits")
-	errInvalidIsAbstain = errors.New("one and only one IsAbstain rule " +
+	errDuplicateBitNumber = errors.New("duplicate bit number")
+	errInvalidMask        = errors.New("invalid mask")
+	errNotConsecutive     = errors.New("choices not consecutive")
+	errTooManyChoices     = errors.New("too many choices")
+	errInvalidAbstain     = errors.New("invalid abstain bits")
+	errInvalidBits        = errors.New("invalid vote bits")
+	errInvalidIsAbstain   = errors.New("one and only one IsAbstain rule " +
 		"violation")
 	errInvalidIsNo      = errors.New("one and only one IsNo rule violation")
 	errInvalidBothFlags = errors.New("IsNo and IsAbstain may not be both " +
@@ -129,18 +129,15 @@ func validateAgenda(vote Vote) error {
 	return validateChoices(vote.Mask, vote.Choices)
 }
 
-func validateDeployments(deployments []ConsensusDeployment) (int, error) {
-	dups := make(map[string]struct{})
+func validateDeployments(deployments [DefinedDeployments]ConsensusDeployment) (int, error) {
+	var bits uint8
 	for index, deployment := range deployments {
 		// Check for duplicates.
-		id := strings.ToLower(deployment.Vote.Id)
-		_, found := dups[id]
-		if found {
-			return index, errDuplicateVoteId
+		if bits&deployment.BitNumber != 0 {
+			return index, errDuplicateBitNumber
 		}
-		dups[id] = struct{}{}
+		bits |= deployment.BitNumber
 	}
-
 	return -1, nil
 }
 
@@ -148,26 +145,13 @@ func validateAgendas() {
 	allParams := []*Params{&MainNetParams, &TestNet3Params, &SimNetParams,
 		&RegNetParams}
 	for _, params := range allParams {
-		for version, deployments := range params.Deployments {
-			index, err := validateDeployments(deployments)
-			if err != nil {
-				e := fmt.Sprintf("invalid agenda on %v "+
-					"version %v id %v: %v", params.Name,
-					version, deployments[index].Vote.Id,
-					err)
-				panic(e)
-			}
-
-			for _, deployment := range deployments {
-				err := validateAgenda(deployment.Vote)
-				if err != nil {
-					e := fmt.Sprintf("invalid agenda "+
-						"on %v version %v id %v: %v",
-						params.Name, version,
-						deployment.Vote.Id, err)
-					panic(e)
-				}
-			}
+		index, err := validateDeployments(params.Deployments)
+		if err != nil {
+			e := fmt.Sprintf("invalid agenda on %v "+
+				"bit number %v: %v", params.Name,
+				params.Deployments[index].BitNumber,
+				err)
+			panic(e)
 		}
 	}
 }

@@ -7,7 +7,6 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/dcrutil"
 	"github.com/endurio/ndrd/wire"
 )
@@ -25,16 +24,6 @@ type SequenceLock struct {
 	MinTime   int64
 }
 
-// isStakeBaseTx determines whether or not a transaction is a stakebase (also
-// known as a vote).  A stakebase is a special transaction created by the
-// proof-of-stake system that creates subsidy.  This function simply delegates
-// to the IsSSGen function in the stake package and exists to make calling code
-// that does not care about the specific reason the transaction is not a
-// stakebase, rather only if it is one or not.
-func isStakeBaseTx(tx *wire.MsgTx) bool {
-	return stake.IsSSGen(tx)
-}
-
 // calcSequenceLock computes the relative lock times for the passed transaction
 // from the point of view of the block node passed in as the first argument.
 //
@@ -50,9 +39,8 @@ func (b *BlockChain) calcSequenceLock(node *blockNode, tx *dcrutil.Tx, view *Utx
 	// included in a block at any given height or time.
 	msgTx := tx.MsgTx()
 	enforce := isActive && msgTx.Version >= 2
-	if !enforce || IsCoinBaseTx(msgTx) || isStakeBaseTx(msgTx) {
+	if !enforce || IsCoinBaseTx(msgTx) {
 		return sequenceLock, nil
-
 	}
 
 	for txInIndex, txIn := range msgTx.TxIn {

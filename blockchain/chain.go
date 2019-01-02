@@ -213,7 +213,7 @@ type BlockChain struct {
 	//
 	// deploymentCaches caches the current deployment threshold state for
 	// blocks in each of the actively defined deployments.
-	deploymentCaches map[uint32][]thresholdStateCache
+	deploymentCaches []thresholdStateCache
 
 	// pruner is the automatic pruner for block nodes and stake nodes,
 	// so that the memory may be restored by the garbage collector if
@@ -1358,11 +1358,11 @@ func (b *BlockChain) maxBlockSize(prevNode *blockNode) (int64, error) {
 	// here because there is only one possible choice that can be active
 	// for the agenda, which is yes, so there is no need to check it.
 	maxSize := int64(b.chainParams.MaximumBlockSizes[0])
-	state, err := b.deploymentState(prevNode, 4, chaincfg.VoteIDMaxBlockSize)
+	state, err := b.deploymentState(prevNode, 4 /*, chaincfg.VoteIDMaxBlockSize*/)
 	if err != nil {
 		return maxSize, err
 	}
-	if state.State == ThresholdActive {
+	if state == ThresholdActive {
 		return int64(b.chainParams.MaximumBlockSizes[1]), nil
 	}
 
@@ -1819,7 +1819,7 @@ func New(config *Config) (*BlockChain, error) {
 		prevOrphans:                   make(map[chainhash.Hash][]*orphanBlock),
 		mainchainBlockCache:           make(map[chainhash.Hash]*dcrutil.Block),
 		mainchainBlockCacheSize:       mainchainBlockCacheSize,
-		deploymentCaches:              newThresholdCaches(params),
+		deploymentCaches:              newThresholdCaches(chaincfg.DefinedDeployments),
 		isVoterMajorityVersionCache:   make(map[[stakeMajorityCacheKeySize]byte]bool),
 		isStakeMajorityVersionCache:   make(map[[stakeMajorityCacheKeySize]byte]bool),
 		calcPriorStakeVersionCache:    make(map[[chainhash.HashSize]byte]uint32),

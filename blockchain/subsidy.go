@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/dcrutil"
 	"github.com/endurio/ndrd/txscript"
@@ -330,12 +329,6 @@ func CalculateAddedSubsidy(block, parent *dcrutil.Block) int64 {
 	var subsidy int64
 	if headerApprovesParent(&block.MsgBlock().Header) {
 		subsidy += parent.MsgBlock().Transactions[0].TxIn[0].ValueIn
-	}
-
-	for _, stx := range block.MsgBlock().STransactions {
-		if stake.IsSSGen(stx) {
-			subsidy += stx.TxIn[0].ValueIn
-		}
 	}
 
 	return subsidy
