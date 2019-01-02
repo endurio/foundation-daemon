@@ -61,10 +61,8 @@ var SimNetParams = Params{
 	//
 	// The miner confirmation window is defined as:
 	//   target proof of work timespan / target proof of work spacing
-	RuleChangeActivationQuorum:     160, // 10 % of RuleChangeActivationInterval * TicketsPerBlock
-	RuleChangeActivationMultiplier: 3,   // 75%
-	RuleChangeActivationDivisor:    4,
-	RuleChangeActivationInterval:   320, // 320 seconds
+	RuleChangeActivationThreshold: 1916, // 95% of MinerConfirmationWindow
+	MinerConfirmationWindow:       2016, //
 
 	// Enforce current block version once majority of the network has
 	// upgraded.

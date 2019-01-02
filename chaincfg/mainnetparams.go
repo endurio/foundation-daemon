@@ -72,12 +72,12 @@ var MainNetParams = Params{
 		{295940, newHashFromStr("0000000000000000148852c8a919addf4043f9f267b13c08df051d359f1622ca")},
 	},
 
+	// Consensus rule change deployments.
+	//
 	// The miner confirmation window is defined as:
 	//   target proof of work timespan / target proof of work spacing
-	RuleChangeActivationQuorum:     4032, // 10 % of RuleChangeActivationInterval * TicketsPerBlock
-	RuleChangeActivationMultiplier: 3,    // 75%
-	RuleChangeActivationDivisor:    4,
-	RuleChangeActivationInterval:   2016 * 4, // 4 weeks
+	RuleChangeActivationThreshold: 1916, // 95% of MinerConfirmationWindow
+	MinerConfirmationWindow:       2016, //
 	Deployments: [DefinedDeployments]ConsensusDeployment{
 		DeploymentTestDummy: {
 			BitNumber:  28,

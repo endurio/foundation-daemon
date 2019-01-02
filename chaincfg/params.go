@@ -360,19 +360,19 @@ type Params struct {
 	// These fields are related to voting on consensus rule changes as
 	// defined by BIP0009.
 	//
-	// RuleChangeActivationQurom is the number of votes required for a vote
-	// to take effect.
+	// RuleChangeActivationThreshold is the number of blocks in a threshold
+	// state retarget window for which a positive vote for a rule change
+	// must be cast in order to lock in a rule change. It should typically
+	// be 95% for the main network and 75% for test networks.
 	//
-	// RuleChangeActivationInterval is the number of blocks in each threshold
+	// MinerConfirmationWindow is the number of blocks in each threshold
 	// state retarget window.
 	//
 	// Deployments define the specific consensus rule changes to be voted
-	// on for the stake version (the map key).
-	RuleChangeActivationQuorum     uint32
-	RuleChangeActivationMultiplier uint32
-	RuleChangeActivationDivisor    uint32
-	RuleChangeActivationInterval   uint32
-	Deployments                    [DefinedDeployments]ConsensusDeployment
+	// on.
+	RuleChangeActivationThreshold uint32
+	MinerConfirmationWindow       uint32
+	Deployments                   [DefinedDeployments]ConsensusDeployment
 
 	// Enforce current block version once network has upgraded.
 	BlockEnforceNumRequired uint64

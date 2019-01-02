@@ -472,42 +472,6 @@ func (view *UtxoViewpoint) disconnectRegularTransactions(block *dcrutil.Block, s
 	return view.disconnectTransactions(block, stxos)
 }
 
-// disconnectDisapprovedBlock updates the view by disconnecting all of the
-// transactions in the regular tree of the passed block.
-//
-// Disconnecting a transaction entails removing the utxos created by it and
-// restoring the outputs spent by it with the help of the provided spent txo
-// information.
-//func (view *UtxoViewpoint) disconnectDisapprovedBlock(db database.DB, block *dcrutil.Block, stxos []spentTxOut) error {
-func (view *UtxoViewpoint) disconnectDisapprovedBlock(db database.DB, block *dcrutil.Block) error {
-	// Load all of the spent txos for the block from the database spend journal.
-	var stxos []spentTxOut
-	err := db.View(func(dbTx database.Tx) error {
-		var err error
-		stxos, err = dbFetchSpendJournalEntry(dbTx, block)
-		return err
-	})
-	if err != nil {
-		return err
-	}
-
-	// Load all of the utxos referenced by the inputs for all transactions in
-	// the block that don't already exist in the utxo view from the database.
-	err = view.fetchRegularInputUtxos(db, block)
-	if err != nil {
-		return err
-	}
-
-	// Sanity check the correct number of stxos are provided.
-	if len(stxos) != countSpentOutputs(block) {
-		panicf("provided %v stxos for block %v (height %v) which spends %v "+
-			"outputs", len(stxos), block.Hash(), block.MsgBlock().SerializeSize(),
-			countSpentOutputs(block))
-	}
-
-	return view.disconnectRegularTransactions(block, stxos)
-}
-
 // connectBlock updates the view by potentially disconnecting all of the
 // transactions in the regular tree of the parent block of the passed block in
 // the case the passed block disapproves the parent block, connecting all of
@@ -524,15 +488,6 @@ func (view *UtxoViewpoint) disconnectDisapprovedBlock(db database.DB, block *dcr
 // In addition, when the 'stxos' argument is not nil, it will be updated to
 // append an entry for each spent txout.
 func (view *UtxoViewpoint) connectBlock(db database.DB, block, parent *dcrutil.Block, stxos *[]spentTxOut) error {
-	// Disconnect the transactions in the regular tree of the parent block if
-	// the passed block disapproves it.
-	if !headerApprovesParent(&block.MsgBlock().Header) {
-		err := view.disconnectDisapprovedBlock(db, parent)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Load all of the utxos referenced by the inputs for all transactions in
 	// the block that don't already exist in the utxo view from the database.
 	err := view.fetchInputUtxos(db, block)
@@ -596,25 +551,6 @@ func (view *UtxoViewpoint) disconnectBlock(db database.DB, block, parent *dcruti
 	err = view.disconnectRegularTransactions(block, stxos)
 	if err != nil {
 		return err
-	}
-
-	// Reconnect the transactions in the regular tree of the parent block if the
-	// block that is being disconnected disapproves it.
-	if !headerApprovesParent(&block.MsgBlock().Header) {
-		// Load all of the utxos referenced by the inputs for all transactions
-		// in the regular tree of the parent block that don't already exist in
-		// the utxo view from the database.
-		err := view.fetchRegularInputUtxos(db, parent)
-		if err != nil {
-			return err
-		}
-
-		for i, tx := range parent.Transactions() {
-			err := view.connectTransaction(tx, parent.Height(), uint32(i), nil)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	// Update the best hash for view to include this block since all of its
@@ -798,7 +734,7 @@ func NewUtxoViewpoint() *UtxoViewpoint {
 // outputs.
 //
 // This function is safe for concurrent access however the returned view is NOT.
-func (b *BlockChain) FetchUtxoView(tx *dcrutil.Tx, includePrevRegularTxns bool) (*UtxoViewpoint, error) {
+func (b *BlockChain) FetchUtxoView(tx *dcrutil.Tx) (*UtxoViewpoint, error) {
 	b.chainLock.RLock()
 	defer b.chainLock.RUnlock()
 
@@ -811,38 +747,6 @@ func (b *BlockChain) FetchUtxoView(tx *dcrutil.Tx, includePrevRegularTxns bool) 
 	view.SetBestHash(&tip.hash)
 	if tip.height == 0 {
 		return view, nil
-	}
-
-	// Disconnect the transactions in the regular tree of the parent block if
-	// the caller requests it.  In order to avoid the overhead of repeated
-	// lookups, only create a view with the changes once and cache it.
-	if !includePrevRegularTxns {
-		b.disapprovedViewLock.Lock()
-		if b.disapprovedView == nil || *b.disapprovedView.BestHash() !=
-			tip.hash {
-
-			// Grab the parent of the current block.
-			parent, err := b.fetchMainChainBlockByNode(tip.parent)
-			if err != nil {
-				b.disapprovedViewLock.Unlock()
-				return nil, err
-			}
-
-			// Disconnect the transactions in the regular tree of the parent
-			// block.
-			err = view.disconnectDisapprovedBlock(b.db, parent)
-			if err != nil {
-				b.disapprovedViewLock.Unlock()
-				return nil, err
-			}
-
-			// Clone the view so the caller can safely mutate it.
-			b.disapprovedView = view.clone()
-		} else {
-			// Clone the view so the caller can safely mutate it.
-			view = b.disapprovedView.clone()
-		}
-		b.disapprovedViewLock.Unlock()
 	}
 
 	// Create a set of needed transactions based on those referenced by the

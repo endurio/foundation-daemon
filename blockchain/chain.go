@@ -177,15 +177,6 @@ type BlockChain struct {
 	mainchainBlockCache     map[chainhash.Hash]*dcrutil.Block
 	mainchainBlockCacheSize int
 
-	// These fields house a cached view that represents a block that votes
-	// against its parent and therefore contains all changes as a result
-	// of disconnecting all regular transactions in its parent.  It is only
-	// lazily updated to the current tip when fetching a utxo view via the
-	// FetchUtxoView function with the flag indicating the block votes against
-	// the parent set.
-	disapprovedViewLock sync.Mutex
-	disapprovedView     *UtxoViewpoint
-
 	// These fields are related to checkpoint handling.  They are protected
 	// by the chain lock.
 	nextCheckpoint *chaincfg.Checkpoint
@@ -213,23 +204,24 @@ type BlockChain struct {
 	//
 	// deploymentCaches caches the current deployment threshold state for
 	// blocks in each of the actively defined deployments.
+	warningCaches    []thresholdStateCache
 	deploymentCaches []thresholdStateCache
+
+	// The following fields are used to determine if certain warnings have
+	// already been shown.
+	//
+	// unknownRulesWarned refers to warnings due to unknown rules being
+	// activated.
+	//
+	// unknownVersionsWarned refers to warnings due to unknown versions
+	// being mined.
+	unknownRulesWarned    bool
+	unknownVersionsWarned bool
 
 	// pruner is the automatic pruner for block nodes and stake nodes,
 	// so that the memory may be restored by the garbage collector if
 	// it is unlikely to be referenced in the future.
 	pruner *chainPruner
-
-	// The following maps are various caches for the stake version/voting
-	// system.  The goal of these is to reduce disk access to load blocks
-	// from disk.  Measurements indicate that it is slightly more expensive
-	// so setup the cache (<10%) vs doing a straight chain walk.  Every
-	// other subsequent call is >10x faster.
-	isVoterMajorityVersionCache   map[[stakeMajorityCacheKeySize]byte]bool
-	isStakeMajorityVersionCache   map[[stakeMajorityCacheKeySize]byte]bool
-	calcPriorStakeVersionCache    map[[chainhash.HashSize]byte]uint32
-	calcVoterVersionIntervalCache map[[chainhash.HashSize]byte]uint32
-	calcStakeVersionCache         map[[chainhash.HashSize]byte]uint32
 }
 
 const (
@@ -1805,26 +1797,22 @@ func New(config *Config) (*BlockChain, error) {
 	}
 
 	b := BlockChain{
-		checkpointsByHeight:           checkpointsByHeight,
-		db:                            config.DB,
-		chainParams:                   params,
-		timeSource:                    config.TimeSource,
-		notifications:                 config.Notifications,
-		sigCache:                      config.SigCache,
-		indexManager:                  config.IndexManager,
-		interrupt:                     config.Interrupt,
-		index:                         newBlockIndex(config.DB, params),
-		bestChain:                     newChainView(nil),
-		orphans:                       make(map[chainhash.Hash]*orphanBlock),
-		prevOrphans:                   make(map[chainhash.Hash][]*orphanBlock),
-		mainchainBlockCache:           make(map[chainhash.Hash]*dcrutil.Block),
-		mainchainBlockCacheSize:       mainchainBlockCacheSize,
-		deploymentCaches:              newThresholdCaches(chaincfg.DefinedDeployments),
-		isVoterMajorityVersionCache:   make(map[[stakeMajorityCacheKeySize]byte]bool),
-		isStakeMajorityVersionCache:   make(map[[stakeMajorityCacheKeySize]byte]bool),
-		calcPriorStakeVersionCache:    make(map[[chainhash.HashSize]byte]uint32),
-		calcVoterVersionIntervalCache: make(map[[chainhash.HashSize]byte]uint32),
-		calcStakeVersionCache:         make(map[[chainhash.HashSize]byte]uint32),
+		checkpointsByHeight:     checkpointsByHeight,
+		db:                      config.DB,
+		chainParams:             params,
+		timeSource:              config.TimeSource,
+		notifications:           config.Notifications,
+		sigCache:                config.SigCache,
+		indexManager:            config.IndexManager,
+		interrupt:               config.Interrupt,
+		index:                   newBlockIndex(config.DB, params),
+		bestChain:               newChainView(nil),
+		orphans:                 make(map[chainhash.Hash]*orphanBlock),
+		prevOrphans:             make(map[chainhash.Hash][]*orphanBlock),
+		mainchainBlockCache:     make(map[chainhash.Hash]*dcrutil.Block),
+		mainchainBlockCacheSize: mainchainBlockCacheSize,
+		warningCaches:           newThresholdCaches(vbNumBits),
+		deploymentCaches:        newThresholdCaches(chaincfg.DefinedDeployments),
 	}
 
 	// Initialize the chain state from the passed database.  When the db

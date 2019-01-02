@@ -59,10 +59,8 @@ var TestNet3Params = Params{
 	//
 	// The miner confirmation window is defined as:
 	//   target proof of work timespan / target proof of work spacing
-	RuleChangeActivationQuorum:     2520, // 10 % of RuleChangeActivationInterval * TicketsPerBlock
-	RuleChangeActivationMultiplier: 3,    // 75%
-	RuleChangeActivationDivisor:    4,
-	RuleChangeActivationInterval:   5040, // 1 week
+	RuleChangeActivationThreshold: 1916, // 95% of MinerConfirmationWindow
+	MinerConfirmationWindow:       2016, //
 
 	// Enforce current block version once majority of the network has
 	// upgraded.

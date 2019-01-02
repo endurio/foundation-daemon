@@ -322,6 +322,14 @@ func (b *BlockChain) initThresholdCaches() error {
 	// populated and any states that needed to be recalculated due to
 	// definition changes is done now.
 	prevNode := b.bestChain.Tip().parent
+	for bit := uint32(0); bit < vbNumBits; bit++ {
+		checker := bitConditionChecker{bit: bit, chain: b}
+		cache := &b.warningCaches[bit]
+		_, err := b.thresholdState(prevNode, checker, cache)
+		if err != nil {
+			return err
+		}
+	}
 	for id := 0; id < len(b.chainParams.Deployments); id++ {
 		deployment := &b.chainParams.Deployments[id]
 		cache := &b.deploymentCaches[id]

@@ -119,7 +119,7 @@ func (s *SubsidyCache) CalcBlockSubsidy(height int64) int64 {
 
 // CalcBlockWorkSubsidy calculates the proof of work subsidy for a block as a
 // proportion of the total subsidy.
-func CalcBlockWorkSubsidy(subsidyCache *SubsidyCache, height int64, voters uint16, params *chaincfg.Params) int64 {
+func CalcBlockWorkSubsidy(subsidyCache *SubsidyCache, height int64, params *chaincfg.Params) int64 {
 	subsidy := subsidyCache.CalcBlockSubsidy(height)
 
 	proportionWork := int64(params.WorkRewardProportion)
@@ -127,23 +127,7 @@ func CalcBlockWorkSubsidy(subsidyCache *SubsidyCache, height int64, voters uint1
 	subsidy *= proportionWork
 	subsidy /= proportions
 
-	// Ignore the voters field of the header before we're at a point
-	// where there are any voters.
-	if height < params.StakeValidationHeight {
-		return subsidy
-	}
-
-	// If there are no voters, subsidy is 0. The block will fail later anyway.
-	if voters == 0 {
-		return 0
-	}
-
-	// Adjust for the number of voters. This shouldn't ever overflow if you start
-	// with 50 * 10^8 Atoms and voters and potentialVoters are uint16.
-	potentialVoters := params.TicketsPerBlock
-	actual := (int64(voters) * subsidy) / int64(potentialVoters)
-
-	return actual
+	return subsidy
 }
 
 // CalcStakeVoteSubsidy calculates the subsidy for a stake vote based on the height
@@ -169,7 +153,7 @@ func CalcStakeVoteSubsidy(subsidyCache *SubsidyCache, height int64, params *chai
 // coinbase.
 //
 // Safe for concurrent access.
-func CalcBlockTaxSubsidy(subsidyCache *SubsidyCache, height int64, voters uint16, params *chaincfg.Params) int64 {
+func CalcBlockTaxSubsidy(subsidyCache *SubsidyCache, height int64, params *chaincfg.Params) int64 {
 	if params.BlockTaxProportion == 0 {
 		return 0
 	}
@@ -181,22 +165,7 @@ func CalcBlockTaxSubsidy(subsidyCache *SubsidyCache, height int64, voters uint16
 	subsidy *= proportionTax
 	subsidy /= proportions
 
-	// Assume all voters 'present' before stake voting is turned on.
-	if height < params.StakeValidationHeight {
-		voters = 5
-	}
-
-	// If there are no voters, subsidy is 0. The block will fail later anyway.
-	if voters == 0 && height >= params.StakeValidationHeight {
-		return 0
-	}
-
-	// Adjust for the number of voters. This shouldn't ever overflow if you start
-	// with 50 * 10^8 Atoms and voters and potentialVoters are uint16.
-	potentialVoters := params.TicketsPerBlock
-	adjusted := (int64(voters) * subsidy) / int64(potentialVoters)
-
-	return adjusted
+	return subsidy
 }
 
 // BlockOneCoinbasePaysTokens checks to see if the first block coinbase pays
@@ -281,7 +250,7 @@ func BlockOneCoinbasePaysTokens(tx *dcrutil.Tx, params *chaincfg.Params) error {
 
 // CoinbasePaysTax checks to see if a given block's coinbase correctly pays
 // tax to the developer organization.
-func CoinbasePaysTax(subsidyCache *SubsidyCache, tx *dcrutil.Tx, height int64, voters uint16, params *chaincfg.Params) error {
+func CoinbasePaysTax(subsidyCache *SubsidyCache, tx *dcrutil.Tx, height int64, params *chaincfg.Params) error {
 	// Taxes only apply from block 2 onwards.
 	if height <= 1 {
 		return nil
@@ -310,7 +279,7 @@ func CoinbasePaysTax(subsidyCache *SubsidyCache, tx *dcrutil.Tx, height int64, v
 
 	// Get the amount of subsidy that should have been paid out to
 	// the organization, then check it.
-	orgSubsidy := CalcBlockTaxSubsidy(subsidyCache, height, voters, params)
+	orgSubsidy := CalcBlockTaxSubsidy(subsidyCache, height, params)
 	if orgSubsidy != taxOutput.Value {
 		errStr := fmt.Sprintf("amount in output 0 has non matching org "+
 			"calculated amount; got %v, want %v", taxOutput.Value,
@@ -326,10 +295,5 @@ func CoinbasePaysTax(subsidyCache *SubsidyCache, tx *dcrutil.Tx, height int64, v
 // that have already been confirmed to abide by the consensus rules of the
 // network, or the function might panic.
 func CalculateAddedSubsidy(block, parent *dcrutil.Block) int64 {
-	var subsidy int64
-	if headerApprovesParent(&block.MsgBlock().Header) {
-		subsidy += parent.MsgBlock().Transactions[0].TxIn[0].ValueIn
-	}
-
-	return subsidy
+	return parent.MsgBlock().Transactions[0].TxIn[0].ValueIn
 }
