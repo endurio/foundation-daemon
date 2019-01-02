@@ -8,20 +8,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/endurio/ndrd/dcrutil"
 	"github.com/decred/slog"
+	"github.com/endurio/ndrd/dcrutil"
 )
 
 // blockProgressLogger provides periodic logging for other services in order
 // to show users progress of certain "actions" involving some or all current
 // blocks. Ex: syncing to best chain, indexing all blocks, etc.
 type blockProgressLogger struct {
-	receivedLogBlocks      int64
-	receivedLogTx          int64
-	receivedLogVotes       int64
-	receivedLogRevocations int64
-	receivedLogTickets     int64
-	lastBlockLogTime       time.Time
+	receivedLogBlocks int64
+	receivedLogTx     int64
+	lastBlockLogTime  time.Time
 
 	subsystemLogger slog.Logger
 	progressAction  string
@@ -48,9 +45,6 @@ func (b *blockProgressLogger) logBlockHeight(block *dcrutil.Block) {
 	defer b.Unlock()
 	b.receivedLogBlocks++
 	b.receivedLogTx += int64(len(block.MsgBlock().Transactions))
-	b.receivedLogVotes += int64(block.MsgBlock().Header.Voters)
-	b.receivedLogRevocations += int64(block.MsgBlock().Header.Revocations)
-	b.receivedLogTickets += int64(block.MsgBlock().Header.FreshStake)
 	now := time.Now()
 	duration := now.Sub(b.lastBlockLogTime)
 	if duration < time.Second*10 {
@@ -70,30 +64,13 @@ func (b *blockProgressLogger) logBlockHeight(block *dcrutil.Block) {
 	if b.receivedLogTx == 1 {
 		txStr = "transaction"
 	}
-	ticketStr := "tickets"
-	if b.receivedLogTickets == 1 {
-		ticketStr = "ticket"
-	}
-	revocationStr := "revocations"
-	if b.receivedLogRevocations == 1 {
-		revocationStr = "revocation"
-	}
-	voteStr := "votes"
-	if b.receivedLogVotes == 1 {
-		voteStr = "vote"
-	}
-	b.subsystemLogger.Infof("%s %d %s in the last %s (%d %s, %d %s, %d %s, %d %s, height "+
+	b.subsystemLogger.Infof("%s %d %s in the last %s (%d %s, height "+
 		"%d, %s)",
 		b.progressAction, b.receivedLogBlocks, blockStr, tDuration,
-		b.receivedLogTx, txStr, b.receivedLogTickets, ticketStr,
-		b.receivedLogVotes, voteStr, b.receivedLogRevocations,
-		revocationStr, block.Height(), block.MsgBlock().Header.Timestamp)
+		b.receivedLogTx, txStr, block.Height(), block.MsgBlock().Header.Timestamp)
 
 	b.receivedLogBlocks = 0
 	b.receivedLogTx = 0
-	b.receivedLogVotes = 0
-	b.receivedLogTickets = 0
-	b.receivedLogRevocations = 0
 	b.lastBlockLogTime = now
 }
 

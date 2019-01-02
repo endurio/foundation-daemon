@@ -9,7 +9,6 @@ import (
 	"container/list"
 	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -17,7 +16,6 @@ import (
 	"time"
 
 	"github.com/endurio/ndrd/blockchain"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
@@ -154,19 +152,6 @@ type calcNextReqDiffNodeMsg struct {
 	hash      *chainhash.Hash
 	timestamp time.Time
 	reply     chan calcNextReqDifficultyResponse
-}
-
-// calcNextReqStakeDifficultyResponse is a response sent to the reply channel of a
-// calcNextReqStakeDifficultyMsg query.
-type calcNextReqStakeDifficultyResponse struct {
-	stakeDifficulty int64
-	err             error
-}
-
-// calcNextReqStakeDifficultyMsg is a message type to be sent across the message
-// channel for requesting the required stake difficulty of the next block.
-type calcNextReqStakeDifficultyMsg struct {
-	reply chan calcNextReqStakeDifficultyResponse
 }
 
 // tipGenerationResponse is a response sent to the reply channel of a
@@ -680,181 +665,6 @@ func (b *blockManager) current() bool {
 	return true
 }
 
-// checkBlockForHiddenVotes checks to see if a newly added block contains
-// any votes that were previously unknown to our daemon. If it does, it
-// adds these votes to the cached parent block template.
-//
-// This is UNSAFE for concurrent access. It must be called in single threaded
-// access through the block mananger. All template access must also be routed
-// through the block manager.
-func (b *blockManager) checkBlockForHiddenVotes(block *dcrutil.Block) {
-	var votesFromBlock []*dcrutil.Tx
-	for _, stx := range block.STransactions() {
-		if stake.IsSSGen(stx.MsgTx()) {
-			votesFromBlock = append(votesFromBlock, stx)
-		}
-	}
-
-	// Identify the cached parent template; it's possible that
-	// the parent template hasn't yet been updated, so we may
-	// need to use the current template.
-	var template *BlockTemplate
-	if b.cachedCurrentTemplate != nil {
-		if b.cachedCurrentTemplate.Height ==
-			block.Height() {
-			template = b.cachedCurrentTemplate
-		}
-	}
-	if template == nil &&
-		b.cachedParentTemplate != nil {
-		if b.cachedParentTemplate.Height ==
-			block.Height() {
-			template = b.cachedParentTemplate
-		}
-	}
-
-	// No template to alter.
-	if template == nil {
-		return
-	}
-
-	// Make sure that the template has the same parent
-	// as the new block.
-	if template.Block.Header.PrevBlock !=
-		block.MsgBlock().Header.PrevBlock {
-		bmgrLog.Warnf("error found while trying to check incoming " +
-			"block for hidden votes: template did not have the " +
-			"same parent as the incoming block")
-		return
-	}
-
-	// Now that we have the template, grab the votes and compare
-	// them with those found in the newly added block. If we don't
-	// the votes, they will need to be added to our block template.
-	// Here we map the vote by their ticket hashes, since the vote
-	// hash itself varies with the settings of voteBits.
-	var newVotes []*dcrutil.Tx
-	var oldTickets []*dcrutil.Tx
-	var oldRevocations []*dcrutil.Tx
-	oldVoteMap := make(map[chainhash.Hash]struct{},
-		int(b.server.chainParams.TicketsPerBlock))
-	if template != nil {
-		templateBlock := dcrutil.NewBlock(template.Block)
-
-		// Add all the votes found in our template. Keep their
-		// hashes in a map for easy lookup in the next loop.
-		for _, stx := range templateBlock.STransactions() {
-			mstx := stx.MsgTx()
-			txType := stake.DetermineTxType(mstx)
-			if txType == stake.TxTypeSSGen {
-				ticketH := mstx.TxIn[1].PreviousOutPoint.Hash
-				oldVoteMap[ticketH] = struct{}{}
-				newVotes = append(newVotes, stx)
-			}
-
-			// Create a list of old tickets and revocations
-			// while we're in this loop.
-			if txType == stake.TxTypeSStx {
-				oldTickets = append(oldTickets, stx)
-			}
-			if txType == stake.TxTypeSSRtx {
-				oldRevocations = append(oldRevocations, stx)
-			}
-		}
-
-		// Check the votes seen in the block. If the votes
-		// are new, append them.
-		for _, vote := range votesFromBlock {
-			ticketH := vote.MsgTx().TxIn[1].PreviousOutPoint.Hash
-			if _, exists := oldVoteMap[ticketH]; !exists {
-				newVotes = append(newVotes, vote)
-			}
-		}
-	}
-
-	// Check the length of the reconstructed voter list for
-	// integrity.
-	votesTotal := len(newVotes)
-	if votesTotal > int(b.server.chainParams.TicketsPerBlock) {
-		bmgrLog.Warnf("error found while adding hidden votes "+
-			"from block %v to the old block template: %v max "+
-			"votes expected but %v votes found", block.Hash(),
-			int(b.server.chainParams.TicketsPerBlock),
-			votesTotal)
-		return
-	}
-
-	// Clear the old stake transactions and begin inserting the
-	// new vote list along with all the old transactions. Do this
-	// for both the underlying template msgBlock and a new slice
-	// of transaction pointers so that a new merkle root can be
-	// calculated.
-	template.Block.ClearSTransactions()
-	updatedTxTreeStake := make([]*dcrutil.Tx, 0,
-		votesTotal+len(oldTickets)+len(oldRevocations))
-	for _, vote := range newVotes {
-		updatedTxTreeStake = append(updatedTxTreeStake, vote)
-		template.Block.AddSTransaction(vote.MsgTx())
-	}
-	for _, ticket := range oldTickets {
-		updatedTxTreeStake = append(updatedTxTreeStake, ticket)
-		template.Block.AddSTransaction(ticket.MsgTx())
-	}
-	for _, revocation := range oldRevocations {
-		updatedTxTreeStake = append(updatedTxTreeStake, revocation)
-		template.Block.AddSTransaction(revocation.MsgTx())
-	}
-
-	// Create a new coinbase and update the coinbase pointer
-	// in the underlying template msgBlock.
-	random, err := wire.RandomUint64()
-	if err != nil {
-		return
-	}
-	height := block.MsgBlock().SerializeSize()
-	opReturnPkScript, err := standardCoinbaseOpReturn(height, random)
-	if err != nil {
-		// Stopping at this step will lead to a corrupted block template
-		// because the stake tree has already been manipulated, so throw
-		// an error.
-		bmgrLog.Errorf("failed to create coinbase OP_RETURN while generating " +
-			"block with extra found voters")
-		return
-	}
-	coinbase, err := createCoinbaseTx(b.chain.FetchSubsidyCache(),
-		template.Block.Transactions[0].TxIn[0].SignatureScript,
-		opReturnPkScript,
-		int64(template.Block.Header.Height),
-		cfg.miningAddrs[rand.Intn(len(cfg.miningAddrs))],
-		uint16(votesTotal),
-		b.server.chainParams)
-	if err != nil {
-		bmgrLog.Errorf("failed to create coinbase while generating " +
-			"block with extra found voters")
-		return
-	}
-	template.Block.Transactions[0] = coinbase.MsgTx()
-
-	// Patch the header. First, reconstruct the merkle trees, then
-	// correct the number of voters, and finally recalculate the size.
-	var updatedTxTreeRegular []*dcrutil.Tx
-	updatedTxTreeRegular = append(updatedTxTreeRegular, coinbase)
-	for i, mtx := range template.Block.Transactions {
-		// Coinbase
-		if i == 0 {
-			continue
-		}
-		tx := dcrutil.NewTx(mtx)
-		updatedTxTreeRegular = append(updatedTxTreeRegular, tx)
-	}
-	merkles := blockchain.BuildMerkleTreeStore(updatedTxTreeRegular)
-	template.Block.Header.StakeRoot = *merkles[len(merkles)-1]
-	smerkles := blockchain.BuildMerkleTreeStore(updatedTxTreeStake)
-	template.Block.Header.Voters = uint16(votesTotal)
-	template.Block.Header.StakeRoot = *smerkles[len(smerkles)-1]
-	template.Block.Header.Size = uint32(template.Block.SerializeSize())
-}
-
 // handleBlockMsg handles block messages from all peers.
 func (b *blockManager) handleBlockMsg(bmsg *blockMsg) {
 	// If we didn't ask for this block then the peer is misbehaving.
@@ -961,7 +771,7 @@ func (b *blockManager) handleBlockMsg(bmsg *blockMsg) {
 		// Extraction is only attempted if the block's version is
 		// high enough (ver 2+).
 		header := &bmsg.block.MsgBlock().Header
-		cbHeight := header.Height
+		cbHeight := bmsg.block.Height()
 		heightUpdate = int64(cbHeight)
 		blkHashUpdate = blockHash
 
@@ -984,15 +794,6 @@ func (b *blockManager) handleBlockMsg(bmsg *blockMsg) {
 
 		onMainChain := !isOrphan && forkLen == 0
 		if onMainChain {
-			// A new block is connected, however, this new block may have
-			// votes in it that were hidden from the network and which
-			// validate our parent block. We should bolt these new votes
-			// into the tx tree stake of the old block template on parent.
-			svl := b.server.chainParams.StakeValidationHeight
-			if b.AggressiveMining && bmsg.block.Height() >= svl {
-				b.checkBlockForHiddenVotes(bmsg.block)
-			}
-
 			// Notify stake difficulty subscribers and prune invalidated
 			// transactions.
 			best := b.chain.BestSnapshot()
@@ -1007,8 +808,6 @@ func (b *blockManager) handleBlockMsg(bmsg *blockMsg) {
 						best.NextStakeDiff,
 					})
 			}
-			b.server.txMemPool.PruneStakeTx(best.NextStakeDiff,
-				best.Height)
 			b.server.txMemPool.PruneExpiredTx()
 
 			// Update this peer's latest block height, for future
@@ -1520,13 +1319,6 @@ out:
 					err:        err,
 				}
 
-			case calcNextReqStakeDifficultyMsg:
-				stakeDiff, err := b.chain.CalcNextRequiredStakeDifficulty()
-				msg.reply <- calcNextReqStakeDifficultyResponse{
-					stakeDifficulty: stakeDiff,
-					err:             err,
-				}
-
 			case forceReorganizationMsg:
 				err := b.chain.ForceHeadReorganization(
 					msg.formerBest, msg.newBest)
@@ -1544,8 +1336,6 @@ out:
 								best.NextStakeDiff,
 							})
 					}
-					b.server.txMemPool.PruneStakeTx(best.NextStakeDiff,
-						best.Height)
 					b.server.txMemPool.PruneExpiredTx()
 				}
 
@@ -1586,8 +1376,6 @@ out:
 								best.NextStakeDiff,
 							})
 					}
-					b.server.txMemPool.PruneStakeTx(best.NextStakeDiff,
-						best.Height)
 					b.server.txMemPool.PruneExpiredTx()
 				}
 
@@ -1647,22 +1435,6 @@ out:
 
 	b.wg.Done()
 	bmgrLog.Trace("Block handler done")
-}
-
-// notifiedWinningTickets returns whether or not the winning tickets
-// notification for the specified block hash has already been sent.
-func (b *blockManager) notifiedWinningTickets(hash *chainhash.Hash) bool {
-	b.lotteryDataBroadcastMutex.Lock()
-	_, beenNotified := b.lotteryDataBroadcast[*hash]
-	b.lotteryDataBroadcastMutex.Unlock()
-	return beenNotified
-}
-
-// headerApprovesParent returns whether or not the vote bits in the passed
-// header indicate the regular transaction tree of the parent block should be
-// considered valid.
-func headerApprovesParent(header *wire.BlockHeader) bool {
-	return dcrutil.IsFlagSet16(header.VoteBits, dcrutil.BlockValid)
 }
 
 // isDoubleSpendOrDuplicateError returns whether or not the passed error, which
@@ -1758,34 +1530,6 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		bestHeight := band.BestHeight
 		blockHeight := int64(block.MsgBlock().SerializeSize())
 		reorgDepth := bestHeight - (blockHeight - band.ForkLen)
-		if b.server.rpcServer != nil &&
-			blockHeight >= b.server.chainParams.StakeValidationHeight-1 &&
-			reorgDepth < maxReorgDepthNotify &&
-			blockHeight > b.server.chainParams.LatestCheckpointHeight() &&
-			!b.notifiedWinningTickets(blockHash) {
-
-			// Obtain the winning tickets for this block.  handleNotifyMsg
-			// should be safe for concurrent access of things contained
-			// within blockchain.
-			wt, _, _, err := b.chain.LotteryDataForBlock(blockHash)
-			if err != nil {
-				bmgrLog.Errorf("Couldn't calculate winning tickets for "+
-					"accepted block %v: %v", blockHash, err.Error())
-			} else {
-				ntfnData := &WinningTicketsNtfnData{
-					BlockHash:   *blockHash,
-					BlockHeight: blockHeight,
-					Tickets:     wt,
-				}
-
-				// Notify registered websocket clients of newly
-				// eligible tickets to vote on.
-				b.server.rpcServer.ntfnMgr.NotifyWinningTickets(ntfnData)
-				b.lotteryDataBroadcastMutex.Lock()
-				b.lotteryDataBroadcast[*blockHash] = struct{}{}
-				b.lotteryDataBroadcastMutex.Unlock()
-			}
-		}
 
 		// Generate the inventory vector and relay it immediately if not already
 		// known to have been sent in NTNewTipBlockChecked.
@@ -1870,36 +1614,6 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 			}
 		}
 		handleConnectedBlockTxns(block.Transactions()[1:])
-		handleConnectedBlockTxns(block.STransactions())
-
-		// In the case the regular tree of the previous block was disapproved,
-		// add all of the its transactions, with the exception of the coinbase,
-		// back to the transaction pool to be mined in a future block.
-		//
-		// Notice that some of those transactions might have been included in
-		// the current block and others might also be spending some of the same
-		// outputs that transactions in the previous originally block spent.
-		// This is the expected behavior because disapproval of the regular tree
-		// of the previous block essentially makes it as if those transactions
-		// never happened.
-		//
-		// Finally, if transactions fail to add to the pool for some reason
-		// other than the pool already having it (a duplicate) or now being a
-		// double spend, remove all transactions that depend on it as well.
-		// The dependencies are not removed for double spends because the only
-		// way a transaction which was not a double spend in the previous block
-		// to now be one is due to some transaction in the current block
-		// (probably the same one) also spending those outputs, and, in that
-		// case, anything that happens to be in the pool which depends on the
-		// transaction is still valid.
-		if !headerApprovesParent(&block.MsgBlock().Header) {
-			for _, tx := range parentBlock.Transactions()[1:] {
-				_, err := txMemPool.MaybeAcceptTransaction(tx, false, true)
-				if err != nil && !isDoubleSpendOrDuplicateError(err) {
-					txMemPool.RemoveTransaction(tx, true)
-				}
-			}
-		}
 
 		if r := b.server.rpcServer; r != nil {
 			// Filter and update the rebroadcast inventory.
@@ -1958,14 +1672,6 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		// pool.  Transactions which depend on a confirmed transaction are NOT
 		// removed recursively because they are still valid.
 		txMemPool := b.server.txMemPool
-		if !headerApprovesParent(&block.MsgBlock().Header) {
-			for _, tx := range parentBlock.Transactions()[1:] {
-				txMemPool.RemoveTransaction(tx, false)
-				txMemPool.RemoveDoubleSpends(tx)
-				txMemPool.RemoveOrphan(tx)
-				txMemPool.ProcessOrphans(tx)
-			}
-		}
 
 		// Add all of the regular and stake transactions in the disconnected
 		// block, with the exception of the regular tree coinbase, back to the
@@ -1998,7 +1704,6 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 			}
 		}
 		handleDisconnectedBlockTxns(block.Transactions()[1:])
-		handleDisconnectedBlockTxns(block.STransactions())
 
 		if r := b.server.rpcServer; r != nil {
 			// Filter and update the rebroadcast inventory.
@@ -2246,18 +1951,6 @@ func (b *blockManager) CalcNextRequiredDiffNode(hash *chainhash.Hash, timestamp 
 	return response.difficulty, response.err
 }
 
-// CalcNextRequiredStakeDifficulty calculates the required Stake difficulty for
-// the next block after the current main chain.  This function makes use of
-// CalcNextRequiredStakeDifficulty on an internal instance of a block chain.  It is
-// funneled through the block manager since blockchain is not safe for concurrent
-// access.
-func (b *blockManager) CalcNextRequiredStakeDifficulty() (int64, error) {
-	reply := make(chan calcNextReqStakeDifficultyResponse)
-	b.msgChan <- calcNextReqStakeDifficultyMsg{reply: reply}
-	response := <-reply
-	return response.stakeDifficulty, response.err
-}
-
 // ForceReorganization returns the hashes of all the children of a parent for the
 // block hash that is passed to the function. It is funneled through the block
 // manager since blockchain is not safe for concurrent access.
@@ -2309,12 +2002,6 @@ func (b *blockManager) IsCurrent() bool {
 	reply := make(chan bool)
 	b.msgChan <- isCurrentMsg{reply: reply}
 	return <-reply
-}
-
-// TicketPoolValue returns the current value of the total stake in the ticket
-// pool.
-func (b *blockManager) TicketPoolValue() (dcrutil.Amount, error) {
-	return b.chain.TicketPoolValue()
 }
 
 // GetCurrentTemplate gets the current block template for mining.
