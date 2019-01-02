@@ -46,8 +46,8 @@ var (
 	defaultNumWorkers = uint32(runtime.NumCPU())
 )
 
-// Config is a descriptor containing the cpu miner configuration.
-type Config struct {
+// cpuminerConfig is a descriptor containing the cpu miner configuration.
+type cpuminerConfig struct {
 	// ChainParams identifies which chain parameters the cpu miner is
 	// associated with.
 	ChainParams *chaincfg.Params
@@ -91,7 +91,7 @@ type Config struct {
 type CPUMiner struct {
 	sync.Mutex
 	g                 *BlkTmplGenerator
-	cfg               Config
+	cfg               cpuminerConfig
 	numWorkers        uint32
 	started           bool
 	discreteMining    bool
@@ -626,10 +626,10 @@ func (m *CPUMiner) GenerateNBlocks(n uint32) ([]*chainhash.Hash, error) {
 	}
 }
 
-// New returns a new instance of a CPU miner for the provided configuration.
+// newCPUMiner returns a new instance of a CPU miner for the provided configuration.
 // Use Start to begin the mining process.  See the documentation for CPUMiner
 // type for more details.
-func New(cfg *Config) *CPUMiner {
+func newCPUMiner(cfg *cpuminerConfig) *CPUMiner {
 	return &CPUMiner{
 		g:                 cfg.BlockTemplateGenerator,
 		cfg:               *cfg,

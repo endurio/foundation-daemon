@@ -23,7 +23,6 @@ import (
 	"github.com/endurio/ndrd/addrmgr"
 	"github.com/endurio/ndrd/blockchain"
 	"github.com/endurio/ndrd/blockchain/indexers"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/connmgr"
@@ -508,19 +507,8 @@ func (sp *serverPeer) pushMiningStateMsg(height uint32, blockHashes []chainhash.
 func (sp *serverPeer) OnGetMiningState(p *peer.Peer, msg *wire.MsgGetMiningState) {
 	// Access the block manager and get the list of best blocks to mine on.
 	bm := sp.server.blockManager
-	mp := sp.server.txMemPool
+	//mp := sp.server.txMemPool
 	best := bm.chain.BestSnapshot()
-
-	// Send out blank mining states if it's early in the blockchain.
-	if best.Height < activeNetParams.StakeValidationHeight-1 {
-		err := sp.pushMiningStateMsg(0, nil, nil)
-		if err != nil {
-			peerLog.Warnf("unexpected error while pushing data for "+
-				"mining state request: %v", err.Error())
-		}
-
-		return
-	}
 
 	// Obtain the entire generation of blocks stemming from the parent of
 	// the current tip.
@@ -541,7 +529,7 @@ func (sp *serverPeer) OnGetMiningState(p *peer.Peer, msg *wire.MsgGetMiningState
 		blockHashes = blockHashes[:wire.MaxMSBlocksAtHeadPerMsg]
 	}
 
-	err = sp.pushMiningStateMsg(uint32(best.Height), blockHashes, voteHashes)
+	err = sp.pushMiningStateMsg(uint32(best.Height), blockHashes)
 	if err != nil {
 		peerLog.Warnf("unexpected error while pushing data for "+
 			"mining state request: %v", err.Error())
@@ -551,8 +539,7 @@ func (sp *serverPeer) OnGetMiningState(p *peer.Peer, msg *wire.MsgGetMiningState
 // OnMiningState is invoked when a peer receives a miningstate wire message.  It
 // requests the data advertised in the message from the peer.
 func (sp *serverPeer) OnMiningState(p *peer.Peer, msg *wire.MsgMiningState) {
-	err := sp.server.blockManager.RequestFromPeer(sp, msg.BlockHashes,
-		msg.VoteHashes)
+	err := sp.server.blockManager.RequestFromPeer(sp, msg.BlockHashes, nil)
 	if err != nil {
 		peerLog.Warnf("couldn't handle mining state message: %v",
 			err.Error())
@@ -1966,57 +1953,15 @@ out:
 				}
 
 			case broadcastPruneInventory:
-				best := s.blockManager.chain.BestSnapshot()
-				nextStakeDiff, err :=
-					s.blockManager.chain.CalcNextRequiredStakeDifficulty()
-				if err != nil {
-					srvrLog.Errorf("Failed to get next stake difficulty: %v",
-						err)
-					break
-				}
+				// best := s.blockManager.chain.BestSnapshot()
 
-				for iv, data := range pendingInvs {
-					tx, ok := data.(*dcrutil.Tx)
-					if !ok {
-						continue
-					}
-
-					txType := stake.DetermineTxType(tx.MsgTx())
-
-					// Remove the ticket rebroadcast if the amount not equal to
-					// the current stake difficulty.
-					if txType == stake.TxTypeSStx &&
-						tx.MsgTx().TxOut[0].Value != nextStakeDiff {
-						delete(pendingInvs, iv)
-						srvrLog.Debugf("Pending ticket purchase broadcast "+
-							"inventory for tx %v removed. Ticket value not "+
-							"equal to stake difficulty.", tx.Hash())
-						continue
-					}
-
-					// Remove the ticket rebroadcast if it has already expired.
-					if txType == stake.TxTypeSStx &&
-						blockchain.IsExpired(tx, best.Height) {
-						delete(pendingInvs, iv)
-						srvrLog.Debugf("Pending ticket purchase broadcast "+
-							"inventory for tx %v removed. Transaction "+
-							"expired.", tx.Hash())
-						continue
-					}
-
-					// Remove the revocation rebroadcast if the associated
-					// ticket has been revived.
-					if txType == stake.TxTypeSSRtx {
-						refSStxHash := tx.MsgTx().TxIn[0].PreviousOutPoint.Hash
-						if !s.blockManager.chain.CheckLiveTicket(refSStxHash) {
-							delete(pendingInvs, iv)
-							srvrLog.Debugf("Pending revocation broadcast "+
-								"inventory for tx %v removed. "+
-								"Associated ticket was revived.", tx.Hash())
-							continue
-						}
-					}
-				}
+				// for iv, data := range pendingInvs {
+				// 	tx, ok := data.(*dcrutil.Tx)
+				// 	if !ok {
+				// 		continue
+				// 	}
+				// 	// TODO: prune tx here if it's feasible
+				// }
 			}
 
 		case <-timer.C:
@@ -2272,17 +2217,7 @@ out:
 // for the script to be considered standard.  Note these flags are different
 // than what is required for the consensus rules in that they are more strict.
 func standardScriptVerifyFlags(chain *blockchain.BlockChain) (txscript.ScriptFlags, error) {
-	scriptFlags := mempool.BaseStandardVerifyFlags
-
-	// Enable validation of OP_SHA256 if the stake vote for the agenda is
-	// active.
-	isActive, err := chain.IsLNFeaturesAgendaActive()
-	if err != nil {
-		return 0, err
-	}
-	if isActive {
-		scriptFlags |= txscript.ScriptVerifySHA256
-	}
+	scriptFlags := mempool.BaseStandardVerifyFlags | txscript.ScriptVerifySHA256
 	return scriptFlags, nil
 }
 
@@ -2562,13 +2497,13 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 	blockTemplateGenerator := newBlkTmplGenerator(&policy, s.txMemPool,
 		s.timeSource, s.sigCache, s.chainParams, bm.chain, bm)
 	s.cpuMiner = newCPUMiner(&cpuminerConfig{
-		ChainParams:                s.chainParams,
-		PermitConnectionlessMining: cfg.SimNet,
-		BlockTemplateGenerator:     blockTemplateGenerator,
-		MiningAddrs:                cfg.miningAddrs,
-		ProcessBlock:               bm.ProcessBlock,
-		ConnectedCount:             s.ConnectedCount,
-		IsCurrent:                  bm.IsCurrent,
+		ChainParams:            s.chainParams,
+		BlockTemplateGenerator: blockTemplateGenerator,
+		MiningAddrs:            cfg.miningAddrs,
+		ProcessBlock:           bm.ProcessBlock,
+		ConnectedCount:         s.ConnectedCount,
+		IsCurrent:              bm.IsCurrent,
+		//PermitConnectionlessMining: cfg.SimNet,
 	})
 
 	// Only setup a function to return new addresses to connect to when
