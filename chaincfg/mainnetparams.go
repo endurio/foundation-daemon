@@ -129,24 +129,7 @@ var MainNetParams = Params{
 	LegacyCoinType:   20, // for backwards compatibility
 
 	// Decred PoS parameters
-	MinimumStakeDiff:        2 * 1e8, // 2 Coin
-	TicketPoolSize:          8192,
-	TicketsPerBlock:         5,
-	TicketMaturity:          256,
-	TicketExpiry:            40960, // 5*TicketPoolSize
-	CoinbaseMaturity:        256,
-	SStxChangeMaturity:      1,
-	TicketPoolSizeWeight:    4,
-	StakeDiffAlpha:          1, // Minimal
-	StakeDiffWindowSize:     144,
-	StakeDiffWindows:        20,
-	StakeVersionInterval:    144 * 2 * 7, // ~1 week
-	MaxFreshStakePerBlock:   20,          // 4*TicketsPerBlock
-	StakeEnabledHeight:      256 + 256,   // CoinbaseMaturity + TicketMaturity
-	StakeValidationHeight:   4096,        // ~14 days
-	StakeBaseSigScript:      []byte{0x00, 0x00},
-	StakeMajorityMultiplier: 3,
-	StakeMajorityDivisor:    4,
+	CoinbaseMaturity: 256,
 
 	// Decred organization related parameters
 	// Organization address is Dcur2mcGjmENx4DhNqDctW5wJCVyT3Qeqkx

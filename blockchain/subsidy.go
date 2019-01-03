@@ -130,25 +130,6 @@ func CalcBlockWorkSubsidy(subsidyCache *SubsidyCache, height int64, params *chai
 	return subsidy
 }
 
-// CalcStakeVoteSubsidy calculates the subsidy for a stake vote based on the height
-// of its input SStx.
-//
-// Safe for concurrent access.
-func CalcStakeVoteSubsidy(subsidyCache *SubsidyCache, height int64, params *chaincfg.Params) int64 {
-	// Calculate the actual reward for this block, then further reduce reward
-	// proportional to StakeRewardProportion.
-	// Note that voters/potential voters is 1, so that vote reward is calculated
-	// irrespective of block reward.
-	subsidy := subsidyCache.CalcBlockSubsidy(height)
-
-	proportionStake := int64(params.StakeRewardProportion)
-	proportions := int64(params.TotalSubsidyProportions())
-	subsidy *= proportionStake
-	subsidy /= (proportions * int64(params.TicketsPerBlock))
-
-	return subsidy
-}
-
 // CalcBlockTaxSubsidy calculates the subsidy for the organization address in the
 // coinbase.
 //

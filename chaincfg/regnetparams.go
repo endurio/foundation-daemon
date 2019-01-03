@@ -113,24 +113,7 @@ var RegNetParams = Params{
 	LegacyCoinType:   1,
 
 	// Decred PoS parameters
-	MinimumStakeDiff:        20000,
-	TicketPoolSize:          64,
-	TicketsPerBlock:         5,
-	TicketMaturity:          16,
-	TicketExpiry:            384, // 6*TicketPoolSize
-	CoinbaseMaturity:        16,
-	SStxChangeMaturity:      1,
-	TicketPoolSizeWeight:    4,
-	StakeDiffAlpha:          1,
-	StakeDiffWindowSize:     8,
-	StakeDiffWindows:        8,
-	StakeVersionInterval:    8 * 2 * 7,
-	MaxFreshStakePerBlock:   20,            // 4*TicketsPerBlock
-	StakeEnabledHeight:      16 + 16,       // CoinbaseMaturity + TicketMaturity
-	StakeValidationHeight:   16 + (64 * 2), // CoinbaseMaturity + TicketPoolSize*2
-	StakeBaseSigScript:      []byte{0x73, 0x57},
-	StakeMajorityMultiplier: 3,
-	StakeMajorityDivisor:    4,
+	CoinbaseMaturity: 16,
 
 	// Decred organization related parameters
 	//

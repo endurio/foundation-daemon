@@ -546,11 +546,10 @@ func deepCopyBlockTemplate(blockTemplate *BlockTemplate) *BlockTemplate {
 func handleCreatedBlockTemplate(blockTemplate *BlockTemplate, bm *blockManager) (*BlockTemplate, error) {
 	curTemplate := bm.GetCurrentTemplate()
 	nextBlockHeight := blockTemplate.Height
-	stakeValidationHeight := bm.server.chainParams.StakeValidationHeight
 	// This is where we begin storing block templates, when either the
 	// program is freshly started or the chain is matured to stake
 	// validation height.
-	if curTemplate == nil && nextBlockHeight >= stakeValidationHeight-2 {
+	if curTemplate == nil {
 		bm.SetCurrentTemplate(blockTemplate)
 	}
 
@@ -558,7 +557,7 @@ func handleCreatedBlockTemplate(blockTemplate *BlockTemplate, bm *blockManager) 
 	// so we check to if CachedCurrentTemplate is out of date. If it is,
 	// we store it as the cached parent template, and store the new block
 	// template as the currenct template.
-	if curTemplate != nil && nextBlockHeight >= stakeValidationHeight-1 {
+	if curTemplate != nil {
 		if curTemplate.Height < nextBlockHeight {
 			bm.SetParentTemplate(curTemplate)
 			bm.SetCurrentTemplate(blockTemplate)

@@ -376,16 +376,6 @@ func CheckProofOfWork(header *wire.BlockHeader, powLimit *big.Int) error {
 // The flags do not modify the behavior of this function directly, however they
 // are needed to pass along to checkProofOfWork.
 func checkBlockHeaderSanity(header *wire.BlockHeader, timeSource MedianTimeSource, flags BehaviorFlags, chainParams *chaincfg.Params) error {
-	// The stake validation height should always be at least stake enabled
-	// height, so assert it because the code below relies on that assumption.
-	stakeValidationHeight := uint32(chainParams.StakeValidationHeight)
-	stakeEnabledHeight := uint32(chainParams.StakeEnabledHeight)
-	if stakeEnabledHeight > stakeValidationHeight {
-		return AssertError(fmt.Sprintf("checkBlockHeaderSanity called "+
-			"with stake enabled height %d after stake validation "+
-			"height %d", stakeEnabledHeight, stakeValidationHeight))
-	}
-
 	// Ensure the proof of work bits in the block header is in min/max
 	// range and the block hash is less than the target value described by
 	// the bits.

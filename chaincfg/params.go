@@ -415,76 +415,9 @@ type Params struct {
 	// should be used instead.
 	LegacyCoinType uint32
 
-	// MinimumStakeDiff if the minimum amount of Atoms required to purchase a
-	// stake ticket.
-	MinimumStakeDiff int64
-
-	// Ticket pool sizes for Decred PoS. This denotes the number of possible
-	// buckets/number of different ticket numbers. It is also the number of
-	// possible winner numbers there are.
-	TicketPoolSize uint16
-
-	// Average number of tickets per block for Decred PoS.
-	TicketsPerBlock uint16
-
-	// Number of blocks for tickets to mature (spendable at TicketMaturity+1).
-	TicketMaturity uint16
-
-	// Number of blocks for tickets to expire after they have matured. This MUST
-	// be >= (StakeEnabledHeight + StakeValidationHeight).
-	TicketExpiry uint32
-
 	// CoinbaseMaturity is the number of blocks required before newly mined
 	// coins (coinbase transactions) can be spent.
 	CoinbaseMaturity uint16
-
-	// Maturity for spending SStx change outputs.
-	SStxChangeMaturity uint16
-
-	// TicketPoolSizeWeight is the multiplicative weight applied to the
-	// ticket pool size difference between a window period and its target
-	// when determining the stake system.
-	TicketPoolSizeWeight uint16
-
-	// StakeDiffAlpha is the stake difficulty EMA calculation alpha (smoothing)
-	// value. It is different from a normal EMA alpha. Closer to 1 --> smoother.
-	StakeDiffAlpha int64
-
-	// StakeDiffWindowSize is the number of blocks used for each interval in
-	// exponentially weighted average.
-	StakeDiffWindowSize int64
-
-	// StakeDiffWindows is the number of windows (intervals) used for calculation
-	// of the exponentially weighted average.
-	StakeDiffWindows int64
-
-	// StakeVersionInterval determines the interval where the stake version
-	// is calculated.
-	StakeVersionInterval int64
-
-	// MaxFreshStakePerBlock is the maximum number of new tickets that may be
-	// submitted per block.
-	MaxFreshStakePerBlock uint8
-
-	// StakeEnabledHeight is the height in which the first ticket could possibly
-	// mature.
-	StakeEnabledHeight int64
-
-	// StakeValidationHeight is the height at which votes (SSGen) are required
-	// to add a new block to the top of the blockchain. This height is the
-	// first block that will be voted on, but will include in itself no votes.
-	StakeValidationHeight int64
-
-	// StakeBaseSigScript is the consensus stakebase signature script for all
-	// votes on the network. This isn't signed in any way, so without forcing
-	// it to be this value miners/daemons could freely change it.
-	StakeBaseSigScript []byte
-
-	// StakeMajorityMultiplier and StakeMajorityDivisor are used
-	// to calculate the super majority of stake votes using integer math as
-	// such: X*StakeMajorityMultiplier/StakeMajorityDivisor
-	StakeMajorityMultiplier int32
-	StakeMajorityDivisor    int32
 
 	// OrganizationPkScript is the output script for block taxes to be
 	// distributed to in every block's coinbase. It should ideally be a P2SH
