@@ -42,9 +42,7 @@ type Block struct {
 	hash            chainhash.Hash // Cached block hash
 	height          int64          // Height in the main block chain
 	transactions    []*Tx          // Transactions
-	sTransactions   []*Tx          // Stake transactions
 	txnsGenerated   bool           // ALL wrapped transactions generated
-	sTxnsGenerated  bool           // ALL wrapped stake transactions generated
 }
 
 // MsgBlock returns the underlying wire.MsgBlock for the Block.
