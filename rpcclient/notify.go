@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/dcrjson"
@@ -31,23 +30,15 @@ var (
 // registered notification so the state can be automatically re-established on
 // reconnect.
 type notificationState struct {
-	notifyBlocks                bool
-	notifyWinningTickets        bool
-	notifySpentAndMissedTickets bool
-	notifyNewTickets            bool
-	notifyStakeDifficulty       bool
-	notifyNewTx                 bool
-	notifyNewTxVerbose          bool
+	notifyBlocks       bool
+	notifyNewTx        bool
+	notifyNewTxVerbose bool
 }
 
 // Copy returns a deep copy of the receiver.
 func (s *notificationState) Copy() *notificationState {
 	var stateCopy notificationState
 	stateCopy.notifyBlocks = s.notifyBlocks
-	stateCopy.notifyWinningTickets = s.notifyWinningTickets
-	stateCopy.notifySpentAndMissedTickets = s.notifySpentAndMissedTickets
-	stateCopy.notifyNewTickets = s.notifyNewTickets
-	stateCopy.notifyStakeDifficulty = s.notifyStakeDifficulty
 	stateCopy.notifyNewTx = s.notifyNewTx
 	stateCopy.notifyNewTxVerbose = s.notifyNewTxVerbose
 
@@ -106,40 +97,6 @@ type NotificationHandlers struct {
 	OnReorganization func(oldHash *chainhash.Hash, oldHeight int32,
 		newHash *chainhash.Hash, newHeight int32)
 
-	// OnWinningTickets is invoked when a block is connected and eligible tickets
-	// to be voted on for this chain are given.  It will only be invoked if a
-	// preceding call to NotifyWinningTickets has been made to register for the
-	// notification and the function is non-nil.
-	OnWinningTickets func(blockHash *chainhash.Hash,
-		blockHeight int64,
-		tickets []*chainhash.Hash)
-
-	// OnSpentAndMissedTickets is invoked when a block is connected to the
-	// longest (best) chain and tickets are spent or missed.  It will only be
-	// invoked if a preceding call to NotifySpentAndMissedTickets has been made to
-	// register for the notification and the function is non-nil.
-	OnSpentAndMissedTickets func(hash *chainhash.Hash,
-		height int64,
-		stakeDiff int64,
-		tickets map[chainhash.Hash]bool)
-
-	// OnNewTickets is invoked when a block is connected to the longest (best)
-	// chain and tickets have matured to become active.  It will only be invoked
-	// if a preceding call to NotifyNewTickets has been made to register for the
-	// notification and the function is non-nil.
-	OnNewTickets func(hash *chainhash.Hash,
-		height int64,
-		stakeDiff int64,
-		tickets []*chainhash.Hash)
-
-	// OnStakeDifficulty is invoked when a block is connected to the longest
-	// (best) chain and a new stake difficulty is calculated.  It will only
-	// be invoked if a preceding call to NotifyStakeDifficulty has been
-	// made to register for the notification and the function is non-nil.
-	OnStakeDifficulty func(hash *chainhash.Hash,
-		height int64,
-		stakeDiff int64)
-
 	// OnTxAccepted is invoked when a transaction is accepted into the
 	// memory pool.  It will only be invoked if a preceding call to
 	// NotifyNewTransactions with the verbose flag set to false has been
@@ -170,29 +127,6 @@ type NotificationHandlers struct {
 	// This will only be available when client is connected to a wallet
 	// server such as dcrwallet.
 	OnWalletLockState func(locked bool)
-
-	// OnTicketsPurchased is invoked when a wallet purchases an SStx.
-	//
-	// This will only be available when client is connected to a wallet
-	// server such as dcrwallet.
-	OnTicketsPurchased func(TxHash *chainhash.Hash, amount dcrutil.Amount)
-
-	// OnVotesCreated is invoked when a wallet generates an SSGen.
-	//
-	// This will only be available when client is connected to a wallet
-	// server such as dcrwallet.
-	OnVotesCreated func(txHash *chainhash.Hash,
-		blockHash *chainhash.Hash,
-		height int32,
-		sstxIn *chainhash.Hash,
-		voteBits uint16)
-
-	// OnRevocationsCreated is invoked when a wallet generates an SSRtx.
-	//
-	// This will only be available when client is connected to a wallet
-	// server such as dcrwallet.
-	OnRevocationsCreated func(txHash *chainhash.Hash,
-		sstxIn *chainhash.Hash)
 
 	// OnUnknownNotification is invoked when an unrecognized notification
 	// is received.  This typically means the notification handling code
@@ -500,231 +434,6 @@ func parseReorganizationNtfnParams(params []json.RawMessage) (*chainhash.Hash,
 	return oldHash, oldHeight, newHash, newHeight, nil
 }
 
-// parseWinningTicketsNtfnParams parses out the list of eligible tickets, block
-// hash, and block height from a WinningTickets notification.
-func parseWinningTicketsNtfnParams(params []json.RawMessage) (
-	*chainhash.Hash,
-	int64,
-	[]*chainhash.Hash,
-	error) {
-
-	if len(params) != 3 {
-		return nil, 0, nil, wrongNumParams(len(params))
-	}
-
-	// Unmarshal first parameter as a string.
-	var blockHashStr string
-	err := json.Unmarshal(params[0], &blockHashStr)
-	if err != nil {
-		return nil, 0, nil, err
-	}
-
-	// Create ShaHash from block sha string.
-	bHash, err := chainhash.NewHashFromStr(blockHashStr)
-	if err != nil {
-		return nil, 0, nil, err
-	}
-
-	// Unmarshal second parameter as an integer.
-	var blockHeight int32
-	err = json.Unmarshal(params[1], &blockHeight)
-	if err != nil {
-		return nil, 0, nil, err
-	}
-	bHeight := int64(blockHeight)
-
-	// Unmarshal third parameter as a slice.
-	tickets := make(map[string]string)
-	err = json.Unmarshal(params[2], &tickets)
-	if err != nil {
-		return nil, 0, nil, err
-	}
-	t := make([]*chainhash.Hash, len(tickets))
-
-	for i, ticketHashStr := range tickets {
-		// Create and cache Hash from tx hash.
-		ticketHash, err := chainhash.NewHashFromStr(ticketHashStr)
-		if err != nil {
-			return nil, 0, nil, err
-		}
-
-		itr, err := strconv.Atoi(i)
-		if err != nil {
-			return nil, 0, nil, err
-		}
-
-		t[itr] = ticketHash
-	}
-
-	return bHash, bHeight, t, nil
-}
-
-// parseSpentAndMissedTicketsNtfnParams parses out the block header hash, height,
-// winner number, and ticket map from a SpentAndMissedTickets notification.
-func parseSpentAndMissedTicketsNtfnParams(params []json.RawMessage) (
-	*chainhash.Hash,
-	int64,
-	int64,
-	map[chainhash.Hash]bool,
-	error) {
-
-	if len(params) != 4 {
-		return nil, 0, 0, nil, wrongNumParams(len(params))
-	}
-
-	// Unmarshal first parameter as a string.
-	var blockShaStr string
-	err := json.Unmarshal(params[0], &blockShaStr)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-
-	// Create ShaHash from block sha string.
-	sha, err := chainhash.NewHashFromStr(blockShaStr)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-
-	// Unmarshal second parameter as an integer.
-	var blockHeight int32
-	err = json.Unmarshal(params[1], &blockHeight)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-	bh := int64(blockHeight)
-
-	// Unmarshal third parameter as an integer.
-	var stakeDiff int64
-	err = json.Unmarshal(params[2], &stakeDiff)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-
-	// Unmarshal fourth parameter as a map[*hash]bool.
-	tickets := make(map[string]string)
-	err = json.Unmarshal(params[3], &tickets)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-	t := make(map[chainhash.Hash]bool)
-
-	for hashStr, spentStr := range tickets {
-		isSpent := false
-		if spentStr == "spent" {
-			isSpent = true
-		}
-
-		// Create and cache ShaHash from tx hash.
-		ticketSha, err := chainhash.NewHashFromStr(hashStr)
-		if err != nil {
-			return nil, 0, 0, nil, err
-		}
-
-		t[*ticketSha] = isSpent
-	}
-
-	return sha, bh, stakeDiff, t, nil
-}
-
-// parseNewTicketsNtfnParams parses out the block header hash, height,
-// winner number, overflow, and ticket map from a NewTickets notification.
-func parseNewTicketsNtfnParams(params []json.RawMessage) (*chainhash.Hash, int64, int64, []*chainhash.Hash, error) {
-
-	if len(params) != 4 {
-		return nil, 0, 0, nil, wrongNumParams(len(params))
-	}
-
-	// Unmarshal first parameter as a string.
-	var blockShaStr string
-	err := json.Unmarshal(params[0], &blockShaStr)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-
-	// Create ShaHash from block sha string.
-	sha, err := chainhash.NewHashFromStr(blockShaStr)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-
-	// Unmarshal second parameter as an integer.
-	var blockHeight int32
-	err = json.Unmarshal(params[1], &blockHeight)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-	bh := int64(blockHeight)
-
-	// Unmarshal third parameter as an integer.
-	var stakeDiff int64
-	err = json.Unmarshal(params[2], &stakeDiff)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-
-	// Unmarshal fourth parameter as a slice.
-	var tickets []string
-	err = json.Unmarshal(params[3], &tickets)
-	if err != nil {
-		return nil, 0, 0, nil, err
-	}
-	t := make([]*chainhash.Hash, len(tickets))
-
-	for i, ticketHashStr := range tickets {
-		ticketHash, err := chainhash.NewHashFromStr(ticketHashStr)
-		if err != nil {
-			return nil, 0, 0, nil, err
-		}
-
-		t[i] = ticketHash
-	}
-
-	return sha, bh, stakeDiff, t, nil
-}
-
-// parseStakeDifficultyNtfnParams parses out the list of block hash, block
-// height, and stake difficulty from a WinningTickets notification.
-func parseStakeDifficultyNtfnParams(params []json.RawMessage) (
-	*chainhash.Hash,
-	int64,
-	int64,
-	error) {
-
-	if len(params) != 3 {
-		return nil, 0, 0, wrongNumParams(len(params))
-	}
-
-	// Unmarshal first parameter as a string.
-	var blockHashStr string
-	err := json.Unmarshal(params[0], &blockHashStr)
-	if err != nil {
-		return nil, 0, 0, err
-	}
-
-	// Create ShaHash from block sha string.
-	bHash, err := chainhash.NewHashFromStr(blockHashStr)
-	if err != nil {
-		return nil, 0, 0, err
-	}
-
-	// Unmarshal second parameter as an integer.
-	var blockHeight int32
-	err = json.Unmarshal(params[1], &blockHeight)
-	if err != nil {
-		return nil, 0, 0, err
-	}
-	bHeight := int64(blockHeight)
-
-	// Unmarshal third parameter as an integer.
-	var stakeDiff int64
-	err = json.Unmarshal(params[2], &stakeDiff)
-	if err != nil {
-		return nil, 0, 0, err
-	}
-
-	return bHash, bHeight, stakeDiff, nil
-}
-
 // parseTxAcceptedNtfnParams parses out the transaction hash and total amount
 // from the parameters of a txaccepted notification.
 func parseTxAcceptedNtfnParams(params []json.RawMessage) (*chainhash.Hash,
@@ -838,134 +547,6 @@ func parseAccountBalanceNtfnParams(params []json.RawMessage) (account string,
 	}
 
 	return account, bal, confirmed, nil
-}
-
-// parseTicketPurchasedNtfnParams parses out the ticket hash and amount
-// from a recent ticket purchase in the wallet.
-func parseTicketPurchasedNtfnParams(params []json.RawMessage) (txHash *chainhash.Hash,
-	amount dcrutil.Amount, err error) {
-
-	if len(params) != 2 {
-		return nil, 0, wrongNumParams(len(params))
-	}
-
-	// Unmarshal first parameter as a string and convert to hash.
-	var th string
-	err = json.Unmarshal(params[0], &th)
-	if err != nil {
-		return nil, 0, err
-	}
-	thHash, err := chainhash.NewHashFromStr(th)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// Unmarshal second parameter as an int64.
-	var amt int64
-	err = json.Unmarshal(params[1], &amt)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return thHash, dcrutil.Amount(amt), nil
-}
-
-// parseVoteCreatedNtfnParams parses out the hash, block hash, block height,
-// ticket input hash, and votebits from a newly created SSGen in wallet.
-// from a recent ticket purchase in the wallet.
-func parseVoteCreatedNtfnParams(params []json.RawMessage) (txHash *chainhash.Hash,
-	blockHash *chainhash.Hash,
-	height int32,
-	sstxIn *chainhash.Hash,
-	voteBits uint16,
-	err error) {
-
-	if len(params) != 5 {
-		return nil, nil, 0, nil, 0, wrongNumParams(len(params))
-	}
-
-	// Unmarshal first parameter as a string and convert to hash.
-	var th string
-	err = json.Unmarshal(params[0], &th)
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
-	}
-	thHash, err := chainhash.NewHashFromStr(th)
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
-	}
-
-	// Unmarshal second parameter as a string and convert to hash.
-	var bh string
-	err = json.Unmarshal(params[1], &bh)
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
-	}
-	bhHash, err := chainhash.NewHashFromStr(bh)
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
-	}
-
-	// Unmarshal third parameter as an int32.
-	var h int32
-	err = json.Unmarshal(params[2], &h)
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
-	}
-
-	// Unmarshal fourth parameter as a string and convert to hash.
-	var ss string
-	err = json.Unmarshal(params[3], &ss)
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
-	}
-	ssHash, err := chainhash.NewHashFromStr(ss)
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
-	}
-
-	// Unmarshal fifth parameter as a uint16.
-	var vb uint16
-	err = json.Unmarshal(params[4], &vb)
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
-	}
-
-	return thHash, bhHash, h, ssHash, vb, nil
-}
-
-// parseRevocationCreatedNtfnParams parses out the hash and ticket input hash
-// from a newly created SSGen in wallet.
-func parseRevocationCreatedNtfnParams(params []json.RawMessage) (txHash *chainhash.Hash,
-	sstxIn *chainhash.Hash, err error) {
-
-	if len(params) != 2 {
-		return nil, nil, wrongNumParams(len(params))
-	}
-
-	// Unmarshal first parameter as a string and convert to hash.
-	var th string
-	err = json.Unmarshal(params[0], &th)
-	if err != nil {
-		return nil, nil, err
-	}
-	thHash, err := chainhash.NewHashFromStr(th)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Unmarshal second parameter as a string and convert to hash.
-	var ss string
-	err = json.Unmarshal(params[1], &ss)
-	if err != nil {
-		return nil, nil, err
-	}
-	ssHash, err := chainhash.NewHashFromStr(ss)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return thHash, ssHash, nil
 }
 
 // parseWalletLockStateNtfnParams parses out the account name and locked
