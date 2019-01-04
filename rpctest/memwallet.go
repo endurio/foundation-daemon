@@ -184,7 +184,7 @@ func (m *memWallet) IngestBlock(header []byte, filteredTxns [][]byte) {
 	if err := hdr.FromBytes(header); err != nil {
 		panic(err)
 	}
-	height := int64(hdr.Height)
+	height := int64(0 /*hdr.Height*/)
 
 	txns := make([]*dcrutil.Tx, 0, len(filteredTxns))
 	for _, txBytes := range filteredTxns {
@@ -306,7 +306,7 @@ func (m *memWallet) UnwindBlock(header []byte) {
 	if err := hdr.FromBytes(header); err != nil {
 		panic(err)
 	}
-	height := int64(hdr.Height)
+	height := int64(0 /*hdr.Height*/)
 
 	m.Lock()
 	defer m.Unlock()

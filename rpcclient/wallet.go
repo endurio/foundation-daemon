@@ -338,7 +338,6 @@ func (c *Client) LockUnspentAsync(unlock bool, ops []*wire.OutPoint) FutureLockU
 		outputs[i] = dcrjson.TransactionInput{
 			Txid: op.Hash.String(),
 			Vout: op.Index,
-			Tree: op.Tree,
 		}
 	}
 	cmd := dcrjson.NewLockUnspentCmd(unlock, outputs)
@@ -392,7 +391,7 @@ func (r FutureListLockUnspentResult) Receive() ([]*wire.OutPoint, error) {
 		if err != nil {
 			return nil, err
 		}
-		ops[i] = wire.NewOutPoint(sha, input.Vout, input.Tree) // Decred TODO
+		ops[i] = wire.NewOutPoint(sha, input.Vout) // Decred TODO
 	}
 
 	return ops, nil

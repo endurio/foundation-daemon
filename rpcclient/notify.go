@@ -1451,7 +1451,6 @@ func (c *Client) LoadTxFilterAsync(reload bool, addresses []dcrutil.Address,
 		outPointObjects[i] = dcrjson.OutPoint{
 			Hash:  outPoints[i].Hash.String(),
 			Index: outPoints[i].Index,
-			Tree:  outPoints[i].Tree,
 		}
 	}
 
