@@ -63,18 +63,6 @@ func NewAddMultisigAddressCmd(nRequired int, keys []string, account *string) *Ad
 	}
 }
 
-// AddTicketCmd forces a ticket into the wallet stake manager, for example if
-// someone made an invalid ticket for a stake pool and the pool manager wanted
-// to manually add it.
-type AddTicketCmd struct {
-	TicketHex string `json:"tickethex"`
-}
-
-// NewAddTicketCmd creates a new AddTicketCmd.
-func NewAddTicketCmd(ticketHex string) *AddTicketCmd {
-	return &AddTicketCmd{TicketHex: ticketHex}
-}
-
 // ConsolidateCmd is a type handling custom marshaling and
 // unmarshaling of consolidate JSON wallet extension
 // commands.
@@ -173,27 +161,6 @@ func NewFundRawTransactionCmd(hexString string, fundAccount string, options *Fun
 		HexString:   hexString,
 		FundAccount: fundAccount,
 		Options:     options,
-	}
-}
-
-// GenerateVoteCmd is a type handling custom marshaling and
-// unmarshaling of generatevote JSON wallet extension commands.
-type GenerateVoteCmd struct {
-	BlockHash   string
-	Height      int64
-	TicketHash  string
-	VoteBits    uint16
-	VoteBitsExt string
-}
-
-// NewGenerateVoteCmd creates a new GenerateVoteCmd.
-func NewGenerateVoteCmd(blockhash string, height int64, tickethash string, votebits uint16, voteBitsExt string) *GenerateVoteCmd {
-	return &GenerateVoteCmd{
-		BlockHash:   blockhash,
-		Height:      height,
-		TicketHash:  tickethash,
-		VoteBits:    votebits,
-		VoteBitsExt: voteBitsExt,
 	}
 }
 
@@ -372,40 +339,6 @@ func NewGetReceivedByAddressCmd(address string, minConf *int) *GetReceivedByAddr
 	}
 }
 
-// GetStakeInfoCmd is a type handling custom marshaling and
-// unmarshaling of getstakeinfo JSON wallet extension commands.
-type GetStakeInfoCmd struct {
-}
-
-// NewGetStakeInfoCmd creates a new GetStakeInfoCmd.
-func NewGetStakeInfoCmd() *GetStakeInfoCmd {
-	return &GetStakeInfoCmd{}
-}
-
-// GetTicketFeeCmd is a type handling custom marshaling and
-// unmarshaling of getticketfee JSON wallet extension
-// commands.
-type GetTicketFeeCmd struct {
-}
-
-// NewGetTicketFeeCmd creates a new GetTicketFeeCmd.
-func NewGetTicketFeeCmd() *GetTicketFeeCmd {
-	return &GetTicketFeeCmd{}
-}
-
-// GetTicketsCmd is a type handling custom marshaling and
-// unmarshaling of gettickets JSON wallet extension
-// commands.
-type GetTicketsCmd struct {
-	IncludeImmature bool
-}
-
-// NewGetTicketsCmd returns a new instance which can be used to issue a
-// gettickets JSON-RPC command.
-func NewGetTicketsCmd(includeImmature bool) *GetTicketsCmd {
-	return &GetTicketsCmd{includeImmature}
-}
-
 // GetTransactionCmd defines the gettransaction JSON-RPC command.
 type GetTransactionCmd struct {
 	Txid             string
@@ -422,17 +355,6 @@ func NewGetTransactionCmd(txHash string, includeWatchOnly *bool) *GetTransaction
 		Txid:             txHash,
 		IncludeWatchOnly: includeWatchOnly,
 	}
-}
-
-// GetVoteChoicesCmd returns a new instance which can be used to issue a
-// getvotechoices JSON-RPC command.
-type GetVoteChoicesCmd struct {
-}
-
-// NewGetVoteChoicesCmd returns a new instance which can be used to
-// issue a JSON-RPC getvotechoices command.
-func NewGetVoteChoicesCmd() *GetVoteChoicesCmd {
-	return &GetVoteChoicesCmd{}
 }
 
 // GetWalletFeeCmd defines the getwalletfee JSON-RPC command.
@@ -510,16 +432,6 @@ func NewListAccountsCmd(minConf *int) *ListAccountsCmd {
 	return &ListAccountsCmd{
 		MinConf: minConf,
 	}
-}
-
-// ListTicketsCmd defines the listtickets JSON-RPC command.
-type ListTicketsCmd struct {
-}
-
-// NewListTicketsCmd returns a new instance which can be used to issue a
-// listtickets JSON-RPC command.
-func NewListTicketsCmd() *ListTicketsCmd {
-	return &ListTicketsCmd{}
 }
 
 // ListLockUnspentCmd defines the listlockunspent JSON-RPC command.
@@ -659,39 +571,6 @@ func NewLockUnspentCmd(unlock bool, transactions []TransactionInput) *LockUnspen
 	}
 }
 
-// PurchaseTicketCmd is a type handling custom marshaling and
-// unmarshaling of purchaseticket JSON RPC commands.
-type PurchaseTicketCmd struct {
-	FromAccount   string
-	SpendLimit    float64 // In Coins
-	MinConf       *int    `jsonrpcdefault:"1"`
-	TicketAddress *string
-	NumTickets    *int
-	PoolAddress   *string
-	PoolFees      *float64
-	Expiry        *int
-	Comment       *string
-	TicketFee     *float64
-}
-
-// NewPurchaseTicketCmd creates a new PurchaseTicketCmd.
-func NewPurchaseTicketCmd(fromAccount string, spendLimit float64, minConf *int,
-	ticketAddress *string, numTickets *int, poolAddress *string, poolFees *float64,
-	expiry *int, comment *string, ticketFee *float64) *PurchaseTicketCmd {
-	return &PurchaseTicketCmd{
-		FromAccount:   fromAccount,
-		SpendLimit:    spendLimit,
-		MinConf:       minConf,
-		TicketAddress: ticketAddress,
-		NumTickets:    numTickets,
-		PoolAddress:   poolAddress,
-		PoolFees:      poolFees,
-		Expiry:        expiry,
-		Comment:       comment,
-		TicketFee:     ticketFee,
-	}
-}
-
 // RedeemMultiSigOutCmd is a type handling custom marshaling and
 // unmarshaling of redeemmultisigout JSON RPC commands.
 type RedeemMultiSigOutCmd struct {
@@ -748,15 +627,6 @@ func NewRenameAccountCmd(oldAccount, newAccount string) *RenameAccountCmd {
 // RescanWalletCmd describes the rescanwallet JSON-RPC request and parameters.
 type RescanWalletCmd struct {
 	BeginHeight *int `jsonrpcdefault:"0"`
-}
-
-// RevokeTicketsCmd describes the revoketickets JSON-RPC request and parameters.
-type RevokeTicketsCmd struct {
-}
-
-// NewRevokeTicketsCmd creates a new RevokeTicketsCmd.
-func NewRevokeTicketsCmd() *RevokeTicketsCmd {
-	return &RevokeTicketsCmd{}
 }
 
 // SendFromCmd defines the sendfrom JSON-RPC command.
@@ -866,32 +736,6 @@ func NewSetTxFeeCmd(amount float64) *SetTxFeeCmd {
 	}
 }
 
-// SetTicketFeeCmd is a type handling custom marshaling and
-// unmarshaling of setticketfee JSON RPC commands.
-type SetTicketFeeCmd struct {
-	Fee float64
-}
-
-// NewSetTicketFeeCmd creates a new instance of the setticketfee
-// command.
-func NewSetTicketFeeCmd(fee float64) *SetTicketFeeCmd {
-	return &SetTicketFeeCmd{
-		Fee: fee,
-	}
-}
-
-// SetVoteChoiceCmd defines the parameters to the setvotechoice method.
-type SetVoteChoiceCmd struct {
-	AgendaID string
-	ChoiceID string
-}
-
-// NewSetVoteChoiceCmd returns a new instance which can be used to issue a
-// setvotechoice JSON-RPC command.
-func NewSetVoteChoiceCmd(agendaID, choiceID string) *SetVoteChoiceCmd {
-	return &SetVoteChoiceCmd{AgendaID: agendaID, ChoiceID: choiceID}
-}
-
 // SignMessageCmd defines the signmessage JSON-RPC command.
 type SignMessageCmd struct {
 	Address string
@@ -953,61 +797,6 @@ func NewSignRawTransactionsCmd(hexEncodedTxs []string,
 		RawTxs: hexEncodedTxs,
 		Send:   send,
 	}
-}
-
-// StakePoolUserInfoCmd defines the stakepooluserinfo JSON-RPC command.
-type StakePoolUserInfoCmd struct {
-	User string
-}
-
-// NewStakePoolUserInfoCmd returns a new instance which can be used to issue a
-// signrawtransactions JSON-RPC command.
-func NewStakePoolUserInfoCmd(user string) *StakePoolUserInfoCmd {
-	return &StakePoolUserInfoCmd{
-		User: user,
-	}
-}
-
-// StartAutoBuyerCmd is a type handling custom marshaling and
-// unmarshaling of startautobuyer JSON RPC commands.
-type StartAutoBuyerCmd struct {
-	Account           string
-	Passphrase        string
-	BalanceToMaintain *int64
-	MaxFeePerKb       *int64
-	MaxPriceRelative  *float64
-	MaxPriceAbsolute  *int64
-	VotingAddress     *string
-	PoolAddress       *string
-	PoolFees          *float64
-	MaxPerBlock       *int64
-}
-
-// NewStartAutoBuyerCmd creates a new StartAutoBuyerCmd.
-func NewStartAutoBuyerCmd(account string, passphrase string, balanceToMaintain *int64, maxFeePerKb *int64, maxPriceRelative *float64, maxPriceAbsolute *int64, votingAddress *string, poolAddress *string, poolFees *float64,
-	maxPerBlock *int64) *StartAutoBuyerCmd {
-	return &StartAutoBuyerCmd{
-		Account:           account,
-		Passphrase:        passphrase,
-		BalanceToMaintain: balanceToMaintain,
-		MaxFeePerKb:       maxFeePerKb,
-		MaxPriceRelative:  maxPriceRelative,
-		MaxPriceAbsolute:  maxPriceAbsolute,
-		VotingAddress:     votingAddress,
-		PoolAddress:       poolAddress,
-		PoolFees:          poolFees,
-		MaxPerBlock:       maxPerBlock,
-	}
-}
-
-// StopAutoBuyerCmd is a type handling custom marshaling and
-// unmarshaling of stopautobuyer JSON RPC commands.
-type StopAutoBuyerCmd struct {
-}
-
-// NewStopAutoBuyerCmd creates a new StopAutoBuyerCmd.
-func NewStopAutoBuyerCmd() *StopAutoBuyerCmd {
-	return &StopAutoBuyerCmd{}
 }
 
 // SweepAccountCmd defines the sweep account JSON-RPC command.
@@ -1102,14 +891,12 @@ func init() {
 	MustRegisterCmd("accountaddressindex", (*AccountAddressIndexCmd)(nil), flags)
 	MustRegisterCmd("accountsyncaddressindex", (*AccountSyncAddressIndexCmd)(nil), flags)
 	MustRegisterCmd("addmultisigaddress", (*AddMultisigAddressCmd)(nil), flags)
-	MustRegisterCmd("addticket", (*AddTicketCmd)(nil), flags)
 	MustRegisterCmd("consolidate", (*ConsolidateCmd)(nil), flags)
 	MustRegisterCmd("createmultisig", (*CreateMultisigCmd)(nil), flags)
 	MustRegisterCmd("createnewaccount", (*CreateNewAccountCmd)(nil), flags)
 	MustRegisterCmd("dumpprivkey", (*DumpPrivKeyCmd)(nil), flags)
 	MustRegisterCmd("estimatepriority", (*EstimatePriorityCmd)(nil), flags)
 	MustRegisterCmd("fundrawtransaction", (*FundRawTransactionCmd)(nil), flags)
-	MustRegisterCmd("generatevote", (*GenerateVoteCmd)(nil), flags)
 	MustRegisterCmd("getaccount", (*GetAccountCmd)(nil), flags)
 	MustRegisterCmd("getaccountaddress", (*GetAccountAddressCmd)(nil), flags)
 	MustRegisterCmd("getaddressesbyaccount", (*GetAddressesByAccountCmd)(nil), flags)
@@ -1122,11 +909,7 @@ func init() {
 	MustRegisterCmd("getrawchangeaddress", (*GetRawChangeAddressCmd)(nil), flags)
 	MustRegisterCmd("getreceivedbyaccount", (*GetReceivedByAccountCmd)(nil), flags)
 	MustRegisterCmd("getreceivedbyaddress", (*GetReceivedByAddressCmd)(nil), flags)
-	MustRegisterCmd("getstakeinfo", (*GetStakeInfoCmd)(nil), flags)
-	MustRegisterCmd("getticketfee", (*GetTicketFeeCmd)(nil), flags)
-	MustRegisterCmd("gettickets", (*GetTicketsCmd)(nil), flags)
 	MustRegisterCmd("gettransaction", (*GetTransactionCmd)(nil), flags)
-	MustRegisterCmd("getvotechoices", (*GetVoteChoicesCmd)(nil), flags)
 	MustRegisterCmd("getwalletfee", (*GetWalletFeeCmd)(nil), flags)
 	MustRegisterCmd("importprivkey", (*ImportPrivKeyCmd)(nil), flags)
 	MustRegisterCmd("importscript", (*ImportScriptCmd)(nil), flags)
@@ -1137,29 +920,21 @@ func init() {
 	MustRegisterCmd("listreceivedbyaddress", (*ListReceivedByAddressCmd)(nil), flags)
 	MustRegisterCmd("listscripts", (*ListScriptsCmd)(nil), flags)
 	MustRegisterCmd("listsinceblock", (*ListSinceBlockCmd)(nil), flags)
-	MustRegisterCmd("listtickets", (*ListTicketsCmd)(nil), flags)
 	MustRegisterCmd("listtransactions", (*ListTransactionsCmd)(nil), flags)
 	MustRegisterCmd("listunspent", (*ListUnspentCmd)(nil), flags)
 	MustRegisterCmd("lockunspent", (*LockUnspentCmd)(nil), flags)
-	MustRegisterCmd("purchaseticket", (*PurchaseTicketCmd)(nil), flags)
 	MustRegisterCmd("redeemmultisigout", (*RedeemMultiSigOutCmd)(nil), flags)
 	MustRegisterCmd("redeemmultisigouts", (*RedeemMultiSigOutsCmd)(nil), flags)
 	MustRegisterCmd("renameaccount", (*RenameAccountCmd)(nil), flags)
 	MustRegisterCmd("rescanwallet", (*RescanWalletCmd)(nil), flags)
-	MustRegisterCmd("revoketickets", (*RevokeTicketsCmd)(nil), flags)
 	MustRegisterCmd("sendfrom", (*SendFromCmd)(nil), flags)
 	MustRegisterCmd("sendmany", (*SendManyCmd)(nil), flags)
 	MustRegisterCmd("sendtoaddress", (*SendToAddressCmd)(nil), flags)
 	MustRegisterCmd("sendtomultisig", (*SendToMultiSigCmd)(nil), flags)
 	MustRegisterCmd("settxfee", (*SetTxFeeCmd)(nil), flags)
-	MustRegisterCmd("setticketfee", (*SetTicketFeeCmd)(nil), flags)
-	MustRegisterCmd("setvotechoice", (*SetVoteChoiceCmd)(nil), flags)
 	MustRegisterCmd("signmessage", (*SignMessageCmd)(nil), flags)
 	MustRegisterCmd("signrawtransaction", (*SignRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("signrawtransactions", (*SignRawTransactionsCmd)(nil), flags)
-	MustRegisterCmd("stakepooluserinfo", (*StakePoolUserInfoCmd)(nil), flags)
-	MustRegisterCmd("startautobuyer", (*StartAutoBuyerCmd)(nil), flags)
-	MustRegisterCmd("stopautobuyer", (*StopAutoBuyerCmd)(nil), flags)
 	MustRegisterCmd("sweepaccount", (*SweepAccountCmd)(nil), flags)
 	MustRegisterCmd("verifyseed", (*VerifySeedCmd)(nil), flags)
 	MustRegisterCmd("walletinfo", (*WalletInfoCmd)(nil), flags)

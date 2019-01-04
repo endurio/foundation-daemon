@@ -719,107 +719,6 @@ func (c *Client) SendManyComment(fromAccount string,
 		comment).Receive()
 }
 
-// Begin DECRED FUNCTIONS ---------------------------------------------------------
-//
-// SStx generation RPC call handling
-
-// FuturePurchaseTicketResult a channel for the response promised by the future.
-type FuturePurchaseTicketResult chan *response
-
-// Receive waits for the response promised by the future and returns the hash
-// of the transaction sending multiple amounts to multiple addresses using the
-// provided account as a source of funds.
-func (r FuturePurchaseTicketResult) Receive() ([]*chainhash.Hash, error) {
-	res, err := receiveFuture(r)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmashal result as a string slice.
-	var txHashesStr []string
-	err = json.Unmarshal(res, &txHashesStr)
-	if err != nil {
-		return nil, err
-	}
-
-	txHashes := make([]*chainhash.Hash, len(txHashesStr))
-	for i := range txHashesStr {
-		h, err := chainhash.NewHashFromStr(txHashesStr[i])
-		if err != nil {
-			return nil, err
-		}
-		txHashes[i] = h
-	}
-
-	return txHashes, nil
-}
-
-// PurchaseTicketAsync takes an account and a spending limit and returns a
-// future chan to receive the transactions representing the purchased tickets
-// when they come.
-func (c *Client) PurchaseTicketAsync(fromAccount string,
-	spendLimit dcrutil.Amount, minConf *int, ticketAddress dcrutil.Address,
-	numTickets *int, poolAddress dcrutil.Address, poolFees *dcrutil.Amount,
-	expiry *int, ticketFee *dcrutil.Amount) FuturePurchaseTicketResult {
-	// An empty string is used to keep the sendCmd
-	// passing of the command from accidentally
-	// removing certain fields. We fill in the
-	// default values of the other arguments as
-	// well for the same reason.
-
-	minConfVal := 1
-	if minConf != nil {
-		minConfVal = *minConf
-	}
-
-	ticketAddrStr := ""
-	if ticketAddress != nil {
-		ticketAddrStr = ticketAddress.EncodeAddress()
-	}
-
-	numTicketsVal := 1
-	if numTickets != nil {
-		numTicketsVal = *numTickets
-	}
-
-	poolAddrStr := ""
-	if poolAddress != nil {
-		poolAddrStr = poolAddress.EncodeAddress()
-	}
-
-	poolFeesFloat := 0.0
-	if poolFees != nil {
-		poolFeesFloat = poolFees.ToCoin()
-	}
-
-	expiryVal := 0
-	if expiry != nil {
-		expiryVal = *expiry
-	}
-
-	ticketFeeFloat := 0.0
-	if ticketFee != nil {
-		ticketFeeFloat = ticketFee.ToCoin()
-	}
-
-	cmd := dcrjson.NewPurchaseTicketCmd(fromAccount, spendLimit.ToCoin(),
-		&minConfVal, &ticketAddrStr, &numTicketsVal, &poolAddrStr,
-		&poolFeesFloat, &expiryVal, dcrjson.String(""), &ticketFeeFloat)
-
-	return c.sendCmd(cmd)
-}
-
-// PurchaseTicket takes an account and a spending limit and calls the async
-// puchasetickets command.
-func (c *Client) PurchaseTicket(fromAccount string,
-	spendLimit dcrutil.Amount, minConf *int, ticketAddress dcrutil.Address,
-	numTickets *int, poolAddress dcrutil.Address, poolFees *dcrutil.Amount,
-	expiry *int, ticketChange *bool, ticketFee *dcrutil.Amount) ([]*chainhash.Hash, error) {
-
-	return c.PurchaseTicketAsync(fromAccount, spendLimit, minConf, ticketAddress,
-		numTickets, poolAddress, poolFees, expiry, ticketFee).Receive()
-}
-
 // END DECRED FUNCTIONS -----------------------------------------------------------
 
 // *************************
@@ -2230,66 +2129,6 @@ func (c *Client) AccountSyncAddressIndex(account string, branch uint32, index in
 	return c.AccountSyncAddressIndexAsync(account, branch, index).Receive()
 }
 
-// FutureRevokeTicketsResult is a future promise to deliver the result of a
-// RevokeTicketsAsync RPC invocation (or an applicable error).
-type FutureRevokeTicketsResult chan *response
-
-// Receive waits for the response promised by the future and returns the info
-// provided by the server.
-func (r FutureRevokeTicketsResult) Receive() error {
-	_, err := receiveFuture(r)
-	return err
-}
-
-// RevokeTicketsAsync returns an instance of a type that can be used to get the result
-// of the RPC at some future time by invoking the Receive function on the
-// returned instance.
-//
-// See RevokeTickets for the blocking version and more details.
-func (c *Client) RevokeTicketsAsync() FutureRevokeTicketsResult {
-	cmd := dcrjson.NewRevokeTicketsCmd()
-	return c.sendCmd(cmd)
-}
-
-// RevokeTickets triggers the wallet to issue revocations for any missed tickets that
-// have not yet been revoked.
-func (c *Client) RevokeTickets() error {
-	return c.RevokeTicketsAsync().Receive()
-}
-
-// FutureAddTicketResult is a future promise to deliver the result of a
-// AddTicketAsync RPC invocation (or an applicable error).
-type FutureAddTicketResult chan *response
-
-// Receive waits for the response promised by the future and returns the info
-// provided by the server.
-func (r FutureAddTicketResult) Receive() error {
-	_, err := receiveFuture(r)
-	return err
-}
-
-// AddTicketAsync returns an instance of a type that can be used to get the result
-// of the RPC at some future time by invoking the Receive function on the
-// returned instance.
-//
-// See AddTicket for the blocking version and more details.
-func (c *Client) AddTicketAsync(rawHex string) FutureAddTicketResult {
-	cmd := dcrjson.NewAddTicketCmd(rawHex)
-	return c.sendCmd(cmd)
-}
-
-// AddTicket manually adds a new ticket to the wallet stake manager. This is used
-// to override normal security settings to insert tickets which would not
-// otherwise be added to the wallet.
-func (c *Client) AddTicket(ticket *dcrutil.Tx) error {
-	ticketB, err := ticket.MsgTx().Bytes()
-	if err != nil {
-		return err
-	}
-
-	return c.AddTicketAsync(hex.EncodeToString(ticketB)).Receive()
-}
-
 // FutureFundRawTransactionResult is a future promise to deliver the result of a
 // FundRawTransactionAsync RPC invocation (or an applicable error).
 type FutureFundRawTransactionResult chan *response
@@ -2326,43 +2165,6 @@ func (c *Client) FundRawTransactionAsync(rawhex string, fundAccount string, opti
 // in value to meet its out value.
 func (c *Client) FundRawTransaction(rawhex string, fundAccount string, options dcrjson.FundRawTransactionOptions) (*dcrjson.FundRawTransactionResult, error) {
 	return c.FundRawTransactionAsync(rawhex, fundAccount, options).Receive()
-}
-
-// FutureGenerateVoteResult is a future promise to deliver the result of a
-// GenerateVoteAsync RPC invocation (or an applicable error).
-type FutureGenerateVoteResult chan *response
-
-// Receive waits for the response promised by the future and returns the info
-// provided by the server.
-func (r FutureGenerateVoteResult) Receive() (*dcrjson.GenerateVoteResult, error) {
-	res, err := receiveFuture(r)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal result as a getinfo result object.
-	var infoRes dcrjson.GenerateVoteResult
-	err = json.Unmarshal(res, &infoRes)
-	if err != nil {
-		return nil, err
-	}
-
-	return &infoRes, nil
-}
-
-// GenerateVoteAsync returns an instance of a type that can be used to get the result
-// of the RPC at some future time by invoking the Receive function on the
-// returned instance.
-//
-// See GenerateVote for the blocking version and more details.
-func (c *Client) GenerateVoteAsync(blockHash *chainhash.Hash, height int64, sstxHash *chainhash.Hash, voteBits uint16, voteBitsExt string) FutureGenerateVoteResult {
-	cmd := dcrjson.NewGenerateVoteCmd(blockHash.String(), height, sstxHash.String(), voteBits, voteBitsExt)
-	return c.sendCmd(cmd)
-}
-
-// GenerateVote returns hex of an SSGen.
-func (c *Client) GenerateVote(blockHash *chainhash.Hash, height int64, sstxHash *chainhash.Hash, voteBits uint16, voteBitsExt string) (*dcrjson.GenerateVoteResult, error) {
-	return c.GenerateVoteAsync(blockHash, height, sstxHash, voteBits, voteBitsExt).Receive()
 }
 
 // NOTE: While getinfo is implemented here (in wallet.go), a ndrd chain server
@@ -2405,93 +2207,6 @@ func (c *Client) GetInfoAsync() FutureGetInfoResult {
 // not include wallet functionality.
 func (c *Client) GetInfo() (*dcrjson.InfoWalletResult, error) {
 	return c.GetInfoAsync().Receive()
-}
-
-// FutureGetStakeInfoResult is a future promise to deliver the result of a
-// GetStakeInfoAsync RPC invocation (or an applicable error).
-type FutureGetStakeInfoResult chan *response
-
-// Receive waits for the response promised by the future and returns the stake
-// info provided by the server.
-func (r FutureGetStakeInfoResult) Receive() (*dcrjson.GetStakeInfoResult, error) {
-	res, err := receiveFuture(r)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal result as a getstakeinfo result object.
-	var infoRes dcrjson.GetStakeInfoResult
-	err = json.Unmarshal(res, &infoRes)
-	if err != nil {
-		return nil, err
-	}
-
-	return &infoRes, nil
-}
-
-// GetStakeInfoAsync returns an instance of a type that can be used to get
-// the result of the RPC at some future time by invoking the Receive function
-// on the returned instance.
-//
-// See GetStakeInfo for the blocking version and more details.
-func (c *Client) GetStakeInfoAsync() FutureGetStakeInfoResult {
-	cmd := dcrjson.NewGetStakeInfoCmd()
-	return c.sendCmd(cmd)
-}
-
-// GetStakeInfo returns stake mining info from a given wallet. This includes
-// various statistics on tickets it owns and votes it has produced.
-func (c *Client) GetStakeInfo() (*dcrjson.GetStakeInfoResult, error) {
-	return c.GetStakeInfoAsync().Receive()
-}
-
-// FutureGetTicketsResult is a future promise to deliver the result of a
-// GetTickets RPC invocation (or an applicable error).
-type FutureGetTicketsResult chan *response
-
-// Receive waits for the response promised by the future and returns the info
-// provided by the server.
-func (r FutureGetTicketsResult) Receive() ([]*chainhash.Hash, error) {
-	res, err := receiveFuture(r)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal result as a gettickets result object.
-	var tixRes dcrjson.GetTicketsResult
-	err = json.Unmarshal(res, &tixRes)
-	if err != nil {
-		return nil, err
-	}
-
-	tickets := make([]*chainhash.Hash, len(tixRes.Hashes))
-	for i := range tixRes.Hashes {
-		h, err := chainhash.NewHashFromStr(tixRes.Hashes[i])
-		if err != nil {
-			return nil, err
-		}
-
-		tickets[i] = h
-	}
-
-	return tickets, nil
-}
-
-// GetTicketsAsync returns an instance of a type that can be used to
-// get the result of the RPC at some future time by invoking the Receive
-// function on the returned instance.
-//
-// See GetTicketsfor the blocking version and more details.
-func (c *Client) GetTicketsAsync(includeImmature bool) FutureGetTicketsResult {
-	cmd := dcrjson.NewGetTicketsCmd(includeImmature)
-	return c.sendCmd(cmd)
-}
-
-// GetTickets returns a list of the tickets owned by the wallet, partially
-// or in full. The flag includeImmature is used to indicate if non mature
-// tickets should also be returned.
-func (c *Client) GetTickets(includeImmature bool) ([]*chainhash.Hash, error) {
-	return c.GetTicketsAsync(includeImmature).Receive()
 }
 
 // FutureListScriptsResult is a future promise to deliver the result of a
@@ -2542,32 +2257,6 @@ func (c *Client) ListScriptsAsync() FutureListScriptsResult {
 // wallet as a slice of byte slices.
 func (c *Client) ListScripts() ([][]byte, error) {
 	return c.ListScriptsAsync().Receive()
-}
-
-// FutureSetTicketFeeResult is a future promise to deliver the result of a
-// SetTicketFeeAsync RPC invocation (or an applicable error).
-type FutureSetTicketFeeResult chan *response
-
-// Receive waits for the response promised by the future and returns the info
-// provided by the server.
-func (r FutureSetTicketFeeResult) Receive() error {
-	_, err := receiveFuture(r)
-	return err
-}
-
-// SetTicketFeeAsync returns an instance of a type that can be used to
-// get the result of the RPC at some future time by invoking the Receive
-// function on the returned instance.
-//
-// See SetTicketFee for the blocking version and more details.
-func (c *Client) SetTicketFeeAsync(fee dcrutil.Amount) FutureSetTicketFeeResult {
-	cmd := dcrjson.NewSetTicketFeeCmd(fee.ToCoin())
-	return c.sendCmd(cmd)
-}
-
-// SetTicketFee sets the ticket fee per KB amount.
-func (c *Client) SetTicketFee(fee dcrutil.Amount) error {
-	return c.SetTicketFeeAsync(fee).Receive()
 }
 
 // FutureSetTxFeeResult is a future promise to deliver the result of a
