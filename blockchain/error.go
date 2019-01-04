@@ -9,16 +9,6 @@ import (
 	"fmt"
 )
 
-// VoteVersionError identifies an error that indicates a vote version was
-// specified that does not exist.
-type VoteVersionError uint32
-
-// Error returns the assertion error as a human-readable string and satisfies
-// the error interface.
-func (e VoteVersionError) Error() string {
-	return fmt.Sprintf("stake version %v does not exist", uint32(e))
-}
-
 // HashError identifies an error that indicates a hash was specified that does
 // not exist.
 type HashError string
@@ -73,11 +63,6 @@ const (
 	// no longer accepted since the majority of the network has upgraded
 	// to a newer version.
 	ErrBlockVersionTooOld
-
-	// ErrBadStakeVersionindicates the block version is too old and is no
-	// longer accepted since the majority of the network has upgraded to a
-	// newer version.
-	ErrBadStakeVersion
 
 	// ErrInvalidTime indicates the time in the passed block has a precision
 	// that is more than one second.  The chain consensus rules require
@@ -203,14 +188,6 @@ const (
 	// coinbase transaction.
 	ErrMultipleCoinbases
 
-	// ErrStakeTxInRegularTree indicates a stake transaction was found in
-	// the regular transaction tree.
-	ErrStakeTxInRegularTree
-
-	// ErrRegTxInStakeTree indicates that a regular transaction was found in
-	// the stake transaction tree.
-	ErrRegTxInStakeTree
-
 	// ErrBadCoinbaseScriptLen indicates the length of the signature script
 	// for a coinbase transaction is not within the valid range.
 	ErrBadCoinbaseScriptLen
@@ -231,18 +208,6 @@ const (
 	// coinbase input was incorrect.
 	ErrBadCoinbaseAmountIn
 
-	// ErrBadStakebaseAmountIn indicates that the AmountIn (=subsidy) for a
-	// stakebase input was incorrect.
-	ErrBadStakebaseAmountIn
-
-	// ErrBadStakebaseScriptLen indicates the length of the signature script
-	// for a stakebase transaction is not within the valid range.
-	ErrBadStakebaseScriptLen
-
-	// ErrBadStakebaseScrVal indicates the signature script for a stakebase
-	// transaction was not set to the network consensus value.
-	ErrBadStakebaseScrVal
-
 	// ErrScriptMalformed indicates a transaction script is malformed in
 	// some way.  For example, it might be longer than the maximum allowed
 	// length or fail to parse.
@@ -254,137 +219,6 @@ const (
 	// the stack.
 	ErrScriptValidation
 
-	// ErrNotEnoughStake indicates that there was for some SStx in a given block,
-	// the given SStx did not have enough stake to meet the network target.
-	ErrNotEnoughStake
-
-	// ErrStakeBelowMinimum indicates that for some SStx in a given block,
-	// the given SStx had an amount of stake below the minimum network target.
-	ErrStakeBelowMinimum
-
-	// ErrNonstandardStakeTx indicates that a block contained a stake tx that
-	// was not one of the allowed types of a stake transactions.
-	ErrNonstandardStakeTx
-
-	// ErrNotEnoughVotes indicates that a block contained less than a majority
-	// of voters.
-	ErrNotEnoughVotes
-
-	// ErrTooManyVotes indicates that a block contained more than the maximum
-	// allowable number of votes.
-	ErrTooManyVotes
-
-	// ErrFreshStakeMismatch indicates that a block's header contained a different
-	// number of SStx as compared to what was found in the block.
-	ErrFreshStakeMismatch
-
-	// ErrTooManySStxs indicates that more than the allowed number of SStx was
-	// found in a block.
-	ErrTooManySStxs
-
-	// ErrInvalidEarlyStakeTx indicates that a tx type other than SStx was found
-	// in the stake tx tree before the period when stake validation begins, or
-	// before the stake tx type could possibly be included in the block.
-	ErrInvalidEarlyStakeTx
-
-	// ErrTicketUnavailable indicates that a vote in the block spent a ticket
-	// that could not be found.
-	ErrTicketUnavailable
-
-	// ErrVotesOnWrongBlock indicates that an SSGen voted on a block not the
-	// block's parent, and so was ineligible for inclusion into that block.
-	ErrVotesOnWrongBlock
-
-	// ErrVotesMismatch indicates that the number of SSGen in the block was not
-	// equivalent to the number of votes provided in the block header.
-	ErrVotesMismatch
-
-	// ErrIncongruentVotebit indicates that the first votebit in votebits was not
-	// the same as that determined by the majority of voters in the SSGen tx
-	// included in the block.
-	ErrIncongruentVotebit
-
-	// ErrInvalidSSRtx indicates than an SSRtx in a block could not be found to
-	// have a valid missed sstx input as per the stake ticket database.
-	ErrInvalidSSRtx
-
-	// ErrInvalidRevNum indicates that the number of revocations from the
-	// header was not the same as the number of SSRtx included in the block.
-	ErrRevocationsMismatch
-
-	// ErrTooManyRevocations indicates more revocations were found in a block
-	// than were allowed.
-	ErrTooManyRevocations
-
-	// ErrTicketCommitment indicates that a ticket commitment contains an amount
-	// that does not coincide with the associated ticket input amount.
-	ErrTicketCommitment
-
-	// ErrInvalidVoteInput indicates that an input to a vote transaction is
-	// either not a stake ticket submission or is not a supported version.
-	ErrInvalidVoteInput
-
-	// ErrBadNumPayees indicates that either a vote or revocation transaction
-	// does not make the correct number of payments per the associated ticket
-	// commitments.
-	ErrBadNumPayees
-
-	// ErrBadPayeeScriptVersion indicates that either a vote or revocation
-	// transaction output that corresponds to a ticket commitment does not use
-	// a supported script version.
-	ErrBadPayeeScriptVersion
-
-	// ErrBadPayeeScriptType indicates that either a vote or revocation
-	// transaction output that corresponds to a ticket commitment does not pay
-	// to the same script type required by the commitment.
-	ErrBadPayeeScriptType
-
-	// ErrBadPayeeScriptType indicates that either a vote or revocation
-	// transaction output that corresponds to a ticket commitment does not pay
-	// to the hash required by the commitment.
-	ErrMismatchedPayeeHash
-
-	// ErrBadPayeeValue indicates that either a vote or revocation transaction
-	// output that corresponds to a ticket commitment does not pay the expected
-	// amount required by the commitment.
-	ErrBadPayeeValue
-
-	// ErrSSGenSubsidy indicates that there was an error in the amount of subsidy
-	// generated in the vote.
-	ErrSSGenSubsidy
-
-	// ErrImmatureTicketSpend indicates that a vote or revocation is attempting
-	// to spend a ticket submission output that has not yet reached the required
-	// maturity.
-	ErrImmatureTicketSpend
-
-	// ErrTicketInputScript indicates that a ticket input is not one of the
-	// supported script forms or versions.
-	ErrTicketInputScript
-
-	// ErrInvalidRevokeInput indicates that an input to a revocation transaction
-	// is either not a stake ticket submission or is not a supported version.
-	ErrInvalidRevokeInput
-
-	// ErrSSRtxPayees indicates that the SSRtx failed to pay out to the committed
-	// addresses or amounts from the originating SStx.
-	ErrSSRtxPayees
-
-	// ErrTxSStxOutSpend indicates that a non SSGen or SSRtx tx attempted to spend
-	// an OP_SSTX tagged output from an SStx.
-	ErrTxSStxOutSpend
-
-	// ErrRegTxCreateStakeOut indicates that a regular tx attempted to create
-	// a stake tagged output.
-	ErrRegTxCreateStakeOut
-
-	// ErrInvalidFinalState indicates that the final state of the PRNG included
-	// in the the block differed from the calculated final state.
-	ErrInvalidFinalState
-
-	// ErrPoolSize indicates an error in the ticket pool size for this block.
-	ErrPoolSize
-
 	// ErrForceReorgWrongChain indicates that a reroganization was attempted
 	// to be forced, but the chain indicated was not mirrored by b.bestChain.
 	ErrForceReorgWrongChain
@@ -392,23 +226,6 @@ const (
 	// ErrForceReorgMissingChild indicates that a reroganization was attempted
 	// to be forced, but the child node to reorganize to could not be found.
 	ErrForceReorgMissingChild
-
-	// ErrBadStakebaseValue indicates that a block's stake tx tree has spent
-	// more than it is allowed.
-	ErrBadStakebaseValue
-
-	// ErrDiscordantTxTree specifies that a given origin tx's content
-	// indicated that it should exist in a different tx tree than the
-	// one given in the TxIn outpoint.
-	ErrDiscordantTxTree
-
-	// ErrStakeFees indicates an error with the fees found in the stake
-	// transaction tree.
-	ErrStakeFees
-
-	// ErrNoStakeTx indicates there were no stake transactions found in a
-	// block after stake validation height.
-	ErrNoStakeTx
 
 	// ErrBadBlockHeight indicates that a block header's embedded block height
 	// was different from where it was actually embedded in the block chain.
@@ -453,14 +270,6 @@ const (
 	// zero value output.
 	ErrZeroValueOutputSpend
 
-	// ErrInvalidEarlyVoteBits indicates that a block before stake validation
-	// height had an unallowed vote bits value.
-	ErrInvalidEarlyVoteBits
-
-	// ErrInvalidEarlyFinalState indicates that a block before stake validation
-	// height had a non-zero final state.
-	ErrInvalidEarlyFinalState
-
 	// ErrKnownInvalidBlock indicates that this block has previously failed
 	// validation.
 	ErrKnownInvalidBlock
@@ -484,7 +293,6 @@ var errorCodeStrings = map[ErrorCode]string{
 	ErrBlockTooBig:            "ErrBlockTooBig",
 	ErrWrongBlockSize:         "ErrWrongBlockSize",
 	ErrBlockVersionTooOld:     "ErrBlockVersionTooOld",
-	ErrBadStakeVersion:        "ErrBadStakeVersion",
 	ErrInvalidTime:            "ErrInvalidTime",
 	ErrTimeTooOld:             "ErrTimeTooOld",
 	ErrTimeTooNew:             "ErrTimeTooNew",
@@ -514,55 +322,15 @@ var errorCodeStrings = map[ErrorCode]string{
 	ErrFirstTxNotCoinbase:     "ErrFirstTxNotCoinbase",
 	ErrCoinbaseHeight:         "ErrCoinbaseHeight",
 	ErrMultipleCoinbases:      "ErrMultipleCoinbases",
-	ErrStakeTxInRegularTree:   "ErrStakeTxInRegularTree",
-	ErrRegTxInStakeTree:       "ErrRegTxInStakeTree",
 	ErrBadCoinbaseScriptLen:   "ErrBadCoinbaseScriptLen",
 	ErrBadCoinbaseValue:       "ErrBadCoinbaseValue",
 	ErrBadCoinbaseOutpoint:    "ErrBadCoinbaseOutpoint",
 	ErrBadCoinbaseFraudProof:  "ErrBadCoinbaseFraudProof",
 	ErrBadCoinbaseAmountIn:    "ErrBadCoinbaseAmountIn",
-	ErrBadStakebaseAmountIn:   "ErrBadStakebaseAmountIn",
-	ErrBadStakebaseScriptLen:  "ErrBadStakebaseScriptLen",
-	ErrBadStakebaseScrVal:     "ErrBadStakebaseScrVal",
 	ErrScriptMalformed:        "ErrScriptMalformed",
 	ErrScriptValidation:       "ErrScriptValidation",
-	ErrNotEnoughStake:         "ErrNotEnoughStake",
-	ErrStakeBelowMinimum:      "ErrStakeBelowMinimum",
-	ErrNonstandardStakeTx:     "ErrNonstandardStakeTx",
-	ErrNotEnoughVotes:         "ErrNotEnoughVotes",
-	ErrTooManyVotes:           "ErrTooManyVotes",
-	ErrFreshStakeMismatch:     "ErrFreshStakeMismatch",
-	ErrTooManySStxs:           "ErrTooManySStxs",
-	ErrInvalidEarlyStakeTx:    "ErrInvalidEarlyStakeTx",
-	ErrTicketUnavailable:      "ErrTicketUnavailable",
-	ErrVotesOnWrongBlock:      "ErrVotesOnWrongBlock",
-	ErrVotesMismatch:          "ErrVotesMismatch",
-	ErrIncongruentVotebit:     "ErrIncongruentVotebit",
-	ErrInvalidSSRtx:           "ErrInvalidSSRtx",
-	ErrRevocationsMismatch:    "ErrRevocationsMismatch",
-	ErrTooManyRevocations:     "ErrTooManyRevocations",
-	ErrTicketCommitment:       "ErrTicketCommitment",
-	ErrInvalidVoteInput:       "ErrInvalidVoteInput",
-	ErrBadNumPayees:           "ErrBadNumPayees",
-	ErrBadPayeeScriptVersion:  "ErrBadPayeeScriptVersion",
-	ErrBadPayeeScriptType:     "ErrBadPayeeScriptType",
-	ErrMismatchedPayeeHash:    "ErrMismatchedPayeeHash",
-	ErrBadPayeeValue:          "ErrBadPayeeValue",
-	ErrSSGenSubsidy:           "ErrSSGenSubsidy",
-	ErrImmatureTicketSpend:    "ErrImmatureTicketSpend",
-	ErrTicketInputScript:      "ErrTicketInputScript",
-	ErrInvalidRevokeInput:     "ErrInvalidRevokeInput",
-	ErrSSRtxPayees:            "ErrSSRtxPayees",
-	ErrTxSStxOutSpend:         "ErrTxSStxOutSpend",
-	ErrRegTxCreateStakeOut:    "ErrRegTxCreateStakeOut",
-	ErrInvalidFinalState:      "ErrInvalidFinalState",
-	ErrPoolSize:               "ErrPoolSize",
 	ErrForceReorgWrongChain:   "ErrForceReorgWrongChain",
 	ErrForceReorgMissingChild: "ErrForceReorgMissingChild",
-	ErrBadStakebaseValue:      "ErrBadStakebaseValue",
-	ErrDiscordantTxTree:       "ErrDiscordantTxTree",
-	ErrStakeFees:              "ErrStakeFees",
-	ErrNoStakeTx:              "ErrNoStakeTx",
 	ErrBadBlockHeight:         "ErrBadBlockHeight",
 	ErrBlockOneTx:             "ErrBlockOneTx",
 	ErrBlockOneInputs:         "ErrBlockOneInputs",
@@ -574,8 +342,6 @@ var errorCodeStrings = map[ErrorCode]string{
 	ErrFraudBlockHeight:       "ErrFraudBlockHeight",
 	ErrFraudBlockIndex:        "ErrFraudBlockIndex",
 	ErrZeroValueOutputSpend:   "ErrZeroValueOutputSpend",
-	ErrInvalidEarlyVoteBits:   "ErrInvalidEarlyVoteBits",
-	ErrInvalidEarlyFinalState: "ErrInvalidEarlyFinalState",
 	ErrKnownInvalidBlock:      "ErrKnownInvalidBlock",
 	ErrInvalidAncestorBlock:   "ErrInvalidAncestorBlock",
 	ErrInvalidTemplateParent:  "ErrInvalidTemplateParent",
