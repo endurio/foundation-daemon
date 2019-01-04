@@ -103,20 +103,6 @@ func (msg *MsgBlock) BtcDecode(r io.Reader, pver uint32) error {
 		msg.Transactions = append(msg.Transactions, &tx)
 	}
 
-	// Prevent more transactions than could possibly fit into the stake
-	// tx tree.
-	// It would be possible to cause memory exhaustion and panics without
-	// a sane upper bound on this count.
-	stakeTxCount, err := ReadVarInt(r, pver)
-	if err != nil {
-		return err
-	}
-	if stakeTxCount > maxTxPerTree {
-		str := fmt.Sprintf("too many stransactions to fit into a block "+
-			"[count %d, max %d]", stakeTxCount, maxTxPerTree)
-		return messageError("MsgBlock.BtcDecode", str)
-	}
-
 	return nil
 }
 
@@ -189,23 +175,6 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 		txLocs[i].TxLen = (fullLen - r.Len()) - txLocs[i].TxStart
 	}
 
-	stakeTxCount, err := ReadVarInt(r, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Prevent more transactions than could possibly fit into a stake tx
-	// tree.  It would be possible to cause memory exhaustion and panics
-	// without a sane upper bound on this count.
-	//
-	// NOTE: This is using the constant for the latest protocol version
-	// since it is in terms of the largest possible block size.
-	if stakeTxCount > maxTxPerTree {
-		str := fmt.Sprintf("too many transactions to fit into a stake tx tree "+
-			"[count %d, max %d]", stakeTxCount, maxTxPerTree)
-		return nil, messageError("MsgBlock.DeserializeTxLoc", str)
-	}
-
 	return txLocs, nil
 }
 
@@ -267,8 +236,7 @@ func (msg *MsgBlock) SerializeSize() int {
 	// type and version to be included in a block.
 
 	// Block header bytes + Serialized varint size for the number of
-	// transactions + Serialized varint size for the number of
-	// stake transactions
+	// transactions
 
 	n := blockHeaderLen + VarIntSerializeSize(uint64(len(msg.Transactions)))
 
