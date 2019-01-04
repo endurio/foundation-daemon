@@ -14,19 +14,11 @@ type MiningErrorCode int
 
 // These constants are used to identify a specific RuleError.
 const (
-	// ErrNotEnoughVoters indicates that there were not enough voters to
-	// build a block on top of HEAD.
-	ErrNotEnoughVoters MiningErrorCode = iota
-
 	// ErrFailedToGetGeneration specifies that the current generation for
 	// a block could not be obtained from blockchain.
-	ErrFailedToGetGeneration
+	ErrFailedToGetGeneration MiningErrorCode = iota
 
-	// ErrGetStakeDifficulty indicates that the current stake difficulty
-	// could not be obtained.
-	ErrGetStakeDifficulty
-
-	// ErrGetStakeDifficulty indicates that the current top block of the
+	// ErrGetTopBlock indicates that the current top block of the
 	// blockchain could not be obtained.
 	ErrGetTopBlock
 
@@ -68,9 +60,7 @@ const (
 
 // Map of MiningErrorCode values back to their constant names for pretty printing.
 var miningErrorCodeStrings = map[MiningErrorCode]string{
-	ErrNotEnoughVoters:        "ErrNotEnoughVoters",
 	ErrFailedToGetGeneration:  "ErrFailedToGetGeneration",
-	ErrGetStakeDifficulty:     "ErrGetStakeDifficulty",
 	ErrGetTopBlock:            "ErrGetTopBlock",
 	ErrCreatingCoinbase:       "ErrCreatingCoinbase",
 	ErrGettingMedianTime:      "ErrGettingMedianTime",

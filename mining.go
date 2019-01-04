@@ -115,20 +115,6 @@ func (pq *txPriorityQueue) SetLessFunc(lessFunc txPriorityQueueLessFunc) {
 	heap.Init(pq)
 }
 
-// stakePriority is an integer that is used to sort stake transactions
-// by importance when they enter the min heap for block construction.
-// 2 is for votes (highest), followed by 1 for tickets (2nd highest),
-// followed by 0 for regular transactions and revocations (lowest).
-type stakePriority int
-
-const (
-	regOrRevocPriority stakePriority = iota
-	ticketPriority
-	votePriority
-)
-
-// txPQByStakeAndFee sorts a txPriorityQueue by stake priority, followed by
-// fees per kilobyte, and then transaction priority.
 func txPQByFeeThenPriority(pq *txPriorityQueue, i, j int) bool {
 	// Using > here so that pop gives the highest fee item as opposed
 	// to the lowest.  Sort by fee first, then priority.
@@ -141,9 +127,6 @@ func txPQByFeeThenPriority(pq *txPriorityQueue, i, j int) bool {
 	return pq.items[i].feePerKB > pq.items[j].feePerKB
 }
 
-// txPQByStakeAndFeeAndThenPriority sorts a txPriorityQueue by stake priority,
-// followed by fees per kilobyte, and then if the transaction type is regular
-// or a revocation it sorts it by priority.
 func txPQByPriorityThenFee(pq *txPriorityQueue, i, j int) bool {
 	// Both transactions are of low stake importance. Use > here so that
 	// pop gives the highest priority item as opposed to the lowest.
