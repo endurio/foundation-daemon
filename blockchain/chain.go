@@ -89,16 +89,11 @@ type BestState struct {
 	PrevHash           chainhash.Hash   // The previous block hash.
 	Height             int64            // The height of the block.
 	Bits               uint32           // The difficulty bits of the block.
-	NextPoolSize       uint32           // The ticket pool size.
-	NextStakeDiff      int64            // The next stake difficulty.
 	BlockSize          uint64           // The size of the block.
 	NumTxns            uint64           // The number of txns in the block.
 	TotalTxns          uint64           // The total number of txns in the chain.
 	MedianTime         time.Time        // Median time as per CalcPastMedianTime.
 	TotalSubsidy       int64            // The total subsidy for the chain.
-	NextWinningTickets []chainhash.Hash // The eligible tickets to vote on the next block.
-	MissedTickets      []chainhash.Hash // The missed tickets set to be revoked.
-	NextFinalState     [6]byte          // The calculated state of the lottery for the next block.
 }
 
 // newBestState returns a new best stats instance for the given parameters.

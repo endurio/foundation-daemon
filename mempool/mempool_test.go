@@ -48,23 +48,6 @@ type fakeChain struct {
 	scriptFlags   txscript.ScriptFlags
 }
 
-// NextStakeDifficulty returns the next stake difficulty associated with the
-// fake chain instance.
-func (s *fakeChain) NextStakeDifficulty() (int64, error) {
-	s.RLock()
-	nextStakeDiff := s.nextStakeDiff
-	s.RUnlock()
-	return nextStakeDiff, nil
-}
-
-// SetNextStakeDifficulty sets the next stake difficulty associated with the
-// fake chain instance.
-func (s *fakeChain) SetNextStakeDifficulty(nextStakeDiff int64) {
-	s.Lock()
-	s.nextStakeDiff = nextStakeDiff
-	s.Unlock()
-}
-
 // FetchUtxoView loads utxo details about the input transactions referenced by
 // the passed transaction from the point of view of the fake chain.
 // It also attempts to fetch the utxo details for the transaction itself so the
@@ -599,18 +582,17 @@ func newPoolHarness(chainParams *chaincfg.Params) (*poolHarness, []spendableOutp
 				MinRelayTxFee:        1000, // 1 Satoshi per byte
 				StandardVerifyFlags:  chain.StandardVerifyFlags,
 			},
-			ChainParams:         chainParams,
-			NextStakeDifficulty: chain.NextStakeDifficulty,
-			FetchUtxoView:       chain.FetchUtxoView,
-			BlockByHash:         chain.BlockByHash,
-			BestHash:            chain.BestHash,
-			BestHeight:          chain.BestHeight,
-			PastMedianTime:      chain.PastMedianTime,
-			CalcSequenceLock:    chain.CalcSequenceLock,
-			SubsidyCache:        subsidyCache,
-			SigCache:            nil,
-			AddrIndex:           nil,
-			ExistsAddrIndex:     nil,
+			ChainParams:      chainParams,
+			FetchUtxoView:    chain.FetchUtxoView,
+			BlockByHash:      chain.BlockByHash,
+			BestHash:         chain.BestHash,
+			BestHeight:       chain.BestHeight,
+			PastMedianTime:   chain.PastMedianTime,
+			CalcSequenceLock: chain.CalcSequenceLock,
+			SubsidyCache:     subsidyCache,
+			SigCache:         nil,
+			AddrIndex:        nil,
+			ExistsAddrIndex:  nil,
 		}),
 	}
 

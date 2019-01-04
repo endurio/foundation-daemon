@@ -794,20 +794,7 @@ func (b *blockManager) handleBlockMsg(bmsg *blockMsg) {
 
 		onMainChain := !isOrphan && forkLen == 0
 		if onMainChain {
-			// Notify stake difficulty subscribers and prune invalidated
-			// transactions.
 			best := b.chain.BestSnapshot()
-			r := b.server.rpcServer
-			if r != nil {
-				// Update registered websocket clients on the
-				// current stake difficulty.
-				r.ntfnMgr.NotifyStakeDifficulty(
-					&StakeDifficultyNtfnData{
-						best.Hash,
-						best.Height,
-						best.NextStakeDiff,
-					})
-			}
 			b.server.txMemPool.PruneExpiredTx()
 
 			// Update this peer's latest block height, for future
@@ -1324,18 +1311,6 @@ out:
 					msg.formerBest, msg.newBest)
 
 				if err == nil {
-					// Notify stake difficulty subscribers and prune
-					// invalidated transactions.
-					best := b.chain.BestSnapshot()
-					r := b.server.rpcServer
-					if r != nil {
-						r.ntfnMgr.NotifyStakeDifficulty(
-							&StakeDifficultyNtfnData{
-								best.Hash,
-								best.Height,
-								best.NextStakeDiff,
-							})
-					}
 					b.server.txMemPool.PruneExpiredTx()
 				}
 
@@ -1364,18 +1339,6 @@ out:
 
 				onMainChain := !isOrphan && forkLen == 0
 				if onMainChain {
-					// Notify stake difficulty subscribers and prune
-					// invalidated transactions.
-					best := b.chain.BestSnapshot()
-					r := b.server.rpcServer
-					if r != nil {
-						r.ntfnMgr.NotifyStakeDifficulty(
-							&StakeDifficultyNtfnData{
-								best.Hash,
-								best.Height,
-								best.NextStakeDiff,
-							})
-					}
 					b.server.txMemPool.PruneExpiredTx()
 				}
 

@@ -2462,10 +2462,7 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 				return standardScriptVerifyFlags(bm.chain)
 			},
 		},
-		ChainParams: chainParams,
-		NextStakeDifficulty: func() (int64, error) {
-			return bm.chain.BestSnapshot().NextStakeDiff, nil
-		},
+		ChainParams:      chainParams,
 		FetchUtxoView:    bm.chain.FetchUtxoView,
 		BlockByHash:      bm.chain.BlockByHash,
 		BestHash:         func() *chainhash.Hash { return &bm.chain.BestSnapshot().Hash },
