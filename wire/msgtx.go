@@ -45,19 +45,6 @@ const (
 	// extended Decred script.
 	DefaultPkScriptVersion uint16 = 0x0000
 
-	// TxTreeUnknown is the value returned for a transaction tree that is
-	// unknown.  This is typically because the transaction has not been
-	// inserted into a block yet.
-	TxTreeUnknown int8 = -1
-
-	// TxTreeRegular is the value for a normal transaction tree for a
-	// transaction's location in a block.
-	TxTreeRegular int8 = 0
-
-	// TxTreeStake is the value for a stake transaction tree for a
-	// transaction's location in a block.
-	TxTreeStake int8 = 1
-
 	// SequenceLockTimeDisabled is a flag that if set on a transaction
 	// input's sequence number, the sequence number will not be interpreted
 	// as a relative locktime.

@@ -27,15 +27,8 @@ const (
 	// minMemoryNodes is the minimum number of consecutive nodes needed
 	// in memory in order to perform all necessary validation.  It is used
 	// to determine when it's safe to prune nodes from memory without
-	// causing constant dynamic reloading.  This value should be larger than
-	// that for minMemoryStakeNodes.
+	// causing constant dynamic reloading.
 	minMemoryNodes = 2880
-
-	// minMemoryStakeNodes is the maximum height to keep stake nodes
-	// in memory for in their respective nodes.  Beyond this height,
-	// they will need to be manually recalculated.  This value should
-	// be at least the stake retarget interval.
-	minMemoryStakeNodes = 288
 
 	// mainchainBlockCacheSize is the number of mainchain blocks to
 	// keep in memory, by height from the tip of the mainchain.
@@ -85,15 +78,15 @@ type orphanBlock struct {
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 type BestState struct {
-	Hash               chainhash.Hash   // The hash of the block.
-	PrevHash           chainhash.Hash   // The previous block hash.
-	Height             int64            // The height of the block.
-	Bits               uint32           // The difficulty bits of the block.
-	BlockSize          uint64           // The size of the block.
-	NumTxns            uint64           // The number of txns in the block.
-	TotalTxns          uint64           // The total number of txns in the chain.
-	MedianTime         time.Time        // Median time as per CalcPastMedianTime.
-	TotalSubsidy       int64            // The total subsidy for the chain.
+	Hash         chainhash.Hash // The hash of the block.
+	PrevHash     chainhash.Hash // The previous block hash.
+	Height       int64          // The height of the block.
+	Bits         uint32         // The difficulty bits of the block.
+	BlockSize    uint64         // The size of the block.
+	NumTxns      uint64         // The number of txns in the block.
+	TotalTxns    uint64         // The total number of txns in the chain.
+	MedianTime   time.Time      // Median time as per CalcPastMedianTime.
+	TotalSubsidy int64          // The total subsidy for the chain.
 }
 
 // newBestState returns a new best stats instance for the given parameters.
@@ -213,18 +206,11 @@ type BlockChain struct {
 	unknownRulesWarned    bool
 	unknownVersionsWarned bool
 
-	// pruner is the automatic pruner for block nodes and stake nodes,
+	// pruner is the automatic pruner for block nodes,
 	// so that the memory may be restored by the garbage collector if
 	// it is unlikely to be referenced in the future.
 	pruner *chainPruner
 }
-
-const (
-	// stakeMajorityCacheKeySize is comprised of the stake version and the
-	// hash size.  The stake version is a little endian uint32, hence we
-	// add 4 to the overall size.
-	stakeMajorityCacheKeySize = 4 + chainhash.HashSize
-)
 
 // DisableVerify provides a mechanism to disable transaction script validation
 // which you DO NOT want to do in production as it could allow double spends
@@ -1841,8 +1827,8 @@ func New(config *Config) (*BlockChain, error) {
 
 	tip := b.bestChain.Tip()
 	log.Infof("Chain state: height %d, hash %v, total transactions %d, "+
-		"work %v, stake version %v", tip.height, tip.hash,
-		b.stateSnapshot.TotalTxns, tip.workSum, 0)
+		"work %v", tip.height, tip.hash,
+		b.stateSnapshot.TotalTxns, tip.workSum)
 
 	return &b, nil
 }
