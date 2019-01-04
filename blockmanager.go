@@ -1586,32 +1586,6 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 			r.ntfnMgr.NotifyBlockConnected(block)
 		}
 
-	// Stake tickets are spent or missed from the most recently connected block.
-	case blockchain.NTSpentAndMissedTickets:
-		tnd, ok := notification.Data.(*blockchain.TicketNotificationsData)
-		if !ok {
-			bmgrLog.Warnf("Tickets connected notification is not " +
-				"TicketNotificationsData")
-			break
-		}
-
-		if r := b.server.rpcServer; r != nil {
-			r.ntfnMgr.NotifySpentAndMissedTickets(tnd)
-		}
-
-	// Stake tickets are matured from the most recently connected block.
-	case blockchain.NTNewTickets:
-		tnd, ok := notification.Data.(*blockchain.TicketNotificationsData)
-		if !ok {
-			bmgrLog.Warnf("Tickets connected notification is not " +
-				"TicketNotificationsData")
-			break
-		}
-
-		if r := b.server.rpcServer; r != nil {
-			r.ntfnMgr.NotifyNewTickets(tnd)
-		}
-
 	// A block has been disconnected from the main block chain.
 	case blockchain.NTBlockDisconnected:
 		blockSlice, ok := notification.Data.([]*dcrutil.Block)

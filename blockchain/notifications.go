@@ -64,28 +64,18 @@ const (
 	// NTReorganization indicates that a blockchain reorganization has taken
 	// place.
 	NTReorganization
-
-	// NTSpentAndMissedTickets indicates spent or missed tickets from a newly
-	// accepted block.
-	NTSpentAndMissedTickets
-
-	// NTSpentAndMissedTickets indicates newly maturing tickets from a newly
-	// accepted block.
-	NTNewTickets
 )
 
 // notificationTypeStrings is a map of notification types back to their constant
 // names for pretty printing.
 var notificationTypeStrings = map[NotificationType]string{
-	NTNewTipBlockChecked:    "NTNewTipBlockChecked",
-	NTBlockAccepted:         "NTBlockAccepted",
-	NTBlockConnected:        "NTBlockConnected",
-	NTBlockDisconnected:     "NTBlockDisconnected",
-	NTChainReorgStarted:     "NTChainReorgStarted",
-	NTChainReorgDone:        "NTChainReorgDone",
-	NTReorganization:        "NTReorganization",
-	NTSpentAndMissedTickets: "NTSpentAndMissedTickets",
-	NTNewTickets:            "NTNewTickets",
+	NTNewTipBlockChecked: "NTNewTipBlockChecked",
+	NTBlockAccepted:      "NTBlockAccepted",
+	NTBlockConnected:     "NTBlockConnected",
+	NTBlockDisconnected:  "NTBlockDisconnected",
+	NTChainReorgStarted:  "NTChainReorgStarted",
+	NTChainReorgDone:     "NTChainReorgDone",
+	NTReorganization:     "NTReorganization",
 }
 
 // String returns the NotificationType in human-readable form.
@@ -127,17 +117,6 @@ type ReorganizationNtfnsData struct {
 	NewHeight int64
 }
 
-// TicketNotificationsData is the structure for new/spent/missed ticket
-// notifications at blockchain HEAD that are outgoing from chain.
-type TicketNotificationsData struct {
-	Hash            chainhash.Hash
-	Height          int64
-	StakeDifficulty int64
-	TicketsSpent    []chainhash.Hash
-	TicketsMissed   []chainhash.Hash
-	TicketsNew      []chainhash.Hash
-}
-
 // Notification defines notification that is sent to the caller via the callback
 // function provided during the call to New and consists of a notification type
 // as well as associated data that depends on the type as follows:
@@ -148,8 +127,6 @@ type TicketNotificationsData struct {
 // 	- NTChainReorgStarted:     nil
 // 	- NTChainReorgDone:        nil
 //  - NTReorganization:        *ReorganizationNtfnsData
-//  - NTSpentAndMissedTickets: *TicketNotificationsData
-//  - NTNewTickets:            *TicketNotificationsData
 type Notification struct {
 	Type NotificationType
 	Data interface{}
