@@ -65,12 +65,6 @@ func IsPushOnlyScript(script []byte) bool {
 	return isPushOnly(pops)
 }
 
-// isStakeOpcode returns whether or not the opcode is one of the stake tagging
-// opcodes.
-func isStakeOpcode(op *opcode) bool {
-	return op.value >= OP_SSTX && op.value <= OP_SSTXCHANGE
-}
-
 // isScriptHash returns whether or not the passed script is a regular
 // pay-to-script-hash script.
 func isScriptHash(pops []parsedOpcode) bool {
@@ -80,57 +74,10 @@ func isScriptHash(pops []parsedOpcode) bool {
 		pops[2].opcode.value == OP_EQUAL
 }
 
-// isStakeScriptHash returns whether or not the passed script is a stake
-// pay-to-script-hash script.
-func isStakeScriptHash(pops []parsedOpcode) bool {
-	return len(pops) == 4 &&
-		isStakeOpcode(pops[0].opcode) &&
-		pops[1].opcode.value == OP_HASH160 &&
-		pops[2].opcode.value == OP_DATA_20 &&
-		pops[3].opcode.value == OP_EQUAL
-}
-
 // isAnyKindOfScriptHash returns whether or not the passed script is either a
 // regular pay-to-script-hash script or a stake pay-to-script-hash script.
 func isAnyKindOfScriptHash(pops []parsedOpcode) bool {
-	return isScriptHash(pops) || isStakeScriptHash(pops)
-}
-
-// HasP2SHScriptSigStakeOpCodes returns an error is the p2sh script has either
-// stake opcodes or if the pkscript cannot be retrieved.
-func HasP2SHScriptSigStakeOpCodes(version uint16, scriptSig, scriptPubKey []byte) error {
-	class := GetScriptClass(version, scriptPubKey)
-	if IsStakeOutput(scriptPubKey) {
-		class, _ = GetStakeOutSubclass(scriptPubKey)
-	}
-	if class == ScriptHashTy {
-		// Obtain the embedded pkScript from the scriptSig of the
-		// current transaction. Then, ensure that it does not use
-		// any stake tagging OP codes.
-		pData, err := PushedData(scriptSig)
-		if err != nil {
-			return err
-		}
-		if len(pData) == 0 {
-			str := "script has no pushed data"
-			return scriptError(ErrNotPushOnly, str)
-		}
-
-		// The pay-to-hash-script is the final data push of the
-		// signature script.
-		shScript := pData[len(pData)-1]
-
-		hasStakeOpCodes, err := ContainsStakeOpCodes(shScript)
-		if err != nil {
-			return err
-		}
-		if hasStakeOpCodes {
-			str := "stake opcodes were found in a p2sh script"
-			return scriptError(ErrP2SHStakeOpCodes, str)
-		}
-	}
-
-	return nil
+	return isScriptHash(pops)
 }
 
 // parseScriptTemplate is the same as parseScript but allows the passing of the

@@ -147,10 +147,6 @@ const (
 	// Failures related to improper use of opcodes.
 	// --------------------------------------------
 
-	// ErrP2SHStakeOpCodes is returned when one or more stake opcodes are
-	// found in the redeem script of a pay-to-script-hash script.
-	ErrP2SHStakeOpCodes
-
 	// ErrDisabledOpcode is returned when a disabled opcode is encountered
 	// in a script.
 	ErrDisabledOpcode
@@ -352,7 +348,6 @@ var errorCodeStrings = map[ErrorCode]string{
 	ErrNumEqualVerify:            "ErrNumEqualVerify",
 	ErrCheckSigVerify:            "ErrCheckSigVerify",
 	ErrCheckMultiSigVerify:       "ErrCheckMultiSigVerify",
-	ErrP2SHStakeOpCodes:          "ErrP2SHStakeOpCodes",
 	ErrDisabledOpcode:            "ErrDisabledOpcode",
 	ErrReservedOpcode:            "ErrReservedOpcode",
 	ErrMalformedPush:             "ErrMalformedPush",

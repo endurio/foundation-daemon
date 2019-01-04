@@ -231,10 +231,10 @@ const (
 	OP_NOP8                = 0xb7 // 183
 	OP_NOP9                = 0xb8 // 184
 	OP_NOP10               = 0xb9 // 185
-	OP_SSTX                = 0xba // 186 DECRED
-	OP_SSGEN               = 0xbb // 187 DECRED
-	OP_SSRTX               = 0xbc // 188 DECRED
-	OP_SSTXCHANGE          = 0xbd // 189 DECRED
+	OP_UNKNOWN186          = 0xba // 186
+	OP_UNKNOWN187          = 0xbb // 187
+	OP_UNKNOWN188          = 0xbc // 188
+	OP_UNKNOWN189          = 0xbd // 189
 	OP_CHECKSIGALT         = 0xbe // 190 DECRED
 	OP_CHECKSIGALTVERIFY   = 0xbf // 191 DECRED
 	OP_SHA256              = 0xc0 // 192
@@ -522,10 +522,10 @@ var opcodeArray = [256]opcode{
 	OP_NOP10: {OP_NOP10, "OP_NOP10", 1, opcodeNop},
 
 	// SS* opcodes.
-	OP_SSTX:       {OP_SSTX, "OP_SSTX", 1, opcodeNop},
-	OP_SSGEN:      {OP_SSGEN, "OP_SSGEN", 1, opcodeNop},
-	OP_SSRTX:      {OP_SSRTX, "OP_SSRTX", 1, opcodeNop},
-	OP_SSTXCHANGE: {OP_SSTXCHANGE, "OP_SSTXCHANGE", 1, opcodeNop},
+	OP_UNKNOWN186: {OP_UNKNOWN186, "OP_UNKNOWN186", 1, opcodeNop},
+	OP_UNKNOWN187: {OP_UNKNOWN187, "OP_UNKNOWN187", 1, opcodeNop},
+	OP_UNKNOWN188: {OP_UNKNOWN188, "OP_UNKNOWN188", 1, opcodeNop},
+	OP_UNKNOWN189: {OP_UNKNOWN189, "OP_UNKNOWN189", 1, opcodeNop},
 
 	// Alternative checksig opcode.
 	OP_CHECKSIGALT:       {OP_CHECKSIGALT, "OP_CHECKSIGALT", 1, opcodeCheckSigAlt},

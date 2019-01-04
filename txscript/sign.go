@@ -189,39 +189,6 @@ func signMultiSig(tx *wire.MsgTx, idx int, subScript []byte, hashType SigHashTyp
 	return script, signed == nRequired
 }
 
-// handleStakeOutSign is a convenience function for reducing code clutter in
-// sign. It handles the signing of stake outputs.
-func handleStakeOutSign(chainParams *chaincfg.Params, tx *wire.MsgTx, idx int,
-	subScript []byte, hashType SigHashType, kdb KeyDB, sdb ScriptDB,
-	addresses []dcrutil.Address, class ScriptClass, subClass ScriptClass,
-	nrequired int) ([]byte, ScriptClass, []dcrutil.Address, int, error) {
-
-	// look up key for address
-	switch subClass {
-	case PubKeyHashTy:
-		key, compressed, err := kdb.GetKey(addresses[0])
-		if err != nil {
-			return nil, class, nil, 0, err
-		}
-		txscript, err := SignatureScript(tx, idx, subScript, hashType,
-			key, compressed)
-		if err != nil {
-			return nil, class, nil, 0, err
-		}
-		return txscript, class, addresses, nrequired, nil
-	case ScriptHashTy:
-		script, err := sdb.GetScript(addresses[0])
-		if err != nil {
-			return nil, class, nil, 0, err
-		}
-
-		return script, class, addresses, nrequired, nil
-	}
-
-	return nil, class, nil, 0, fmt.Errorf("unknown subclass for stake output " +
-		"to sign")
-}
-
 // sign is the main signing workhorse. It takes a script, its input transaction,
 // its input index, a database of keys, a database of scripts, and information
 // about the type of signature and returns a signature, script class, the
@@ -235,19 +202,6 @@ func sign(chainParams *chaincfg.Params, tx *wire.MsgTx, idx int,
 		subScript, chainParams)
 	if err != nil {
 		return nil, NonStandardTy, nil, 0, err
-	}
-
-	subClass := class
-	isStakeType := class == StakeSubmissionTy ||
-		class == StakeSubChangeTy ||
-		class == StakeGenTy ||
-		class == StakeRevocationTy
-	if isStakeType {
-		subClass, err = GetStakeOutSubclass(subScript)
-		if err != nil {
-			return nil, 0, nil, 0,
-				fmt.Errorf("unknown stake output subclass encountered")
-		}
 	}
 
 	switch class {
@@ -323,22 +277,6 @@ func sign(chainParams *chaincfg.Params, tx *wire.MsgTx, idx int,
 		script, _ := signMultiSig(tx, idx, subScript, hashType,
 			addresses, nrequired, kdb)
 		return script, class, addresses, nrequired, nil
-
-	case StakeSubmissionTy:
-		return handleStakeOutSign(chainParams, tx, idx, subScript, hashType, kdb,
-			sdb, addresses, class, subClass, nrequired)
-
-	case StakeGenTy:
-		return handleStakeOutSign(chainParams, tx, idx, subScript, hashType, kdb,
-			sdb, addresses, class, subClass, nrequired)
-
-	case StakeRevocationTy:
-		return handleStakeOutSign(chainParams, tx, idx, subScript, hashType, kdb,
-			sdb, addresses, class, subClass, nrequired)
-
-	case StakeSubChangeTy:
-		return handleStakeOutSign(chainParams, tx, idx, subScript, hashType, kdb,
-			sdb, addresses, class, subClass, nrequired)
 
 	case NullDataTy:
 		return nil, class, nil, 0,
@@ -583,17 +521,6 @@ func SignTxOutput(chainParams *chaincfg.Params, tx *wire.MsgTx, idx int,
 		idx, pkScript, hashType, kdb, sdb, sigType)
 	if err != nil {
 		return nil, err
-	}
-
-	isStakeType := class == StakeSubmissionTy ||
-		class == StakeSubChangeTy ||
-		class == StakeGenTy ||
-		class == StakeRevocationTy
-	if isStakeType {
-		class, err = GetStakeOutSubclass(pkScript)
-		if err != nil {
-			return nil, fmt.Errorf("unknown stake output subclass encountered")
-		}
 	}
 
 	if class == ScriptHashTy {

@@ -672,16 +672,6 @@ func NewEngine(scriptPubKey []byte, tx *wire.MsgTx, txIdx int, flags ScriptFlags
 			"signature script is not push only")
 	}
 
-	// Subscripts for pay to script hash outputs are not allowed
-	// to use any stake tag OP codes if the script version is 0.
-	if scriptVersion == DefaultScriptVersion {
-		err := HasP2SHScriptSigStakeOpCodes(scriptVersion, scriptSig,
-			scriptPubKey)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// The engine stores the scripts in parsed form using a slice.  This
 	// allows multiple scripts to be executed in sequence.  For example,
 	// with a pay-to-script-hash transaction, there will be ultimately be
