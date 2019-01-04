@@ -14,7 +14,6 @@ require (
 
 replace (
 	github.com/endurio/ndrd/blockchain => ../blockchain
-	github.com/endurio/ndrd/blockchain/stake => ../blockchain/stake
 	github.com/endurio/ndrd/chaincfg => ../chaincfg
 	github.com/endurio/ndrd/chaincfg/chainhash => ../chaincfg/chainhash
 	github.com/endurio/ndrd/database => ../database

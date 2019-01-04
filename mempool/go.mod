@@ -2,7 +2,6 @@ module github.com/endurio/ndrd/mempool
 
 require (
 	github.com/endurio/ndrd/blockchain v1.0.1
-	github.com/endurio/ndrd/blockchain/stake v1.1.0
 	github.com/endurio/ndrd/chaincfg v1.2.0
 	github.com/endurio/ndrd/chaincfg/chainhash v1.0.1
 	github.com/endurio/ndrd/dcrec v0.0.0-20180801202239-0761de129164
@@ -17,7 +16,6 @@ require (
 
 replace (
 	github.com/endurio/ndrd/blockchain => ../blockchain
-	github.com/endurio/ndrd/blockchain/stake => ../blockchain/stake
 	github.com/endurio/ndrd/chaincfg => ../chaincfg
 	github.com/endurio/ndrd/chaincfg/chainhash => ../chaincfg/chainhash
 	github.com/endurio/ndrd/database => ../database

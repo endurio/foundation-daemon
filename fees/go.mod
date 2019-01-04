@@ -2,7 +2,6 @@ module github.com/endurio/ndrd/fees
 
 require (
 	github.com/btcsuite/goleveldb v1.0.0
-	github.com/endurio/ndrd/blockchain/stake v1.1.0
 	github.com/endurio/ndrd/chaincfg v1.2.0
 	github.com/endurio/ndrd/chaincfg/chainhash v1.0.1
 	github.com/endurio/ndrd/dcrutil v1.2.0

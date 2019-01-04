@@ -10,17 +10,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/decred/slog"
 	"github.com/endurio/ndrd/addrmgr"
 	"github.com/endurio/ndrd/blockchain"
 	"github.com/endurio/ndrd/blockchain/indexers"
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/connmgr"
 	"github.com/endurio/ndrd/database"
 	"github.com/endurio/ndrd/fees"
 	"github.com/endurio/ndrd/mempool"
 	"github.com/endurio/ndrd/peer"
 	"github.com/endurio/ndrd/txscript"
-	"github.com/decred/slog"
 	"github.com/jrick/logrotate/rotator"
 )
 
@@ -69,7 +68,6 @@ var (
 	rpcsLog = backendLog.Logger("RPCS")
 	scrpLog = backendLog.Logger("SCRP")
 	srvrLog = backendLog.Logger("SRVR")
-	stkeLog = backendLog.Logger("STKE")
 	txmpLog = backendLog.Logger("TXMP")
 )
 
@@ -83,7 +81,6 @@ func init() {
 	indexers.UseLogger(indxLog)
 	mempool.UseLogger(txmpLog)
 	peer.UseLogger(peerLog)
-	stake.UseLogger(stkeLog)
 	txscript.UseLogger(scrpLog)
 }
 
@@ -104,7 +101,6 @@ var subsystemLoggers = map[string]slog.Logger{
 	"RPCS": rpcsLog,
 	"SCRP": scrpLog,
 	"SRVR": srvrLog,
-	"STKE": stkeLog,
 	"TXMP": txmpLog,
 }
 

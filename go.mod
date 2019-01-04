@@ -8,7 +8,6 @@ require (
 	github.com/decred/slog v1.0.0
 	github.com/endurio/ndrd/addrmgr v1.0.2
 	github.com/endurio/ndrd/blockchain v1.1.1
-	github.com/endurio/ndrd/blockchain/stake v1.1.0
 	github.com/endurio/ndrd/certgen v1.0.2
 	github.com/endurio/ndrd/chaincfg v1.2.1
 	github.com/endurio/ndrd/chaincfg/chainhash v1.0.1
@@ -37,7 +36,6 @@ replace (
 	github.com/endurio/ndrd => ./
 	github.com/endurio/ndrd/addrmgr => ./addrmgr
 	github.com/endurio/ndrd/blockchain => ./blockchain
-	github.com/endurio/ndrd/blockchain/stake => ./blockchain/stake
 	github.com/endurio/ndrd/certgen => ./certgen
 	github.com/endurio/ndrd/chaincfg => ./chaincfg
 	github.com/endurio/ndrd/chaincfg/chainhash => ./chaincfg/chainhash
