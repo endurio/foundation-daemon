@@ -260,18 +260,6 @@ func (c *Client) trackRegisteredNtfns(cmd interface{}) {
 	defer c.ntfnStateLock.Unlock()
 
 	switch bcmd := cmd.(type) {
-	case *dcrjson.NotifyWinningTicketsCmd:
-		c.ntfnState.notifyWinningTickets = true
-
-	case *dcrjson.NotifySpentAndMissedTicketsCmd:
-		c.ntfnState.notifySpentAndMissedTickets = true
-
-	case *dcrjson.NotifyNewTicketsCmd:
-		c.ntfnState.notifyNewTickets = true
-
-	case *dcrjson.NotifyStakeDifficultyCmd:
-		c.ntfnState.notifyStakeDifficulty = true
-
 	case *dcrjson.NotifyBlocksCmd:
 		c.ntfnState.notifyBlocks = true
 
@@ -539,38 +527,6 @@ func (c *Client) reregisterNtfns() error {
 	if stateCopy.notifyBlocks {
 		log.Debugf("Reregistering [notifyblocks]")
 		if err := c.NotifyBlocks(); err != nil {
-			return err
-		}
-	}
-
-	// Reregister notifywinningtickets if needed.
-	if stateCopy.notifyWinningTickets {
-		log.Debugf("Reregistering [notifywinningtickets]")
-		if err := c.NotifyWinningTickets(); err != nil {
-			return err
-		}
-	}
-
-	// Reregister notifyspendandmissedtickets if needed.
-	if stateCopy.notifySpentAndMissedTickets {
-		log.Debugf("Reregistering [notifyspentandmissedtickets]")
-		if err := c.NotifySpentAndMissedTickets(); err != nil {
-			return err
-		}
-	}
-
-	// Reregister notifynewtickets if needed.
-	if stateCopy.notifyNewTickets {
-		log.Debugf("Reregistering [notifynewtickets]")
-		if err := c.NotifyNewTickets(); err != nil {
-			return err
-		}
-	}
-
-	// Reregister notifystakedifficulty if needed.
-	if stateCopy.notifyStakeDifficulty {
-		log.Debugf("Reregistering [notifystakedifficulty]")
-		if err := c.NotifyStakeDifficulty(); err != nil {
 			return err
 		}
 	}

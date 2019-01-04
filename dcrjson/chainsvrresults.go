@@ -34,15 +34,6 @@ type EstimateSmartFeeResult struct {
 	Blocks  int64    `json:"blocks"`
 }
 
-// EstimateStakeDiffResult models the data returned from the estimatestakediff
-// command.
-type EstimateStakeDiffResult struct {
-	Min      float64  `json:"min"`
-	Max      float64  `json:"max"`
-	Expected float64  `json:"expected"`
-	User     *float64 `json:"user,omitempty"`
-}
-
 // GetAddedNodeInfoResultAddr models the data of the addresses portion of the
 // getaddednodeinfo command.
 type GetAddedNodeInfoResultAddr struct {
@@ -321,13 +312,6 @@ type TxRawResult struct {
 	Blocktime     int64  `json:"blocktime,omitempty"`
 }
 
-// GetStakeDifficultyResult models the data returned from the
-// getstakedifficulty command.
-type GetStakeDifficultyResult struct {
-	CurrentStakeDifficulty float64 `json:"current"`
-	NextStakeDifficulty    float64 `json:"next"`
-}
-
 // VersionCount models a generic version:count tuple.
 type VersionCount struct {
 	Version uint32 `json:"version"`
@@ -342,33 +326,10 @@ type VersionInterval struct {
 	VoteVersions []VersionCount `json:"voteversions"`
 }
 
-// GetStakeVersionInfoResult models the resulting data for getstakeversioninfo
-// command.
-type GetStakeVersionInfoResult struct {
-	CurrentHeight int64             `json:"currentheight"`
-	Hash          string            `json:"hash"`
-	Intervals     []VersionInterval `json:"intervals"`
-}
-
 // VersionBits models a generic version:bits tuple.
 type VersionBits struct {
 	Version uint32 `json:"version"`
 	Bits    uint16 `json:"bits"`
-}
-
-// StakeVersions models the data for GetStakeVersionsResult.
-type StakeVersions struct {
-	Hash         string        `json:"hash"`
-	Height       int64         `json:"height"`
-	BlockVersion int32         `json:"blockversion"`
-	StakeVersion uint32        `json:"stakeversion"`
-	Votes        []VersionBits `json:"votes"`
-}
-
-// GetStakeVersionsResult models the data returned from the getstakeversions
-// command.
-type GetStakeVersionsResult struct {
-	StakeVersions []StakeVersions `json:"stakeversions"`
 }
 
 // GetTxOutResult models the data from the gettxout command.
