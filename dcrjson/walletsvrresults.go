@@ -20,12 +20,9 @@ type GenerateVoteResult struct {
 type GetAccountBalanceResult struct {
 	AccountName             string  `json:"accountname"`
 	ImmatureCoinbaseRewards float64 `json:"immaturecoinbaserewards"`
-	ImmatureStakeGeneration float64 `json:"immaturestakegeneration"`
-	LockedByTickets         float64 `json:"lockedbytickets"`
 	Spendable               float64 `json:"spendable"`
 	Total                   float64 `json:"total"`
 	Unconfirmed             float64 `json:"unconfirmed"`
-	VotingAuthority         float64 `json:"votingauthority"`
 }
 
 // GetBalanceResult models the data from the getbalance command.
@@ -33,12 +30,9 @@ type GetBalanceResult struct {
 	Balances                     []GetAccountBalanceResult `json:"balances"`
 	BlockHash                    string                    `json:"blockhash"`
 	TotalImmatureCoinbaseRewards float64                   `json:"totalimmaturecoinbaserewards,omitempty"`
-	TotalImmatureStakeGeneration float64                   `json:"totalimmaturestakegeneration,omitempty"`
-	TotalLockedByTickets         float64                   `json:"totallockedbytickets,omitempty"`
 	TotalSpendable               float64                   `json:"totalspendable,omitempty"`
 	CumulativeTotal              float64                   `json:"cumulativetotal,omitempty"`
 	TotalUnconfirmed             float64                   `json:"totalunconfirmed,omitempty"`
-	TotalVotingAuthority         float64                   `json:"totalvotingauthority,omitempty"`
 }
 
 // GetBestBlockResult models the data from the getbestblock command.
@@ -75,36 +69,6 @@ type GetPayToContractHashResult struct {
 	Address string `json:"address"`
 }
 
-// GetStakeInfoResult models the data returned from the getstakeinfo
-// command.
-type GetStakeInfoResult struct {
-	BlockHeight  int64   `json:"blockheight"`
-	Difficulty   float64 `json:"difficulty"`
-	TotalSubsidy float64 `json:"totalsubsidy"`
-
-	OwnMempoolTix  uint32 `json:"ownmempooltix"`
-	Immature       uint32 `json:"immature"`
-	Unspent        uint32 `json:"unspent"`
-	Voted          uint32 `json:"voted"`
-	Revoked        uint32 `json:"revoked"`
-	UnspentExpired uint32 `json:"unspentexpired"`
-
-	// Not available to SPV wallets
-	PoolSize         uint32  `json:"poolsize,omitempty"`
-	AllMempoolTix    uint32  `json:"allmempooltix,omitempty"`
-	Live             uint32  `json:"live,omitempty"`
-	ProportionLive   float64 `json:"proportionlive,omitempty"`
-	Missed           uint32  `json:"missed,omitempty"`
-	ProportionMissed float64 `json:"proportionmissed,omitempty"`
-	Expired          uint32  `json:"expired,omitempty"`
-}
-
-// GetTicketsResult models the data returned from the gettickets
-// command.
-type GetTicketsResult struct {
-	Hashes []string `json:"hashes"`
-}
-
 // GetTransactionDetailsResult models the details data from the gettransaction command.
 //
 // This models the "short" version of the ListTransactionsResult type, which
@@ -134,22 +98,6 @@ type GetTransactionResult struct {
 	TimeReceived    int64                         `json:"timereceived"`
 	Details         []GetTransactionDetailsResult `json:"details"`
 	Hex             string                        `json:"hex"`
-	Type            string                        `json:"type"`
-	TicketStatus    string                        `json:"ticketstatus,omitempty"`
-}
-
-// VoteChoice models the data for a vote choice in the getvotechoices result.
-type VoteChoice struct {
-	AgendaID          string `json:"agendaid"`
-	AgendaDescription string `json:"agendadescription"`
-	ChoiceID          string `json:"choiceid"`
-	ChoiceDescription string `json:"choicedescription"`
-}
-
-// GetVoteChoicesResult models the data returned by the getvotechoices command.
-type GetVoteChoicesResult struct {
-	Version uint32       `json:"version"`
-	Choices []VoteChoice `json:"choices"`
 }
 
 // InfoWalletResult models the data returned by the wallet server getinfo
@@ -187,83 +135,26 @@ type ListScriptsResult struct {
 	Scripts []ScriptInfo `json:"scripts"`
 }
 
-// ListTicketsTransactionSummaryInput defines the type used in the listtickets JSON-RPC
-// result for the MyInputs field of Ticket and Spender command field.
-type ListTicketsTransactionSummaryInput struct {
-	Index           uint32  `json:"index"`
-	PreviousAccount string  `json:"previousaccount"`
-	PreviousAmount  float64 `json:"previousamount"`
-}
-
-// ListTicketsTransactionSummaryOutput defines the type used in the listtickets JSON-RPC
-// result for the MyOutputs field of Ticket and Spender command field.
-type ListTicketsTransactionSummaryOutput struct {
-	Index        uint32  `json:"index"`
-	Account      string  `json:"account"`
-	Internal     bool    `json:"internal"`
-	Amount       float64 `json:"amount"`
-	Address      string  `json:"address"`
-	OutputScript string  `json:"outputscript"`
-}
-
-// ListTicketsTransactionSummary defines the type used in the listtickets JSON-RPC
-// result for the Ticket and Spender command fields.
-type ListTicketsTransactionSummary struct {
-	Hash        string                                `json:"hash"`
-	Transaction string                                `json:"transaction"`
-	MyInputs    []ListTicketsTransactionSummaryInput  `json:"myinputs"`
-	MyOutputs   []ListTicketsTransactionSummaryOutput `json:"myoutputs"`
-	Fee         float64                               `json:"fee"`
-	Timestamp   int64                                 `json:"timestamp"`
-	Type        string                                `json:"type"`
-}
-
-// ListTicketsResult models the data from the listtickets command.
-type ListTicketsResult struct {
-	Ticket  *ListTicketsTransactionSummary `json:"ticket"`
-	Spender *ListTicketsTransactionSummary `json:"spender"`
-	Status  string                         `json:"status"`
-}
-
-// ListTransactionsTxType defines the type used in the listtransactions JSON-RPC
-// result for the TxType command field.
-type ListTransactionsTxType string
-
-const (
-	// LTTTRegular indicates a regular transaction.
-	LTTTRegular ListTransactionsTxType = "regular"
-
-	// LTTTTicket indicates a ticket.
-	LTTTTicket ListTransactionsTxType = "ticket"
-
-	// LTTTVote indicates a vote.
-	LTTTVote ListTransactionsTxType = "vote"
-
-	// LTTTRevocation indicates a revocation.
-	LTTTRevocation ListTransactionsTxType = "revocation"
-)
-
 // ListTransactionsResult models the data from the listtransactions command.
 type ListTransactionsResult struct {
-	Account           string                  `json:"account"`
-	Address           string                  `json:"address,omitempty"`
-	Amount            float64                 `json:"amount"`
-	BlockHash         string                  `json:"blockhash,omitempty"`
-	BlockIndex        *int64                  `json:"blockindex,omitempty"`
-	BlockTime         int64                   `json:"blocktime,omitempty"`
-	Category          string                  `json:"category"`
-	Confirmations     int64                   `json:"confirmations"`
-	Fee               *float64                `json:"fee,omitempty"`
-	Generated         bool                    `json:"generated,omitempty"`
-	InvolvesWatchOnly bool                    `json:"involveswatchonly,omitempty"`
-	Time              int64                   `json:"time"`
-	TimeReceived      int64                   `json:"timereceived"`
-	TxID              string                  `json:"txid"`
-	TxType            *ListTransactionsTxType `json:"txtype,omitempty"`
-	Vout              uint32                  `json:"vout"`
-	WalletConflicts   []string                `json:"walletconflicts"`
-	Comment           string                  `json:"comment,omitempty"`
-	OtherAccount      string                  `json:"otheraccount,omitempty"`
+	Account           string   `json:"account"`
+	Address           string   `json:"address,omitempty"`
+	Amount            float64  `json:"amount"`
+	BlockHash         string   `json:"blockhash,omitempty"`
+	BlockIndex        *int64   `json:"blockindex,omitempty"`
+	BlockTime         int64    `json:"blocktime,omitempty"`
+	Category          string   `json:"category"`
+	Confirmations     int64    `json:"confirmations"`
+	Fee               *float64 `json:"fee,omitempty"`
+	Generated         bool     `json:"generated,omitempty"`
+	InvolvesWatchOnly bool     `json:"involveswatchonly,omitempty"`
+	Time              int64    `json:"time"`
+	TimeReceived      int64    `json:"timereceived"`
+	TxID              string   `json:"txid"`
+	Vout              uint32   `json:"vout"`
+	WalletConflicts   []string `json:"walletconflicts"`
+	Comment           string   `json:"comment,omitempty"`
+	OtherAccount      string   `json:"otheraccount,omitempty"`
 }
 
 // ListReceivedByAccountResult models the data from the listreceivedbyaccount
@@ -296,8 +187,6 @@ type ListSinceBlockResult struct {
 type ListUnspentResult struct {
 	TxID          string  `json:"txid"`
 	Vout          uint32  `json:"vout"`
-	Tree          int8    `json:"tree"`
-	TxType        int     `json:"txtype"`
 	Address       string  `json:"address"`
 	Account       string  `json:"account"`
 	ScriptPubKey  string  `json:"scriptPubKey"`
@@ -361,23 +250,6 @@ type SignRawTransactionsResult struct {
 	Results []SignedTransaction `json:"results"`
 }
 
-// PoolUserTicket is the JSON struct corresponding to a stake pool user ticket
-// object.
-type PoolUserTicket struct {
-	Status        string `json:"status"`
-	Ticket        string `json:"ticket"`
-	TicketHeight  uint32 `json:"ticketheight"`
-	SpentBy       string `json:"spentby"`
-	SpentByHeight uint32 `json:"spentbyheight"`
-}
-
-// StakePoolUserInfoResult models the data returned from the stakepooluserinfo
-// command.
-type StakePoolUserInfoResult struct {
-	Tickets        []PoolUserTicket `json:"tickets"`
-	InvalidTickets []string         `json:"invalid"`
-}
-
 // SweepAccountResult models the data returned from the sweepaccount
 // command.
 type SweepAccountResult struct {
@@ -415,13 +287,7 @@ type VerifySeedResult struct {
 // WalletInfoResult models the data returned from the walletinfo
 // command.
 type WalletInfoResult struct {
-	DaemonConnected  bool    `json:"daemonconnected"`
-	Unlocked         bool    `json:"unlocked"`
-	TxFee            float64 `json:"txfee"`
-	TicketFee        float64 `json:"ticketfee"`
-	TicketPurchasing bool    `json:"ticketpurchasing"`
-	VoteBits         uint16  `json:"votebits"`
-	VoteBitsExtended string  `json:"votebitsextended"`
-	VoteVersion      uint32  `json:"voteversion"`
-	Voting           bool    `json:"voting"`
+	DaemonConnected bool    `json:"daemonconnected"`
+	Unlocked        bool    `json:"unlocked"`
+	TxFee           float64 `json:"txfee"`
 }
