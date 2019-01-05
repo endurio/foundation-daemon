@@ -1726,7 +1726,7 @@ func (p *Peer) QueueInventory(invVect *wire.InvVect) {
 
 // QueueInventoryImmediate adds the passed inventory to the send queue to be
 // sent immediately.  This should typically only be used for inventory that is
-// time sensitive such as new tip blocks or votes.  Normal inventory should be
+// time sensitive such as new tip blocks.  Normal inventory should be
 // announced via QueueInventory which instead trickles it to the peer in
 // batches.  Inventory that the peer is already known to have is ignored.
 //
