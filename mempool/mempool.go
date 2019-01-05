@@ -43,23 +43,6 @@ const (
 	// DCR/kB, this results in a maximum allowed high fee of 1 DCR/kB.
 	maxRelayFeeMultiplier = 1e4
 
-	// maxVoteDoubleSpends is the maximum number of vote double spends allowed
-	// in the pool.
-	maxVoteDoubleSpends = 5
-
-	// heightDiffToPruneTicket is the number of blocks to pass by in terms
-	// of height before old tickets are pruned.
-	// TODO Set this based up the stake difficulty retargeting interval?
-	heightDiffToPruneTicket = 288
-
-	// heightDiffToPruneVotes is the number of blocks to pass by in terms
-	// of height before SSGen relating to that block are pruned.
-	heightDiffToPruneVotes = 10
-
-	// If a vote is on a block whose height is before tip minus this
-	// amount, reject it from being added to the mempool.
-	maximumVoteAgeDelta = 1440
-
 	// maxNullDataOutputs is the maximum number of OP_RETURN null data
 	// pushes in a transaction, after which it is considered non-standard.
 	maxNullDataOutputs = 4
@@ -173,10 +156,6 @@ type Policy struct {
 	// MinRelayTxFee defines the minimum transaction fee in DCR/kB to be
 	// considered a non-zero fee.
 	MinRelayTxFee dcrutil.Amount
-
-	// AllowOldVotes defines whether or not votes on old blocks will be
-	// admitted and relayed.
-	AllowOldVotes bool
 
 	// StandardVerifyFlags defines the function to retrieve the flags to
 	// use for verifying scripts for the block after the current best block.

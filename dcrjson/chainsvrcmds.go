@@ -662,27 +662,6 @@ func NewGetPeerInfoCmd() *GetPeerInfoCmd {
 	return &GetPeerInfoCmd{}
 }
 
-// GetRawMempoolTxTypeCmd defines the type used in the getrawmempool JSON-RPC
-// command for the TxType command field.
-type GetRawMempoolTxTypeCmd string
-
-const (
-	// GRMAll indicates any type of transaction should be returned.
-	GRMAll GetRawMempoolTxTypeCmd = "all"
-
-	// GRMRegular indicates only regular transactions should be returned.
-	GRMRegular GetRawMempoolTxTypeCmd = "regular"
-
-	// GRMTickets indicates that only tickets should be returned.
-	GRMTickets GetRawMempoolTxTypeCmd = "tickets"
-
-	// GRMVotes indicates that only votes should be returned.
-	GRMVotes GetRawMempoolTxTypeCmd = "votes"
-
-	// GRMRevocations indicates that only revocations should be returned.
-	GRMRevocations GetRawMempoolTxTypeCmd = "revocations"
-)
-
 // GetRawMempoolCmd defines the getmempool JSON-RPC command.
 type GetRawMempoolCmd struct {
 	Verbose *bool `jsonrpcdefault:"false"`
@@ -693,7 +672,7 @@ type GetRawMempoolCmd struct {
 //
 // The parameters which are pointers indicate they are optional.  Passing nil
 // for optional parameters will use the default value.
-func NewGetRawMempoolCmd(verbose *bool, txType *string) *GetRawMempoolCmd {
+func NewGetRawMempoolCmd(verbose *bool) *GetRawMempoolCmd {
 	return &GetRawMempoolCmd{
 		Verbose: verbose,
 	}

@@ -118,7 +118,6 @@ Application Options:
       --nonaggressive       Disable mining off of the parent block of the blockchain
                             if there aren't enough voters
       --nominingstatesync   Disable synchronizing the mining state with other nodes
-      --allowoldvotes       Enable the addition of very old votes to the mempool
 
       --sigcachemaxsize=    The maximum number of entries in the signature
                             verification cache.

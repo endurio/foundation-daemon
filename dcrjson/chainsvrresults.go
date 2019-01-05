@@ -365,40 +365,10 @@ type Agenda struct {
 	Choices        []Choice `json:"choices"`
 }
 
-// GetVoteInfoResult models the data returned from the getvoteinfo command.
-type GetVoteInfoResult struct {
-	CurrentHeight int64    `json:"currentheight"`
-	StartHeight   int64    `json:"startheight"`
-	EndHeight     int64    `json:"endheight"`
-	Hash          string   `json:"hash"`
-	VoteVersion   uint32   `json:"voteversion"`
-	Quorum        uint32   `json:"quorum"`
-	TotalVotes    uint32   `json:"totalvotes"`
-	Agendas       []Agenda `json:"agendas,omitempty"`
-}
-
 // GetWorkResult models the data from the getwork command.
 type GetWorkResult struct {
 	Data   string `json:"data"`
 	Target string `json:"target"`
-}
-
-// Ticket is the structure representing a ticket.
-type Ticket struct {
-	Hash  string `json:"hash"`
-	Owner string `json:"owner"`
-}
-
-// LiveTicketsResult models the data returned from the livetickets
-// command.
-type LiveTicketsResult struct {
-	Tickets []string `json:"tickets"`
-}
-
-// MissedTicketsResult models the data returned from the missedtickets
-// command.
-type MissedTicketsResult struct {
-	Tickets []string `json:"tickets"`
 }
 
 // FeeInfoBlock is ticket fee information about a block.

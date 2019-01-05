@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/go-socks/socks"
+	"github.com/decred/slog"
 	"github.com/endurio/ndrd/connmgr"
 	"github.com/endurio/ndrd/database"
 	_ "github.com/endurio/ndrd/database/ffldb"
@@ -29,7 +30,6 @@ import (
 	"github.com/endurio/ndrd/internal/version"
 	"github.com/endurio/ndrd/mempool"
 	"github.com/endurio/ndrd/sampleconfig"
-	"github.com/decred/slog"
 	flags "github.com/jessevdk/go-flags"
 )
 
@@ -54,7 +54,6 @@ const (
 	defaultAddrIndex             = false
 	defaultGenerate              = false
 	defaultNoMiningStateSync     = false
-	defaultAllowOldVotes         = false
 	defaultMaxOrphanTransactions = 1000
 	defaultMaxOrphanTxSize       = 5000
 	defaultSigCacheMaxSize       = 100000
@@ -154,7 +153,6 @@ type config struct {
 	SigCacheMaxSize      uint          `long:"sigcachemaxsize" description:"The maximum number of entries in the signature verification cache"`
 	NonAggressive        bool          `long:"nonaggressive" description:"Disable mining off of the parent block of the blockchain if there aren't enough voters"`
 	NoMiningStateSync    bool          `long:"nominingstatesync" description:"Disable synchronizing the mining state with other nodes"`
-	AllowOldVotes        bool          `long:"allowoldvotes" description:"Enable the addition of very old votes to the mempool"`
 	BlocksOnly           bool          `long:"blocksonly" description:"Do not accept transactions from remote peers."`
 	AcceptNonStd         bool          `long:"acceptnonstd" description:"Accept and relay non-standard transactions to the network regardless of the default settings for the active network."`
 	RejectNonStd         bool          `long:"rejectnonstd" description:"Reject non-standard transactions regardless of the default settings for the active network."`
@@ -459,7 +457,6 @@ func loadConfig() (*config, []string, error) {
 		NoMiningStateSync:    defaultNoMiningStateSync,
 		TxIndex:              defaultTxIndex,
 		AddrIndex:            defaultAddrIndex,
-		AllowOldVotes:        defaultAllowOldVotes,
 		NoExistsAddrIndex:    defaultNoExistsAddrIndex,
 		NoCFilters:           defaultNoCFilters,
 		AltDNSNames:          defaultAltDNSNames,

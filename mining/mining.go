@@ -35,14 +35,6 @@ type TxDesc struct {
 	Fee int64
 }
 
-// VoteDesc is a descriptor about a vote transaction in a transaction source
-// along with additional metadata.
-type VoteDesc struct {
-	VoteHash       chainhash.Hash
-	TicketHash     chainhash.Hash
-	ApprovesParent bool
-}
-
 // TxSource represents a source of transactions to consider for inclusion in
 // new blocks.
 //
