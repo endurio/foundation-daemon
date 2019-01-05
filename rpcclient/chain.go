@@ -399,8 +399,7 @@ func (c *Client) GetBlockHeaderVerbose(hash *chainhash.Hash) (*dcrjson.GetBlockH
 type FutureGetBlockSubsidyResult chan *response
 
 // Receive waits for the response promised by the future and returns a data
-// structure of the block subsidy requested from the server given its height
-// and number of voters.
+// structure of the block subsidy requested from the server given its height.
 func (r FutureGetBlockSubsidyResult) Receive() (*dcrjson.GetBlockSubsidyResult, error) {
 	res, err := receiveFuture(r)
 	if err != nil {
@@ -421,15 +420,15 @@ func (r FutureGetBlockSubsidyResult) Receive() (*dcrjson.GetBlockSubsidyResult, 
 // function on the returned instance.
 //
 // See GetBlockSubsidy for the blocking version and more details.
-func (c *Client) GetBlockSubsidyAsync(height int64, voters uint16) FutureGetBlockSubsidyResult {
-	cmd := dcrjson.NewGetBlockSubsidyCmd(height, voters)
+func (c *Client) GetBlockSubsidyAsync(height int64) FutureGetBlockSubsidyResult {
+	cmd := dcrjson.NewGetBlockSubsidyCmd(height)
 	return c.sendCmd(cmd)
 }
 
 // GetBlockSubsidy returns a data structure of the block subsidy
-// from the server given its height and number of voters.
-func (c *Client) GetBlockSubsidy(height int64, voters uint16) (*dcrjson.GetBlockSubsidyResult, error) {
-	return c.GetBlockSubsidyAsync(height, voters).Receive()
+// from the server given its height.
+func (c *Client) GetBlockSubsidy(height int64) (*dcrjson.GetBlockSubsidyResult, error) {
+	return c.GetBlockSubsidyAsync(height).Receive()
 }
 
 // FutureGetCoinSupplyResult is a future promise to deliver the result of a
