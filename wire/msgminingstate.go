@@ -16,14 +16,9 @@ import (
 // per message.
 const MaxMSBlocksAtHeadPerMsg = 8
 
-// MaxMSVotesAtHeadPerMsg is the maximum number of votes at head per message.
-const MaxMSVotesAtHeadPerMsg = 40 // 8 * 5
-
 // MsgMiningState implements the Message interface and represents a mining state
-// message.  It is used to request a list of blocks located at the chain tip
-// along with all votes for those blocks.  The list is returned is limited by
-// the maximum number of blocks per message and the maximum number of votes per
-// message.
+// message.  It is used to request a list of blocks located at the chain tip.
+// The list is returned is limited by the maximum number of blocks per message.
 type MsgMiningState struct {
 	Version     uint32
 	Height      uint32
@@ -125,9 +120,8 @@ func (msg *MsgMiningState) Command() string {
 // receiver.  This is part of the Message interface implementation.
 func (msg *MsgMiningState) MaxPayloadLength(pver uint32) uint32 {
 	// Protocol version 4 bytes + Height 4 bytes + num block hashes (varInt) +
-	// block hashes + num vote hashes (varInt) + vote hashes
+	// block hashes
 	return 4 + 4 + MaxVarIntPayload + (MaxMSBlocksAtHeadPerMsg *
-		chainhash.HashSize) + MaxVarIntPayload + (MaxMSVotesAtHeadPerMsg *
 		chainhash.HashSize)
 }
 

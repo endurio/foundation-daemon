@@ -502,7 +502,7 @@ func (sp *serverPeer) pushMiningStateMsg(height uint32, blockHashes []chainhash.
 }
 
 // OnGetMiningState is invoked when a peer receives a getminings wire message.
-// It constructs a list of the current best blocks and votes that should be
+// It constructs a list of the current best blocks that should be
 // mined on and pushes a miningstate wire message back to the requesting peer.
 func (sp *serverPeer) OnGetMiningState(p *peer.Peer, msg *wire.MsgGetMiningState) {
 	// Access the block manager and get the list of best blocks to mine on.
@@ -2457,7 +2457,6 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 			MaxOrphanTxSize:      defaultMaxOrphanTxSize,
 			MaxSigOpsPerTx:       blockchain.MaxSigOpsPerBlock / 5,
 			MinRelayTxFee:        cfg.minRelayTxFee,
-			AllowOldVotes:        cfg.AllowOldVotes,
 			StandardVerifyFlags: func() (txscript.ScriptFlags, error) {
 				return standardScriptVerifyFlags(bm.chain)
 			},
