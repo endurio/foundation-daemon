@@ -770,8 +770,8 @@ func (b *blockManager) handleBlockMsg(bmsg *blockMsg) {
 		// block height from the scriptSig of the coinbase transaction.
 		// Extraction is only attempted if the block's version is
 		// high enough (ver 2+).
-		//header := &bmsg.block.MsgBlock().Header
-		cbHeight := bmsg.block.Height()
+		header := &bmsg.block.MsgBlock().Header
+		cbHeight := header.Height
 		heightUpdate = int64(cbHeight)
 		blkHashUpdate = blockHash
 
@@ -1491,7 +1491,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		// namely blocks 101, 102, 103, 104, 105, and 106.
 		blockHash := block.Hash()
 		//bestHeight := band.BestHeight
-		//blockHeight := int64(block.MsgBlock().SerializeSize())
+		//blockHeight := int64(block.MsgBlock().Header.Height)
 		//reorgDepth := bestHeight - (blockHeight - band.ForkLen)
 
 		// Generate the inventory vector and relay it immediately if not already

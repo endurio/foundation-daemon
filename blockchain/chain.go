@@ -1145,7 +1145,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block, parent *dcrutil.Bl
 	// Ensure the passed parent is actually the parent of the block.
 	if *parent.Hash() != node.parent.hash {
 		panicf("parent block %v (height %v) does not match expected parent %v "+
-			"(height %v)", parent.Hash(), parent.MsgBlock().SerializeSize(),
+			"(height %v)", parent.Hash(), parent.MsgBlock().Header.Height,
 			node.parent.hash, node.height-1)
 	}
 

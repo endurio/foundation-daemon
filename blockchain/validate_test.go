@@ -89,7 +89,7 @@ func TestBlockchainSpendJournal(t *testing.T) {
 		if !isMainChain {
 			t.Fatalf("block %s (height %d) should have been "+
 				"accepted to the main chain", bl.Hash(),
-				bl.MsgBlock().SerializeSize())
+				bl.MsgBlock().Header.Height)
 		}
 	}
 

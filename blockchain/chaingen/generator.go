@@ -106,7 +106,7 @@ func MakeSpendableOutForSTx(tx *wire.MsgTx, blockHeight, txIndex, txOutIndex uin
 // index within the block, and transaction output index within the transaction.
 func MakeSpendableOut(block *wire.MsgBlock, txIndex, txOutIndex uint32) SpendableOut {
 	tx := block.Transactions[txIndex]
-	return MakeSpendableOutForTx(tx, 0 /*block.Header.Height*/, txIndex, txOutIndex)
+	return MakeSpendableOutForTx(tx, block.Header.Height, txIndex, txOutIndex)
 }
 
 // Generator houses state used to ease the process of generating test blocks

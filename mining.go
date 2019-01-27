@@ -1197,6 +1197,7 @@ mempoolLoop:
 		MerkleRoot: *merkles[len(merkles)-1],
 		Timestamp:  ts,
 		Bits:       reqDifficulty,
+		Height:     uint32(nextBlockHeight),
 		// Size declared below
 	}
 
