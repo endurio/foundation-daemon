@@ -175,16 +175,6 @@
 <path fill="none" stroke="burlywood" d="M397.553,-516C397.553,-516 450.667,-516 450.667,-516 450.667,-516 450.667,-487.576 450.667,-468.035"/>
 <polygon fill="burlywood" stroke="burlywood" points="397.553,-512.5 387.553,-516 397.553,-519.5 397.553,-512.5"/>
 </g>
-<!-- stake -->
-<g id="node15" class="node"><title>stake</title>
-<path fill="bisque" stroke="black" d="M483.5,-396C483.5,-396 397.5,-396 397.5,-396 391.5,-396 385.5,-390 385.5,-384 385.5,-384 385.5,-372 385.5,-372 385.5,-366 391.5,-360 397.5,-360 397.5,-360 483.5,-360 483.5,-360 489.5,-360 495.5,-366 495.5,-372 495.5,-372 495.5,-384 495.5,-384 495.5,-390 489.5,-396 483.5,-396"/>
-<text text-anchor="middle" x="440.5" y="-374.3" font-family="Times New Roman,serif" font-size="14.00">blockchain/stake</text>
-</g>
-<!-- database&#45;&gt;stake -->
-<g id="edge14" class="edge"><title>database&#45;&gt;stake</title>
-<path fill="none" stroke="dodgerblue" d="M389.25,-421.831C389.25,-421.831 389.25,-396.413 389.25,-396.413"/>
-<polygon fill="dodgerblue" stroke="dodgerblue" points="385.75,-421.831 389.25,-431.831 392.75,-421.831 385.75,-421.831"/>
-</g>
 <!-- hdkeychain&#45;&gt;ndrd -->
 <g id="edge27" class="edge"><title>hdkeychain&#45;&gt;ndrd</title>
 <path fill="none" stroke="deepskyblue" d="M311,-61.8314C311,-61.8314 311,-36.4133 311,-36.4133"/>

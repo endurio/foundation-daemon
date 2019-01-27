@@ -179,9 +179,6 @@ The following versioned modules are provided by ndrd repository:
   base for creating and managing Decred network peers
 * [blockchain](https://github.com/endurio/ndrd/tree/master/blockchain) -
   Implements Decred block handling and chain selection rules
-  * [stake](https://github.com/endurio/ndrd/tree/master/blockchain/stake) -
-    Provides an API for working with stake transactions and other portions
-    related to the Proof-of-Stake (PoS) system
 * [txscript](https://github.com/endurio/ndrd/tree/master/txscript) -
   Implements the Decred transaction scripting language
 * [dcrec](https://github.com/endurio/ndrd/tree/master/dcrec) - Provides constants
