@@ -12,7 +12,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
@@ -125,15 +124,10 @@ func newFakeChain(params *chaincfg.Params) *BlockChain {
 	index.AddNode(node)
 
 	return &BlockChain{
-		chainParams:                   params,
-		deploymentCaches:              newThresholdCaches(params),
-		index:                         index,
-		bestChain:                     newChainView(node),
-		isVoterMajorityVersionCache:   make(map[[stakeMajorityCacheKeySize]byte]bool),
-		isStakeMajorityVersionCache:   make(map[[stakeMajorityCacheKeySize]byte]bool),
-		calcPriorStakeVersionCache:    make(map[[chainhash.HashSize]byte]uint32),
-		calcVoterVersionIntervalCache: make(map[[chainhash.HashSize]byte]uint32),
-		calcStakeVersionCache:         make(map[[chainhash.HashSize]byte]uint32),
+		chainParams:      params,
+		deploymentCaches: newThresholdCaches(params),
+		index:            index,
+		bestChain:        newChainView(node),
 	}
 }
 
@@ -143,7 +137,7 @@ var testNoncePrng = mrand.New(mrand.NewSource(0))
 
 // newFakeNode creates a block node connected to the passed parent with the
 // provided fields populated and fake values for the other fields.
-func newFakeNode(parent *blockNode, blockVersion int32, stakeVersion uint32, bits uint32, timestamp time.Time) *blockNode {
+func newFakeNode(parent *blockNode, blockVersion int32, bits uint32, timestamp time.Time) *blockNode {
 	// Make up a header and create a block node from it.
 	var prevHash chainhash.Hash
 	var height uint32
@@ -152,14 +146,12 @@ func newFakeNode(parent *blockNode, blockVersion int32, stakeVersion uint32, bit
 		height = uint32(parent.height + 1)
 	}
 	header := &wire.BlockHeader{
-		Version:      blockVersion,
-		PrevBlock:    prevHash,
-		VoteBits:     0x01,
-		Bits:         bits,
-		Height:       height,
-		Timestamp:    timestamp,
-		Nonce:        testNoncePrng.Uint32(),
-		StakeVersion: stakeVersion,
+		Version:   blockVersion,
+		PrevBlock: prevHash,
+		Bits:      bits,
+		Height:    height,
+		Timestamp: timestamp,
+		Nonce:     testNoncePrng.Uint32(),
 	}
 	node := newBlockNode(header, parent)
 	node.status = statusDataStored | statusValid
@@ -190,15 +182,4 @@ func chainedFakeNodes(parent *blockNode, numNodes int) []*blockNode {
 // created via chainedFakeNodes.
 func branchTip(nodes []*blockNode) *blockNode {
 	return nodes[len(nodes)-1]
-}
-
-// appendFakeVotes appends the passed number of votes to the node with the
-// provided version and vote bits.
-func appendFakeVotes(node *blockNode, numVotes uint16, voteVersion uint32, voteBits uint16) {
-	for i := uint16(0); i < numVotes; i++ {
-		node.votes = append(node.votes, stake.VoteVersionTuple{
-			Version: voteVersion,
-			Bits:    voteBits,
-		})
-	}
 }

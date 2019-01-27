@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/dcrec"
@@ -531,7 +530,7 @@ func TestCheckTransactionStandard(t *testing.T) {
 	for _, test := range tests {
 		// Ensure standardness is as expected.
 		tx := dcrutil.NewTx(&test.tx)
-		err := checkTransactionStandard(tx, stake.DetermineTxType(&test.tx),
+		err := checkTransactionStandard(tx,
 			test.height, medianTime, DefaultMinRelayTxFee,
 			maxTxVersion)
 		if err == nil && test.isStandard {

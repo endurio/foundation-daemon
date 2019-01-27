@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/endurio/ndrd/blockchain/stake"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
 	"github.com/endurio/ndrd/wire"
@@ -102,24 +101,15 @@ func TestBlockIndexSerialization(t *testing.T) {
 	// base data is based on block 150287 on mainnet and serves as a template
 	// for the various tests below.
 	baseHeader := wire.BlockHeader{
-		Version:      4,
-		PrevBlock:    *newHashFromStr("000000000000016916671ae225343a5ee131c999d5cadb6348805db25737731f"),
-		MerkleRoot:   *newHashFromStr("5ef2bb79795d7503c0ccc5cb6e0d4731992fc8c8c5b332c1c0e2c687d864c666"),
-		StakeRoot:    *newHashFromStr("022965059b7527dc2bc18daaa533f806eda1f96fd0b04bbda2381f5552d7c2de"),
-		VoteBits:     0x0001,
-		FinalState:   hexToFinalState("313e16e64c0b"),
-		Voters:       4,
-		FreshStake:   3,
-		Revocations:  2,
-		PoolSize:     41332,
-		Bits:         0x1a016f98,
-		SBits:        7473162478,
-		Height:       150287,
-		Size:         11295,
-		Timestamp:    time.Unix(1499907127, 0),
-		Nonce:        4116576260,
-		ExtraData:    hexToExtraData("8f01ed92645e0a6b11ee3b3c0000000000000000000000000000000000000000"),
-		StakeVersion: 4,
+		Version:    4,
+		PrevBlock:  *newHashFromStr("000000000000016916671ae225343a5ee131c999d5cadb6348805db25737731f"),
+		MerkleRoot: *newHashFromStr("5ef2bb79795d7503c0ccc5cb6e0d4731992fc8c8c5b332c1c0e2c687d864c666"),
+		VoteBits:   0x0001,
+		FinalState: hexToFinalState("313e16e64c0b"),
+		Bits:       0x1a016f98,
+		Height:     150287,
+		Timestamp:  time.Unix(1499907127, 0),
+		Nonce:      4116576260,
 	}
 	baseTicketsVoted := []chainhash.Hash{
 		*newHashFromStr("8b62a877544753ea80a822142a48ec066170e9381d21a9e8a84bc7373f0f9b2e"),
@@ -130,12 +120,6 @@ func TestBlockIndexSerialization(t *testing.T) {
 	baseTicketsRevoked := []chainhash.Hash{
 		*newHashFromStr("8146f01b8ffca8008ebc80293d2978d63b1dffa5c456a73e7b39a9b1e695e8eb"),
 		*newHashFromStr("2292ff2461e725c58cc6e2051eac2a10e6ee6d1f62327ed676b7a196fb94be0c"),
-	}
-	baseVoteInfo := []stake.VoteVersionTuple{
-		{Version: 4, Bits: 0x0001},
-		{Version: 4, Bits: 0x0015},
-		{Version: 4, Bits: 0x0015},
-		{Version: 4, Bits: 0x0001},
 	}
 
 	tests := []struct {
@@ -420,9 +404,7 @@ func TestStxoSerialization(t *testing.T) {
 				isCoinBase:    false,
 				hasExpiry:     false,
 				txFullySpent:  true,
-				txType:        1,
 				txVersion:     1,
-				stakeExtra:    []byte{0x00},
 			},
 			serialized: hexToBytes("1400006edbc6c4d31bae9f1ccc38538a114bf42de65e860100"),
 		},
@@ -526,7 +508,7 @@ func TestStxoDecodeErrors(t *testing.T) {
 			bytesRead:  23,
 		},
 		{
-			name:       "no stakeextra data after script for ticket",
+			name:       "no `stake`extra data after script for ticket",
 			stxo:       spentTxOut{},
 			serialized: hexToBytes("1400016edbc6c4d31bae9f1ccc38538a114bf42de65e8601"),
 			errType:    errDeserialize(""),
@@ -594,9 +576,7 @@ func TestSpendJournalSerialization(t *testing.T) {
 				isCoinBase:    true,
 				hasExpiry:     false,
 				txFullySpent:  true,
-				txType:        0,
 				txVersion:     1,
-				stakeExtra:    nil,
 			}},
 			blockTxns: []*wire.MsgTx{{ // Coinbase omitted.
 				SerType: wire.TxSerializeFull,
@@ -647,9 +627,7 @@ func TestSpendJournalSerialization(t *testing.T) {
 				isCoinBase:    false,
 				hasExpiry:     false,
 				txFullySpent:  true,
-				txType:        0,
 				txVersion:     1,
-				stakeExtra:    nil,
 			}},
 			blockTxns: []*wire.MsgTx{{ // Coinbase omitted.
 				SerType: wire.TxSerializeFull,
@@ -917,10 +895,8 @@ func TestUtxoSerialization(t *testing.T) {
 				txVersion:  1,
 				isCoinBase: true,
 				hasExpiry:  false,
-				txType:     0,
 				height:     12345,
 				index:      54321,
-				stakeExtra: nil,
 				sparseOutputs: map[uint32]*utxoOutput{
 					0: {
 						amount:        5000000000,
@@ -938,10 +914,8 @@ func TestUtxoSerialization(t *testing.T) {
 				txVersion:  1,
 				isCoinBase: true,
 				hasExpiry:  false,
-				txType:     0,
 				height:     12345,
 				index:      54321,
-				stakeExtra: nil,
 				sparseOutputs: map[uint32]*utxoOutput{
 					0: {
 						amount:        5000000000,
@@ -959,10 +933,8 @@ func TestUtxoSerialization(t *testing.T) {
 				txVersion:  1,
 				isCoinBase: false,
 				hasExpiry:  false,
-				txType:     0,
 				height:     55555,
 				index:      1,
-				stakeExtra: nil,
 				sparseOutputs: map[uint32]*utxoOutput{
 					1: {
 						amount:        1000000,
@@ -980,10 +952,8 @@ func TestUtxoSerialization(t *testing.T) {
 				txVersion:  1,
 				isCoinBase: false,
 				hasExpiry:  false,
-				txType:     1,
 				height:     55555,
 				index:      1,
-				stakeExtra: hexToBytes("030f001aba76a9140cdf9941c0c221243cb8672cd1ad2c4c0933850588ac0000206a1e1a221182c26bbae681e4d96d452794e1951e70a208520000000000000054b5f466001abd76a9146c4f8b15918566534d134be7d7004b7f481bf36988ac"),
 				sparseOutputs: map[uint32]*utxoOutput{
 					1: {
 						amount:        1000000,
