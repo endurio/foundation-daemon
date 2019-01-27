@@ -15,9 +15,10 @@ import (
 
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
 // Version 4 bytes + PrevBlock 32 bytes + MerkleRoot 32 bytes + Bits 4 bytes
-// + Timestamp 4 bytes + Nonce 4 bytes +
-// --> Total 80 bytes.
-const MaxBlockHeaderPayload = 80
+// + Timestamp 4 bytes + Nonce 4 bytes
+// + Height 4 bytes
+// --> Total 84 bytes.
+const MaxBlockHeaderPayload = 84
 
 // BlockHeader defines information about a block and is used in the endurio
 // block (MsgBlock) and headers (MsgHeaders) messages.
@@ -38,6 +39,9 @@ type BlockHeader struct {
 	// uint32 on the wire and therefore is limited to 2106.
 	Timestamp time.Time
 
+	// Height is the block height in the block chain.
+	Height uint32
+
 	// Nonce is technically a part of ExtraData, but we use it as the
 	// classical 4-byte nonce here.
 	Nonce uint32
@@ -45,7 +49,7 @@ type BlockHeader struct {
 
 // blockHeaderLen is a constant that represents the number of bytes for a block
 // header.
-const blockHeaderLen = 80
+const blockHeaderLen = 84
 
 // BlockHash computes the block identifier hash for the given block header.
 func (h *BlockHeader) BlockHash() chainhash.Hash {
@@ -117,7 +121,7 @@ func (h *BlockHeader) Bytes() ([]byte, error) {
 // block with defaults for the remaining fields.
 func NewBlockHeader(version int32, prevHash *chainhash.Hash,
 	merkleRootHash *chainhash.Hash, bits uint32,
-	nonce uint32) *BlockHeader {
+	height uint32, nonce uint32) *BlockHeader {
 
 	// Limit the timestamp to one second precision since the protocol
 	// doesn't support better.
@@ -127,6 +131,7 @@ func NewBlockHeader(version int32, prevHash *chainhash.Hash,
 		MerkleRoot: *merkleRootHash,
 		Bits:       bits,
 		Timestamp:  time.Unix(time.Now().Unix(), 0),
+		Height:     height,
 		Nonce:      nonce,
 	}
 }
@@ -136,7 +141,7 @@ func NewBlockHeader(version int32, prevHash *chainhash.Hash,
 // decoding from the wire.
 func readBlockHeader(r io.Reader, pver uint32, bh *BlockHeader) error {
 	return readElements(r, &bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
-		&bh.Bits, (*uint32Time)(&bh.Timestamp), &bh.Nonce)
+		&bh.Bits, (*uint32Time)(&bh.Timestamp), &bh.Height, &bh.Nonce)
 }
 
 // writeBlockHeader writes a Decred block header to w.  See Serialize for
@@ -145,5 +150,5 @@ func readBlockHeader(r io.Reader, pver uint32, bh *BlockHeader) error {
 func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint32(bh.Timestamp.Unix())
 	return writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
-		bh.Bits, sec, bh.Nonce)
+		bh.Bits, sec, bh.Height, bh.Nonce)
 }

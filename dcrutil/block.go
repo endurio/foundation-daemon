@@ -22,11 +22,6 @@ type OutOfRangeError string
 // mutated.
 var assertBlockImmutability = false
 
-// BlockHeightUnknown is the value returned for a block height that is unknown.
-// This is typically because the block has not been inserted into the main chain
-// yet.
-const BlockHeightUnknown = int64(-1)
-
 // Error satisfies the error interface and prints human-readable errors.
 func (e OutOfRangeError) Error() string {
 	return string(e)
@@ -40,7 +35,6 @@ type Block struct {
 	msgBlock        *wire.MsgBlock // Underlying MsgBlock
 	serializedBlock []byte         // Serialized bytes for the block
 	hash            chainhash.Hash // Cached block hash
-	height          int64          // Height in the main block chain
 	transactions    []*Tx          // Transactions
 	txnsGenerated   bool           // ALL wrapped transactions generated
 }
@@ -212,15 +206,12 @@ func (b *Block) TxLoc() ([]wire.TxLoc, error) {
 	return txLocs, err
 }
 
-// Height returns the saved height of the block in the block chain.  This value
-// will be BlockHeightUnknown if it hasn't already explicitly been set.
+// Height returns a casted int64 height from the block header.
+//
+// This function should not be used for new code and will be
+// removed in the future.
 func (b *Block) Height() int64 {
-	return b.height
-}
-
-// SetHeight sets the height of the block in the block chain.
-func (b *Block) SetHeight(height int64) {
-	b.height = height
+	return int64(b.msgBlock.Header.Height)
 }
 
 // NewBlock returns a new instance of a block given an underlying
@@ -305,7 +296,6 @@ func NewBlockFromReader(r io.Reader) (*Block, error) {
 	b := Block{
 		hash:     msgBlock.BlockHash(),
 		msgBlock: &msgBlock,
-		height:   BlockHeightUnknown,
 	}
 	return &b, nil
 }
@@ -317,6 +307,5 @@ func NewBlockFromBlockAndBytes(msgBlock *wire.MsgBlock, serializedBlock []byte) 
 		hash:            msgBlock.BlockHash(),
 		msgBlock:        msgBlock,
 		serializedBlock: serializedBlock,
-		height:          BlockHeightUnknown,
 	}
 }

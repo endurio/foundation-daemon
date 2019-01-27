@@ -534,7 +534,7 @@ func (view *UtxoViewpoint) disconnectBlock(db database.DB, block, parent *dcruti
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
 		panicf("provided %v stxos for block %v (height %v) which spends %v "+
-			"outputs", len(stxos), block.Hash(), block.MsgBlock().SerializeSize(),
+			"outputs", len(stxos), block.Hash(), block.MsgBlock().Header.Height,
 			countSpentOutputs(block))
 	}
 

@@ -791,7 +791,7 @@ func checkCoinbaseUniqueHeight(blockHeight int64, block *dcrutil.Block) error {
 		str := fmt.Sprintf("block %v output 1 has wrong height in "+
 			"coinbase; want %v, got %v; prevBlock %v, header height %v",
 			block.Hash(), blockHeight, cbHeight, prevBlock,
-			block.MsgBlock().SerializeSize())
+			block.MsgBlock().Header.Height)
 		return ruleError(ErrCoinbaseHeight, str)
 	}
 

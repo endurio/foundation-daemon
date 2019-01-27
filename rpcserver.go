@@ -1266,8 +1266,8 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 	blockHeader := &blk.MsgBlock().Header
 	confirmations := int64(-1)
 	if s.chain.MainChainHasBlock(hash) {
-		if int64(blk.Height()) < best.Height {
-			nextHash, err := s.chain.BlockHashByHeight(int64(blk.Height() + 1))
+		if int64(blockHeader.Height) < best.Height {
+			nextHash, err := s.chain.BlockHashByHeight(int64(blockHeader.Height + 1))
 			if err != nil {
 				context := "No next block"
 				return nil, rpcInternalError(err.Error(),
@@ -1275,7 +1275,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 			}
 			nextHashString = nextHash.String()
 		}
-		confirmations = 1 + best.Height - int64(blk.Height())
+		confirmations = 1 + best.Height - int64(blockHeader.Height)
 	}
 
 	blockReply := dcrjson.GetBlockVerboseResult{
@@ -1286,7 +1286,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		Nonce:         blockHeader.Nonce,
 		Time:          blockHeader.Timestamp.Unix(),
 		Confirmations: confirmations,
-		Height:        int64(blk.Height()),
+		Height:        int64(blockHeader.Height),
 		Size:          int32(blk.MsgBlock().SerializeSize()),
 		Bits:          strconv.FormatInt(int64(blockHeader.Bits), 16),
 		Difficulty:    getDifficultyRatio(blockHeader.Bits),
@@ -1308,7 +1308,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 			rawTxn, err := createTxRawResult(s.server.chainParams,
 				tx.MsgTx(), tx.Hash().String(), uint32(i),
 				blockHeader, blk.Hash().String(),
-				int64(blk.Height()), confirmations)
+				int64(blockHeader.Height), confirmations)
 			if err != nil {
 				return nil, rpcInternalError(err.Error(),
 					"Could not create transaction")
@@ -1437,13 +1437,8 @@ func handleGetBlockHeader(s *rpcServer, cmd interface{}, closeChan <-chan struct
 	// Get next block hash unless there are none.
 	var nextHashString string
 	confirmations := int64(-1)
-	height := dcrutil.BlockHeightUnknown
+	height := int64(blockHeader.Height)
 	if s.chain.MainChainHasBlock(hash) {
-		height, err := s.chain.BlockHeightByHash(hash)
-		if err != nil {
-			context := "Failed to obtain block height"
-			return nil, rpcInternalError(err.Error(), context)
-		}
 		if height < best.Height {
 			nextHash, err := s.chain.BlockHashByHeight(height + 1)
 			if err != nil {
@@ -2980,21 +2975,14 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 
 // pruneOldBlockTemplates prunes all old block templates from the templatePool
 // map. Must be called with the RPC workstate locked to avoid races to the map.
-func pruneOldBlockTemplates(s *rpcServer, bestHeight int64) error {
+func pruneOldBlockTemplates(s *rpcServer, bestHeight int64) {
 	pool := s.templatePool
 	for rootHash, blkData := range pool {
-		hash := blkData.msgBlock.BlockHash()
-		height, err := s.chain.BlockHeightByHash(&hash)
-		if err != nil {
-			context := "Failed to obtain block height"
-			return rpcInternalError(err.Error(), context)
-		}
-
+		height := int64(blkData.msgBlock.Header.Height)
 		if height < bestHeight-getworkExpirationDiff {
 			delete(pool, rootHash)
 		}
 	}
-	return nil
 }
 
 // handleGetWorkRequest is a helper for handleGetWork which deals with
@@ -3124,9 +3112,7 @@ func handleGetWorkRequest(s *rpcServer) (interface{}, error) {
 	// submitted solution.
 	coinbaseTx := msgBlock.Transactions[0]
 
-	if msgBlock.Header.PrevBlock != activeNetParams.GenesisBlock.Header.PrevBlock &&
-		msgBlock.Header.PrevBlock != activeNetParams.GenesisBlock.BlockHash() {
-		// height > 1
+	if msgBlock.Header.Height > 1 {
 		s.templatePool[msgBlock.Header.MerkleRoot] = &workStateBlockInfo{
 			msgBlock: msgBlock,
 			pkScript: coinbaseTx.TxOut[1].PkScript,
@@ -3222,9 +3208,7 @@ func handleGetWorkSubmission(s *rpcServer, hexData string) (interface{}, error) 
 	tempBlock := dcrutil.NewBlockDeepCopy(blockInfo.msgBlock)
 	msgBlock := tempBlock.MsgBlock()
 	msgBlock.Header = submittedHeader
-	if msgBlock.Header.PrevBlock != activeNetParams.GenesisBlock.Header.PrevBlock &&
-		msgBlock.Header.PrevBlock != activeNetParams.GenesisBlock.BlockHash() {
-		// height > 1
+	if msgBlock.Header.Height > 1 {
 		pkScriptCopy := make([]byte, len(blockInfo.pkScript))
 		copy(pkScriptCopy, blockInfo.pkScript)
 		msgBlock.Transactions[0].TxOut[1].PkScript = blockInfo.pkScript

@@ -115,6 +115,7 @@ func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *block
 	*node = blockNode{
 		hash:       blockHeader.BlockHash(),
 		workSum:    CalcWork(blockHeader.Bits),
+		height:     int64(blockHeader.Height),
 		version:    blockHeader.Version,
 		bits:       blockHeader.Bits,
 		timestamp:  blockHeader.Timestamp.Unix(),
@@ -123,7 +124,6 @@ func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *block
 	}
 	if parent != nil {
 		node.parent = parent
-		node.height = parent.height + 1
 		node.workSum = node.workSum.Add(parent.workSum, node.workSum)
 	}
 }
@@ -151,6 +151,7 @@ func (node *blockNode) Header() wire.BlockHeader {
 		PrevBlock:  *prevHash,
 		MerkleRoot: node.merkleRoot,
 		Bits:       node.bits,
+		Height:     uint32(node.height),
 		Timestamp:  time.Unix(node.timestamp, 0),
 		Nonce:      node.nonce,
 	}
