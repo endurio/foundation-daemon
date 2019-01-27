@@ -190,7 +190,8 @@ func (m *CPUMiner) submitBlock(block *dcrutil.Block) bool {
 	// The block was accepted.
 	coinbaseTx := block.MsgBlock().Transactions[0].TxOut[0]
 	minrLog.Infof("Block submitted via CPU miner accepted (hash %s, "+
-		"amount %v)", block.Hash(), dcrutil.Amount(coinbaseTx.Value))
+		"height %v, amount %v)", block.Hash(), block.Height(),
+		dcrutil.Amount(coinbaseTx.Value))
 	return true
 }
 
