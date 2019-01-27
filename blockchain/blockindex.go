@@ -94,7 +94,6 @@ type blockNode struct {
 	bits       uint32
 	timestamp  int64
 	merkleRoot chainhash.Hash
-	blockSize  uint32
 	nonce      uint32
 
 	// status is a bitfield representing the validation state of the block.
