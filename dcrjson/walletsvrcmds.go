@@ -576,7 +576,6 @@ func NewLockUnspentCmd(unlock bool, transactions []TransactionInput) *LockUnspen
 type RedeemMultiSigOutCmd struct {
 	Hash    string
 	Index   uint32
-	Tree    int8
 	Address *string
 }
 
@@ -586,7 +585,6 @@ func NewRedeemMultiSigOutCmd(hash string, index uint32, tree int8,
 	return &RedeemMultiSigOutCmd{
 		Hash:    hash,
 		Index:   index,
-		Tree:    tree,
 		Address: address,
 	}
 }
