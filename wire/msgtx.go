@@ -272,9 +272,9 @@ type TxIn struct {
 // SerializeSizePrefix returns the number of bytes it would take to serialize
 // the transaction input for a prefix.
 func (t *TxIn) SerializeSizePrefix() int {
-	// Outpoint Hash 32 bytes + Outpoint Index 4 bytes + Outpoint Tree 1 byte +
+	// Outpoint Hash 32 bytes + Outpoint Index 4 bytes +
 	// Sequence 4 bytes.
-	return 41
+	return 40
 }
 
 // SerializeSizeWitness returns the number of bytes it would take to serialize the
