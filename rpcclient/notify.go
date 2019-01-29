@@ -113,19 +113,19 @@ type NotificationHandlers struct {
 	// ndrd.
 	//
 	// This will only be available when client is connected to a wallet
-	// server such as dcrwallet.
+	// server such as ndrw.
 	OnDcrdConnected func(connected bool)
 
 	// OnAccountBalance is invoked with account balance updates.
 	//
 	// This will only be available when speaking to a wallet server
-	// such as dcrwallet.
+	// such as ndrw.
 	OnAccountBalance func(account string, balance dcrutil.Amount, confirmed bool)
 
 	// OnWalletLockState is invoked when a wallet is locked or unlocked.
 	//
 	// This will only be available when client is connected to a wallet
-	// server such as dcrwallet.
+	// server such as ndrw.
 	OnWalletLockState func(locked bool)
 
 	// OnUnknownNotification is invoked when an unrecognized notification
@@ -495,7 +495,7 @@ func parseTxAcceptedVerboseNtfnParams(params []json.RawMessage) (*dcrjson.TxRawR
 }
 
 // parseDcrdConnectedNtfnParams parses out the connection status of ndrd
-// and dcrwallet from the parameters of a ndrdconnected notification.
+// and ndrw from the parameters of a ndrdconnected notification.
 func parseDcrdConnectedNtfnParams(params []json.RawMessage) (bool, error) {
 	if len(params) != 1 {
 		return false, wrongNumParams(len(params))

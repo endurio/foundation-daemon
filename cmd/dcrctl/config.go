@@ -32,13 +32,13 @@ const (
 
 var (
 	ndrdHomeDir            = dcrutil.AppDataDir("ndrd", false)
-	dcrctlHomeDir          = dcrutil.AppDataDir("dcrctl", false)
-	dcrwalletHomeDir       = dcrutil.AppDataDir("dcrwallet", false)
-	defaultConfigFile      = filepath.Join(dcrctlHomeDir, "dcrctl.conf")
+	dcrctlHomeDir          = dcrutil.AppDataDir("ndrctl", false)
+	ndrwHomeDir            = dcrutil.AppDataDir("ndrw", false)
+	defaultConfigFile      = filepath.Join(dcrctlHomeDir, "ndrctl.conf")
 	defaultRPCServer       = "localhost"
 	defaultWalletRPCServer = "localhost"
 	defaultRPCCertFile     = filepath.Join(ndrdHomeDir, "rpc.cert")
-	defaultWalletCertFile  = filepath.Join(dcrwalletHomeDir, "rpc.cert")
+	defaultWalletCertFile  = filepath.Join(ndrwHomeDir, "rpc.cert")
 )
 
 // listCommands categorizes and lists all of the usable commands along with
@@ -94,7 +94,7 @@ func listCommands() {
 	}
 }
 
-// config defines the configuration options for dcrctl.
+// config defines the configuration options for ndrctl.
 //
 // See loadConfig for details on the configuration load process.
 type config struct {
