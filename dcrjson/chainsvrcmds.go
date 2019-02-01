@@ -1014,6 +1014,7 @@ func init() {
 	MustRegisterCmd("setgenerate", (*SetGenerateCmd)(nil), flags)
 	MustRegisterCmd("stop", (*StopCmd)(nil), flags)
 	MustRegisterCmd("submitblock", (*SubmitBlockCmd)(nil), flags)
+	MustRegisterCmd("txfeeinfo", (*TxFeeInfoCmd)(nil), flags)
 	MustRegisterCmd("validateaddress", (*ValidateAddressCmd)(nil), flags)
 	MustRegisterCmd("verifychain", (*VerifyChainCmd)(nil), flags)
 	MustRegisterCmd("verifymessage", (*VerifyMessageCmd)(nil), flags)

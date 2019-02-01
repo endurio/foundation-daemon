@@ -305,6 +305,7 @@ var rpcLimited = map[string]struct{}{
 	"searchrawtransactions": {},
 	"sendrawtransaction":    {},
 	"submitblock":           {},
+	"txfeeinfo":             {},
 	"validateaddress":       {},
 	"verifymessage":         {},
 	"version":               {},
