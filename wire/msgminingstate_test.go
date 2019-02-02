@@ -26,25 +26,6 @@ func TestMiningStateWire(t *testing.T) {
 		t.Errorf("unexpected error for AddBlockHash: %v", err.Error())
 	}
 
-	fakeVote1, _ := chainhash.NewHashFromStr("2222111122221111222211112" +
-		"222111122221111222211112222111122221111")
-	fakeVote2, _ := chainhash.NewHashFromStr("4444333344443333444433334" +
-		"444333344443333444433334444333344443333")
-	fakeVote3, _ := chainhash.NewHashFromStr("6666555566665555666655556" +
-		"666555566665555666655556666555566665555")
-	err = sampleMSMsg.AddVoteHash(fakeVote1)
-	if err != nil {
-		t.Errorf("unexpected error for AddVoteHash 1: %v", err.Error())
-	}
-	err = sampleMSMsg.AddVoteHash(fakeVote2)
-	if err != nil {
-		t.Errorf("unexpected error for AddVoteHash 2: %v", err.Error())
-	}
-	err = sampleMSMsg.AddVoteHash(fakeVote3)
-	if err != nil {
-		t.Errorf("unexpected error for AddVoteHash 3: %v", err.Error())
-	}
-
 	sampleMSMsgEncoded := []byte{
 		0x01, 0x00, 0x00, 0x00, // Version
 		0x40, 0xe2, 0x01, 0x00, // Height 0001e240 in BE

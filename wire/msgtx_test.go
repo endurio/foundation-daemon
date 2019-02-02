@@ -58,7 +58,7 @@ func TestTx(t *testing.T) {
 	// NOTE: This is a block hash and made up index, but we're only
 	// testing package functionality.
 	prevOutIndex := uint32(1)
-	prevOut := NewOutPoint(hash, prevOutIndex, TxTreeRegular)
+	prevOut := NewOutPoint(hash, prevOutIndex)
 	if !prevOut.Hash.IsEqual(hash) {
 		t.Errorf("NewOutPoint: wrong hash - got %v, want %v",
 			spew.Sprint(&prevOut.Hash), spew.Sprint(hash))
@@ -151,7 +151,6 @@ func TestTxHash(t *testing.T) {
 		PreviousOutPoint: OutPoint{
 			Hash:  chainhash.Hash{},
 			Index: 0xffffffff,
-			Tree:  TxTreeRegular,
 		},
 		Sequence:        0xffffffff,
 		ValueIn:         5000000000,

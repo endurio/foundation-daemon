@@ -63,23 +63,12 @@ func TestHeaders(t *testing.T) {
 // numbers of headers and protocol versions.
 func TestHeadersWire(t *testing.T) {
 	bh := NewBlockHeader(
-		testBlock.Header.Version,                    // Version
-		&mainNetGenesisHash,                         // PrevHash
-		&testBlock.Header.MerkleRoot,                // MerkleRootHash
-		&testBlock.Header.StakeRoot,                 // StakeRoot
-		uint16(0x0000),                              // VoteBits
-		[6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // FinalState
-		uint16(0x0000),                              // Voters
-		uint8(0x00),                                 // FreshStake
-		uint8(0x00),                                 // Revocations
-		uint32(0),                                   // Poolsize
-		uint32(0x1d00ffff),                          // Bits
-		int64(0x0000000000000000),                   // Sbits
-		uint32(0),                                   // Height
-		uint32(0),                                   // Size
-		uint32(0x01010101),                          // Nonce
-		[32]byte{},                                  // ExtraData
-		uint32(0xba5eba11),                          //StakeVersion
+		testBlock.Header.Version,     // Version
+		&mainNetGenesisHash,          // PrevHash
+		&testBlock.Header.MerkleRoot, // MerkleRootHash
+		uint32(0x1d00ffff),           // Bits
+		uint32(0),                    // Height
+		uint32(0x01010101),           // Nonce
 	)
 	bh.Timestamp = time.Unix(0x4966bc61, 0)
 
@@ -192,23 +181,12 @@ func TestHeadersWireErrors(t *testing.T) {
 	bits := uint32(0x1d00ffff)
 	nonce := uint32(0x9962e301)
 	bh := NewBlockHeader(
-		int32(pver),    // Verision
-		&hash,          // PrevHash
-		&merkleHash,    // MerkleRootHash
-		&merkleHash,    // StakeRoot
-		uint16(0x0000), // VoteBits
-		[6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // FinalState
-		uint16(0x0000),            // Voters
-		uint8(0x00),               // FreshStake
-		uint8(0x00),               // Revocations
-		uint32(0),                 // Poolsize
-		bits,                      // Bits
-		int64(0x0000000000000000), // Sbits
-		uint32(1),                 // Height
-		uint32(0),                 // Size
-		nonce,                     // Nonce
-		[32]byte{},                // ExtraData
-		uint32(0xca55e77e),        //StakeVersion
+		int32(pver), // Verision
+		&hash,       // PrevHash
+		&merkleHash, // MerkleRootHash
+		bits,        // Bits
+		uint32(1),   // Height
+		nonce,       // Nonce
 	)
 
 	bh.Version = testBlock.Header.Version
@@ -264,23 +242,12 @@ func TestHeadersWireErrors(t *testing.T) {
 	// Intentionally invalid block header that has a transaction count used
 	// to force errors.
 	bhTrans := NewBlockHeader(
-		int32(0),       // Verision
-		&hash,          // PrevHash
-		&merkleHash,    // MerkleRootHash
-		&merkleHash,    // StakeRoot
-		uint16(0x0000), // VoteBits
-		[6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // FinalState
-		uint16(0x0000),            // Voters
-		uint8(0x00),               // FreshStake
-		uint8(0x00),               // Revocations
-		uint32(0),                 // Poolsize
-		bits,                      // Bits
-		int64(0x0000000000000000), // Sbits
-		uint32(1),                 // Height
-		uint32(0),                 // Size
-		nonce,                     // Nonce
-		[32]byte{},                // ExtraData
-		uint32(0xf01dab1e),        // StakeVersion
+		int32(0),    // Verision
+		&hash,       // PrevHash
+		&merkleHash, // MerkleRootHash
+		bits,        // Bits
+		uint32(1),   // Height
+		nonce,       // Nonce
 	)
 	bhTrans.Version = testBlock.Header.Version
 	bhTrans.Timestamp = testBlock.Header.Timestamp

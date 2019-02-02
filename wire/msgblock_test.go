@@ -10,7 +10,6 @@ import (
 	"io"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
@@ -22,23 +21,12 @@ func TestBlock(t *testing.T) {
 
 	// Test block header.
 	bh := NewBlockHeader(
-		int32(pver),                                 // Version
-		&testBlock.Header.PrevBlock,                 // PrevHash
-		&testBlock.Header.MerkleRoot,                // MerkleRoot
-		&testBlock.Header.StakeRoot,                 // StakeRoot
-		uint16(0x0000),                              // VoteBits
-		[6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // FinalState
-		uint16(0x0000),                              // Voters
-		uint8(0x00),                                 // FreshStake
-		uint8(0x00),                                 // Revocations
-		uint32(0),                                   // Poolsize
-		testBlock.Header.Bits,                       // Bits
-		int64(0x0000000000000000),                   // Sbits
-		uint32(1),                                   // Height
-		uint32(1),                                   // Size
-		testBlock.Header.Nonce,                      // Nonce
-		[32]byte{},                                  // ExtraData
-		uint32(0x5ca1ab1e),                          // StakeVersion
+		int32(pver),                  // Version
+		&testBlock.Header.PrevBlock,  // PrevHash
+		&testBlock.Header.MerkleRoot, // MerkleRoot
+		testBlock.Header.Bits,        // Bits
+		uint32(1),                    // Height
+		testBlock.Header.Nonce,       // Nonce
 	)
 
 	// Ensure the command is expected value.
@@ -89,22 +77,6 @@ func TestBlock(t *testing.T) {
 		t.Errorf("ClearTransactions: wrong transactions - got %v, want %v",
 			len(msg.Transactions), 0)
 	}
-
-	// Ensure stake transactions are added properly.
-	stx := testBlock.STransactions[0].Copy()
-	msg.AddSTransaction(stx)
-	if !reflect.DeepEqual(msg.STransactions, testBlock.STransactions) {
-		t.Errorf("AddSTransaction: wrong transactions - got %v, want %v",
-			spew.Sdump(msg.STransactions),
-			spew.Sdump(testBlock.STransactions))
-	}
-
-	// Ensure transactions are properly cleared.
-	msg.ClearSTransactions()
-	if len(msg.STransactions) != 0 {
-		t.Errorf("ClearTransactions: wrong transactions - got %v, want %v",
-			len(msg.STransactions), 0)
-	}
 }
 
 // TestBlockTxHashes tests the ability to generate a slice of all transaction
@@ -122,25 +94,6 @@ func TestBlockTxHashes(t *testing.T) {
 	hashes := testBlock.TxHashes()
 	if !reflect.DeepEqual(hashes, wantHashes) {
 		t.Errorf("TxHashes: wrong transaction hashes - got %v, want %v",
-			spew.Sdump(hashes), spew.Sdump(wantHashes))
-	}
-}
-
-// TestBlockSTxHashes tests the ability to generate a slice of all stake
-// transaction hashes from a block accurately.
-func TestBlockSTxHashes(t *testing.T) {
-	// Block 1, transaction 1 hash.
-	hashStr := "ae208a69f3ee088d0328126e3d9bef7652b108d1904f27b166c5999233a801d4"
-	wantHash, err := chainhash.NewHashFromStr(hashStr)
-	if err != nil {
-		t.Errorf("NewHashFromStr: %v", err)
-		return
-	}
-
-	wantHashes := []chainhash.Hash{*wantHash}
-	hashes := testBlock.STxHashes()
-	if !reflect.DeepEqual(hashes, wantHashes) {
-		t.Errorf("STxHashes: wrong transaction hashes - got %v, want %v",
 			spew.Sdump(hashes), spew.Sdump(wantHashes))
 	}
 }
@@ -342,7 +295,7 @@ func TestBlockSerialize(t *testing.T) {
 		// information.
 		var txLocBlock MsgBlock
 		br := bytes.NewBuffer(test.buf)
-		txLocs, sTxLocs, err := txLocBlock.DeserializeTxLoc(br)
+		txLocs, err := txLocBlock.DeserializeTxLoc(br)
 		if err != nil {
 			t.Errorf("DeserializeTxLoc #%d error %v", i, err)
 			continue
@@ -355,11 +308,6 @@ func TestBlockSerialize(t *testing.T) {
 		if !reflect.DeepEqual(txLocs, test.txLocs) {
 			t.Errorf("DeserializeTxLoc #%d\n got: %s want: %s", i,
 				spew.Sdump(txLocs), spew.Sdump(test.txLocs))
-			continue
-		}
-		if !reflect.DeepEqual(sTxLocs, test.sTxLocs) {
-			t.Errorf("DeserializeTxLoc, sTxLocs #%d\n got: %s want: %s", i,
-				spew.Sdump(sTxLocs), spew.Sdump(test.sTxLocs))
 			continue
 		}
 	}
@@ -429,15 +377,6 @@ func TestBlockSerializeErrors(t *testing.T) {
 		err = block.Deserialize(r)
 		if err != test.readErr {
 			t.Errorf("Deserialize #%d wrong error got: %v, want: %v",
-				i, err, test.readErr)
-			continue
-		}
-
-		var txLocBlock MsgBlock
-		br := bytes.NewBuffer(test.buf[0:test.max])
-		_, _, err = txLocBlock.DeserializeTxLoc(br)
-		if err != test.readErr {
-			t.Errorf("DeserializeTxLoc #%d wrong error got: %v, want: %v",
 				i, err, test.readErr)
 			continue
 		}
@@ -518,15 +457,6 @@ func TestBlockOverflowErrors(t *testing.T) {
 				i, err, reflect.TypeOf(test.err))
 			continue
 		}
-
-		// Deserialize with transaction location info from wire format.
-		br := bytes.NewBuffer(test.buf)
-		_, _, err = msg.DeserializeTxLoc(br)
-		if reflect.TypeOf(err) != reflect.TypeOf(test.err) {
-			t.Errorf("DeserializeTxLoc #%d wrong error got: %v, "+
-				"want: %v", i, err, reflect.TypeOf(test.err))
-			continue
-		}
 	}
 }
 
@@ -574,26 +504,8 @@ var testBlock = MsgBlock{
 			0x7b, 0xa1, 0xa3, 0xc3, 0x54, 0x0b, 0xf7, 0xb1,
 			0xcd, 0xb6, 0x06, 0xe8, 0x57, 0x23, 0x3e, 0x0e,
 		}),
-		StakeRoot: chainhash.Hash([chainhash.HashSize]byte{ // Make go vet happy.
-			0x98, 0x20, 0x51, 0xfd, 0x1e, 0x4b, 0xa7, 0x44,
-			0xbb, 0xbe, 0x68, 0x0e, 0x1f, 0xee, 0x14, 0x67,
-			0x7b, 0xa1, 0xa3, 0xc3, 0x54, 0x0b, 0xf7, 0xb1,
-			0xcd, 0xb6, 0x06, 0xe8, 0x57, 0x23, 0x3e, 0x0e,
-		}),
-		VoteBits:     uint16(0x0000),
-		FinalState:   [6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		Voters:       uint16(0x0000),
-		FreshStake:   uint8(0x00),
-		Revocations:  uint8(0x00),
-		PoolSize:     uint32(0x00000000), // Poolsize
-		Bits:         0x1d00ffff,         // 486604799
-		SBits:        int64(0x0000000000000000),
-		Height:       uint32(1),
-		Size:         uint32(1),
-		Timestamp:    time.Unix(0x4966bc61, 0), // 2009-01-08 20:54:25 -0600 CST
-		Nonce:        0x9962e301,               // 2573394689
-		ExtraData:    [32]byte{},
-		StakeVersion: uint32(0x5ca1ab1e),
+		Bits:  0x1d00ffff, // 486604799
+		Nonce: 0x9962e301, // 2573394689
 	},
 	Transactions: []*MsgTx{
 		{
@@ -604,7 +516,6 @@ var testBlock = MsgBlock{
 					PreviousOutPoint: OutPoint{
 						Hash:  chainhash.Hash{},
 						Index: 0xffffffff,
-						Tree:  TxTreeRegular,
 					},
 					Sequence:    0xffffffff,
 					ValueIn:     0x1616161616161616,
@@ -619,49 +530,6 @@ var testBlock = MsgBlock{
 				{
 					Value:   0x3333333333333333,
 					Version: 0x9898,
-					PkScript: []byte{
-						0x41, // OP_DATA_65
-						0x04, 0x96, 0xb5, 0x38, 0xe8, 0x53, 0x51, 0x9c,
-						0x72, 0x6a, 0x2c, 0x91, 0xe6, 0x1e, 0xc1, 0x16,
-						0x00, 0xae, 0x13, 0x90, 0x81, 0x3a, 0x62, 0x7c,
-						0x66, 0xfb, 0x8b, 0xe7, 0x94, 0x7b, 0xe6, 0x3c,
-						0x52, 0xda, 0x75, 0x89, 0x37, 0x95, 0x15, 0xd4,
-						0xe0, 0xa6, 0x04, 0xf8, 0x14, 0x17, 0x81, 0xe6,
-						0x22, 0x94, 0x72, 0x11, 0x66, 0xbf, 0x62, 0x1e,
-						0x73, 0xa8, 0x2c, 0xbf, 0x23, 0x42, 0xc8, 0x58,
-						0xee, // 65-byte signature
-						0xac, // OP_CHECKSIG
-					},
-				},
-			},
-			LockTime: 0x11111111,
-			Expiry:   0x22222222,
-		},
-	},
-	STransactions: []*MsgTx{
-		{
-			SerType: TxSerializeFull,
-			Version: 1,
-			TxIn: []*TxIn{
-				{
-					PreviousOutPoint: OutPoint{
-						Hash:  chainhash.Hash{},
-						Index: 0xffffffff,
-						Tree:  TxTreeStake,
-					},
-					Sequence:    0xffffffff,
-					ValueIn:     0x1313131313131313,
-					BlockHeight: 0x14141414,
-					BlockIndex:  0x15151515,
-					SignatureScript: []byte{
-						0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0xf2,
-					},
-				},
-			},
-			TxOut: []*TxOut{
-				{
-					Value:   0x3333333333333333,
-					Version: 0x1212,
 					PkScript: []byte{
 						0x41, // OP_DATA_65
 						0x04, 0x96, 0xb5, 0x38, 0xe8, 0x53, 0x51, 0x9c,

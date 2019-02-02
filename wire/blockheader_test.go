@@ -26,37 +26,16 @@ func TestBlockHeader(t *testing.T) {
 
 	hash := mainNetGenesisHash
 	merkleHash := mainNetGenesisMerkleRoot
-	votebits := uint16(0x0000)
 	bits := uint32(0x1d00ffff)
-	finalState := [6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	voters := uint16(0x0000)
-	freshstake := uint8(0x00)
-	revocations := uint8(0x00)
-	poolsize := uint32(0)
-	sbits := int64(0x0000000000000000)
 	blockHeight := uint32(0)
-	blockSize := uint32(0)
-	stakeVersion := uint32(0xb0a710ad)
-	extraData := [32]byte{}
 
 	bh := NewBlockHeader(
 		1, // verision
 		&hash,
 		&merkleHash,
-		&merkleHash, // stakeRoot
-		votebits,
-		finalState,
-		voters,
-		freshstake,
-		revocations,
-		poolsize,
 		bits,
-		sbits,
 		blockHeight,
-		blockSize,
 		nonce,
-		extraData,
-		stakeVersion,
 	)
 
 	// Ensure we get the same data back out.
@@ -68,49 +47,13 @@ func TestBlockHeader(t *testing.T) {
 		t.Errorf("NewBlockHeader: wrong merkle root - got %v, want %v",
 			spew.Sprint(bh.MerkleRoot), spew.Sprint(merkleHash))
 	}
-	if !bh.StakeRoot.IsEqual(&merkleHash) {
-		t.Errorf("NewBlockHeader: wrong merkle root - got %v, want %v",
-			spew.Sprint(bh.MerkleRoot), spew.Sprint(merkleHash))
-	}
-	if bh.VoteBits != votebits {
-		t.Errorf("NewBlockHeader: wrong bits - got %v, want %v",
-			bh.Bits, bits)
-	}
-	if bh.FinalState != finalState {
-		t.Errorf("NewBlockHeader: wrong bits - got %v, want %v",
-			bh.Bits, bits)
-	}
-	if bh.Voters != voters {
-		t.Errorf("NewBlockHeader: wrong bits - got %v, want %v",
-			bh.Bits, bits)
-	}
-	if bh.FreshStake != freshstake {
-		t.Errorf("NewBlockHeader: wrong bits - got %v, want %v",
-			bh.Bits, bits)
-	}
-	if bh.Revocations != revocations {
-		t.Errorf("NewBlockHeader: wrong bits - got %v, want %v",
-			bh.Bits, bits)
-	}
-	if bh.PoolSize != poolsize {
-		t.Errorf("NewBlockHeader: wrong PoolSize - got %v, want %v",
-			bh.PoolSize, poolsize)
-	}
 	if bh.Bits != bits {
-		t.Errorf("NewBlockHeader: wrong bits - got %v, want %v",
-			bh.Bits, bits)
-	}
-	if bh.SBits != sbits {
 		t.Errorf("NewBlockHeader: wrong bits - got %v, want %v",
 			bh.Bits, bits)
 	}
 	if bh.Nonce != nonce {
 		t.Errorf("NewBlockHeader: wrong nonce - got %v, want %v",
 			bh.Nonce, nonce)
-	}
-	if bh.StakeVersion != stakeVersion {
-		t.Errorf("NewBlockHeader: wrong stakeVersion - got %v, want %v",
-			bh.StakeVersion, stakeVersion)
 	}
 }
 
@@ -123,23 +66,13 @@ func TestBlockHeaderWire(t *testing.T) {
 	// baseBlockHdr is used in the various tests as a baseline BlockHeader.
 	bits := uint32(0x1d00ffff)
 	baseBlockHdr := &BlockHeader{
-		Version:      1,
-		PrevBlock:    mainNetGenesisHash,
-		MerkleRoot:   mainNetGenesisMerkleRoot,
-		StakeRoot:    mainNetGenesisMerkleRoot,
-		VoteBits:     uint16(0x0000),
-		FinalState:   [6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		Voters:       uint16(0x0000),
-		FreshStake:   uint8(0x00),
-		Revocations:  uint8(0x00),
-		PoolSize:     uint32(0x00000000),
-		Timestamp:    time.Unix(0x495fab29, 0), // 2009-01-03 12:15:05 -0600 CST
-		Bits:         bits,
-		SBits:        int64(0x0000000000000000),
-		Nonce:        nonce,
-		StakeVersion: uint32(0x0ddba110),
-		Height:       uint32(0),
-		Size:         uint32(0),
+		Version:    1,
+		PrevBlock:  mainNetGenesisHash,
+		MerkleRoot: mainNetGenesisMerkleRoot,
+		Timestamp:  time.Unix(0x495fab29, 0), // 2009-01-03 12:15:05 -0600 CST
+		Bits:       bits,
+		Nonce:      nonce,
+		Height:     uint32(0),
 	}
 
 	// baseBlockHdrEncoded is the wire encoded bytes of baseBlockHdr.
@@ -254,22 +187,13 @@ func TestBlockHeaderSerialize(t *testing.T) {
 	// baseBlockHdr is used in the various tests as a baseline BlockHeader.
 	bits := uint32(0x1d00ffff)
 	baseBlockHdr := &BlockHeader{
-		Version:      1,
-		PrevBlock:    mainNetGenesisHash,
-		MerkleRoot:   mainNetGenesisMerkleRoot,
-		StakeRoot:    mainNetGenesisMerkleRoot,
-		VoteBits:     uint16(0x0000),
-		FinalState:   [6]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		Voters:       uint16(0x0000),
-		FreshStake:   uint8(0x00),
-		Revocations:  uint8(0x00),
-		Timestamp:    time.Unix(0x495fab29, 0), // 2009-01-03 12:15:05 -0600 CST
-		Bits:         bits,
-		SBits:        int64(0x0000000000000000),
-		Nonce:        nonce,
-		StakeVersion: uint32(0x0ddba110),
-		Height:       uint32(0),
-		Size:         uint32(0),
+		Version:    1,
+		PrevBlock:  mainNetGenesisHash,
+		MerkleRoot: mainNetGenesisMerkleRoot,
+		Timestamp:  time.Unix(0x495fab29, 0), // 2009-01-03 12:15:05 -0600 CST
+		Bits:       bits,
+		Nonce:      nonce,
+		Height:     uint32(0),
 	}
 
 	// baseBlockHdrEncoded is the wire encoded bytes of baseBlockHdr.
