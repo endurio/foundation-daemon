@@ -9,6 +9,6 @@ require (
 replace (
 	github.com/endurio/ndrd/chaincfg => ../chaincfg
 	github.com/endurio/ndrd/chaincfg/chainhash => ../chaincfg/chainhash
-	github.com/endurio/ndrd/dcrec/secp256k1 => ../dcrec/secp256k1
+	github.com/endurio/ndrd/ndrec/secp256k1 => ../ndrec/secp256k1
 	github.com/endurio/ndrd/wire => ../wire
 )

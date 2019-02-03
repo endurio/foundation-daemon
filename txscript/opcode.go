@@ -17,10 +17,10 @@ import (
 
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrec"
-	"github.com/endurio/ndrd/dcrec/edwards"
-	"github.com/endurio/ndrd/dcrec/secp256k1"
-	"github.com/endurio/ndrd/dcrec/secp256k1/schnorr"
+	"github.com/endurio/ndrd/ndrec"
+	"github.com/endurio/ndrd/ndrec/edwards"
+	"github.com/endurio/ndrd/ndrec/secp256k1"
+	"github.com/endurio/ndrd/ndrec/secp256k1/schnorr"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -2907,9 +2907,9 @@ func opcodeCheckSigAlt(op *parsedOpcode, vm *Engine) error {
 		// Zero case; pre-softfork clients will return 0 in this case as well.
 		vm.dstack.PushBool(false)
 		return nil
-	case dcrec.STEd25519:
+	case ndrec.STEd25519:
 		break
-	case dcrec.STSchnorrSecp256k1:
+	case ndrec.STSchnorrSecp256k1:
 		break
 	default:
 		// Caveat: All unknown signature types return true, allowing for future
@@ -2927,12 +2927,12 @@ func opcodeCheckSigAlt(op *parsedOpcode, vm *Engine) error {
 	// are allowed for secp256k1 Schnorr signatures, which 32 byte keys
 	// are used for Curve25519.
 	switch sigType {
-	case dcrec.STEd25519:
+	case ndrec.STEd25519:
 		if len(pkBytes) != 32 {
 			vm.dstack.PushBool(false)
 			return nil
 		}
-	case dcrec.STSchnorrSecp256k1:
+	case ndrec.STSchnorrSecp256k1:
 		if len(pkBytes) != 33 {
 			vm.dstack.PushBool(false)
 			return nil
@@ -2947,12 +2947,12 @@ func opcodeCheckSigAlt(op *parsedOpcode, vm *Engine) error {
 	// Schnorr signatures are 65 bytes in length (64 bytes for [r,s] and
 	// 1 byte appened to the end for hashType).
 	switch sigType {
-	case dcrec.STEd25519:
+	case ndrec.STEd25519:
 		if len(fullSigBytes) != 65 {
 			vm.dstack.PushBool(false)
 			return nil
 		}
-	case dcrec.STSchnorrSecp256k1:
+	case ndrec.STSchnorrSecp256k1:
 		if len(fullSigBytes) != 65 {
 			vm.dstack.PushBool(false)
 			return nil
@@ -3001,7 +3001,7 @@ func opcodeCheckSigAlt(op *parsedOpcode, vm *Engine) error {
 
 	// Get the public key from bytes.
 	switch sigType {
-	case dcrec.STEd25519:
+	case ndrec.STEd25519:
 		pubKeyEd, err := edwards.ParsePubKey(edwards.Edwards(), pkBytes)
 		if err != nil {
 			vm.dstack.PushBool(false)
@@ -3015,7 +3015,7 @@ func opcodeCheckSigAlt(op *parsedOpcode, vm *Engine) error {
 		ok := edwards.Verify(pubKeyEd, hash, sigEd.GetR(), sigEd.GetS())
 		vm.dstack.PushBool(ok)
 		return nil
-	case dcrec.STSchnorrSecp256k1:
+	case ndrec.STSchnorrSecp256k1:
 		pubKeySec, err := schnorr.ParsePubKey(secp256k1.S256(), pkBytes)
 		if err != nil {
 			vm.dstack.PushBool(false)

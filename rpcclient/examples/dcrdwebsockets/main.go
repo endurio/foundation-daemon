@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/rpcclient"
 )
 
@@ -30,7 +30,7 @@ func main() {
 	}
 
 	// Connect to local ndrd RPC server using websockets.
-	ndrdHomeDir := dcrutil.AppDataDir("ndrd", false)
+	ndrdHomeDir := ndrutil.AppDataDir("ndrd", false)
 	certs, err := ioutil.ReadFile(filepath.Join(ndrdHomeDir, "rpc.cert"))
 	if err != nil {
 		log.Fatal(err)

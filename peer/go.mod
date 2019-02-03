@@ -16,10 +16,10 @@ replace (
 	github.com/endurio/ndrd/chaincfg => ../chaincfg
 	github.com/endurio/ndrd/chaincfg/chainhash => ../chaincfg/chainhash
 	github.com/endurio/ndrd/database => ../database
-	github.com/endurio/ndrd/dcrec => ../dcrec
-	github.com/endurio/ndrd/dcrec/edwards => ../dcrec/edwards
-	github.com/endurio/ndrd/dcrec/secp256k1 => ../dcrec/secp256k1
-	github.com/endurio/ndrd/dcrutil => ../dcrutil
+	github.com/endurio/ndrd/ndrec => ../ndrec
+	github.com/endurio/ndrd/ndrec/edwards => ../ndrec/edwards
+	github.com/endurio/ndrd/ndrec/secp256k1 => ../ndrec/secp256k1
+	github.com/endurio/ndrd/ndrutil => ../ndrutil
 	github.com/endurio/ndrd/gcs => ../gcs
 	github.com/endurio/ndrd/txscript => ../txscript
 	github.com/endurio/ndrd/wire => ../wire

@@ -13,7 +13,7 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/database"
 	_ "github.com/endurio/ndrd/database/ffldb"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	flags "github.com/jessevdk/go-flags"
 )
 
@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	ndrdHomeDir     = dcrutil.AppDataDir("ndrd", false)
+	ndrdHomeDir     = ndrutil.AppDataDir("ndrd", false)
 	defaultDataDir  = filepath.Join(ndrdHomeDir, "data")
 	knownDbTypes    = database.SupportedDrivers()
 	activeNetParams = &chaincfg.MainNetParams

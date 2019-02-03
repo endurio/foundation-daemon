@@ -18,7 +18,7 @@ import (
 
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/rpcclient"
 	"github.com/endurio/ndrd/wire"
 )
@@ -223,7 +223,7 @@ func (h *Harness) SetUp(createTestChain bool, numMatureOutputs uint32) error {
 
 	// Filter transactions that pay to the coinbase associated with the
 	// wallet.
-	filterAddrs := []dcrutil.Address{h.wallet.coinbaseAddr}
+	filterAddrs := []ndrutil.Address{h.wallet.coinbaseAddr}
 	if err := h.Node.LoadTxFilter(true, filterAddrs, nil); err != nil {
 		return err
 	}
@@ -318,7 +318,7 @@ func (h *Harness) connectRPCClient() error {
 // wallet.
 //
 // This function is safe for concurrent access.
-func (h *Harness) NewAddress() (dcrutil.Address, error) {
+func (h *Harness) NewAddress() (ndrutil.Address, error) {
 	return h.wallet.NewAddress()
 }
 
@@ -326,7 +326,7 @@ func (h *Harness) NewAddress() (dcrutil.Address, error) {
 // wallet.
 //
 // This function is safe for concurrent access.
-func (h *Harness) ConfirmedBalance() dcrutil.Amount {
+func (h *Harness) ConfirmedBalance() ndrutil.Amount {
 	return h.wallet.ConfirmedBalance()
 }
 
@@ -335,7 +335,7 @@ func (h *Harness) ConfirmedBalance() dcrutil.Amount {
 // according to targetOutputs.
 //
 // This function is safe for concurrent access.
-func (h *Harness) SendOutputs(targetOutputs []*wire.TxOut, feeRate dcrutil.Amount) (*chainhash.Hash, error) {
+func (h *Harness) SendOutputs(targetOutputs []*wire.TxOut, feeRate ndrutil.Amount) (*chainhash.Hash, error) {
 	return h.wallet.SendOutputs(targetOutputs, feeRate)
 }
 
@@ -349,7 +349,7 @@ func (h *Harness) SendOutputs(targetOutputs []*wire.TxOut, feeRate dcrutil.Amoun
 // returned to the pool of spendable outputs.
 //
 // This function is safe for concurrent access.
-func (h *Harness) CreateTransaction(targetOutputs []*wire.TxOut, feeRate dcrutil.Amount) (*wire.MsgTx, error) {
+func (h *Harness) CreateTransaction(targetOutputs []*wire.TxOut, feeRate ndrutil.Amount) (*wire.MsgTx, error) {
 	return h.wallet.CreateTransaction(targetOutputs, feeRate)
 }
 

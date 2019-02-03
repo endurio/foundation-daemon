@@ -10,7 +10,7 @@ import (
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/txscript"
 )
 
@@ -267,7 +267,7 @@ func (view *UtxoViewpoint) LookupEntry(txHash *chainhash.Hash) *UtxoEntry {
 // unspendable to the view.  When the view already has entries for any of the
 // outputs, they are simply marked unspent.  All fields will be updated for
 // existing entries since it's possible it has changed during a reorg.
-func (view *UtxoViewpoint) AddTxOuts(tx *dcrutil.Tx, blockHeight int64, blockIndex uint32) {
+func (view *UtxoViewpoint) AddTxOuts(tx *ndrutil.Tx, blockHeight int64, blockIndex uint32) {
 	// When there are not already any utxos associated with the transaction,
 	// add a new entry for it to the view.
 	entry := view.LookupEntry(tx.Hash())
@@ -320,7 +320,7 @@ func (view *UtxoViewpoint) AddTxOuts(tx *dcrutil.Tx, blockHeight int64, blockInd
 // spent.  In addition, when the 'stxos' argument is not nil, it will be updated
 // to append an entry for each spent txout.  An error will be returned if the
 // view does not contain the required utxos.
-func (view *UtxoViewpoint) connectTransaction(tx *dcrutil.Tx, blockHeight int64, blockIndex uint32, stxos *[]spentTxOut) error {
+func (view *UtxoViewpoint) connectTransaction(tx *ndrutil.Tx, blockHeight int64, blockIndex uint32, stxos *[]spentTxOut) error {
 	// Coinbase transactions don't have any inputs to spend.
 	if IsCoinBase(tx) {
 		// Add the transaction's outputs as available utxos.
@@ -381,7 +381,7 @@ func (view *UtxoViewpoint) connectTransaction(tx *dcrutil.Tx, blockHeight int64,
 // the transactions in either the regular or stake tree of the block, depending
 // on the flag, and unspending all of the txos spent by those same transactions
 // by using the provided spent txo information.
-func (view *UtxoViewpoint) disconnectTransactions(block *dcrutil.Block, stxos []spentTxOut) error {
+func (view *UtxoViewpoint) disconnectTransactions(block *ndrutil.Block, stxos []spentTxOut) error {
 	// Choose which transaction tree to use and the appropriate offset into the
 	// spent transaction outputs that corresponds to them depending on the flag.
 	// Transactions in the stake tree are spent before transactions in the
@@ -468,7 +468,7 @@ func (view *UtxoViewpoint) disconnectTransactions(block *dcrutil.Block, stxos []
 // by the transactions in regular tree of the provided block and unspending all
 // of the txos spent by those same transactions by using the provided spent txo
 // information.
-func (view *UtxoViewpoint) disconnectRegularTransactions(block *dcrutil.Block, stxos []spentTxOut) error {
+func (view *UtxoViewpoint) disconnectRegularTransactions(block *ndrutil.Block, stxos []spentTxOut) error {
 	return view.disconnectTransactions(block, stxos)
 }
 
@@ -487,7 +487,7 @@ func (view *UtxoViewpoint) disconnectRegularTransactions(block *dcrutil.Block, s
 //
 // In addition, when the 'stxos' argument is not nil, it will be updated to
 // append an entry for each spent txout.
-func (view *UtxoViewpoint) connectBlock(db database.DB, block, parent *dcrutil.Block, stxos *[]spentTxOut) error {
+func (view *UtxoViewpoint) connectBlock(db database.DB, block, parent *ndrutil.Block, stxos *[]spentTxOut) error {
 	// Load all of the utxos referenced by the inputs for all transactions in
 	// the block that don't already exist in the utxo view from the database.
 	err := view.fetchInputUtxos(db, block)
@@ -530,7 +530,7 @@ func (view *UtxoViewpoint) connectBlock(db database.DB, block, parent *dcrutil.B
 // Note that, unlike block connection, the spent transaction output (stxo)
 // information is required and failure to provide it will result in an assertion
 // panic.
-func (view *UtxoViewpoint) disconnectBlock(db database.DB, block, parent *dcrutil.Block, stxos []spentTxOut) error {
+func (view *UtxoViewpoint) disconnectBlock(db database.DB, block, parent *ndrutil.Block, stxos []spentTxOut) error {
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
 		panicf("provided %v stxos for block %v (height %v) which spends %v "+
@@ -630,7 +630,7 @@ func (view *UtxoViewpoint) fetchUtxosMain(db database.DB, filteredSet viewFilter
 // located later in the regular tree of the block and returns a set of the
 // referenced outputs that are not already in the view and thus need to be
 // fetched from the database.
-func (view *UtxoViewpoint) addRegularInputUtxos(block *dcrutil.Block) viewFilteredSet {
+func (view *UtxoViewpoint) addRegularInputUtxos(block *ndrutil.Block) viewFilteredSet {
 	// Build a map of in-flight transactions because some of the inputs in the
 	// regular transaction tree of this block could be referencing other
 	// transactions earlier in the block which are not yet in the chain.
@@ -679,7 +679,7 @@ func (view *UtxoViewpoint) addRegularInputUtxos(block *dcrutil.Block) viewFilter
 // the view from the database as needed.  In particular, referenced entries that
 // are earlier in the block are added to the view and entries that are already
 // in the view are not modified.
-func (view *UtxoViewpoint) fetchRegularInputUtxos(db database.DB, block *dcrutil.Block) error {
+func (view *UtxoViewpoint) fetchRegularInputUtxos(db database.DB, block *ndrutil.Block) error {
 	// Add any outputs of transactions in the regular tree of the block that are
 	// referenced by inputs of transactions that are located later in the tree
 	// and fetch any inputs that are not already in the view from the database.
@@ -693,7 +693,7 @@ func (view *UtxoViewpoint) fetchRegularInputUtxos(db database.DB, block *dcrutil
 // referenced entries that are earlier in the regular tree of the block are
 // added to the view.  In all cases, entries that are already in the view are
 // not modified.
-func (view *UtxoViewpoint) fetchInputUtxos(db database.DB, block *dcrutil.Block) error {
+func (view *UtxoViewpoint) fetchInputUtxos(db database.DB, block *ndrutil.Block) error {
 	// Add any outputs of transactions in the regular tree of the block that are
 	// referenced by inputs of transactions that are located later in the tree
 	// and, while doing so, determine which inputs are not already in the view
@@ -734,7 +734,7 @@ func NewUtxoViewpoint() *UtxoViewpoint {
 // outputs.
 //
 // This function is safe for concurrent access however the returned view is NOT.
-func (b *BlockChain) FetchUtxoView(tx *dcrutil.Tx) (*UtxoViewpoint, error) {
+func (b *BlockChain) FetchUtxoView(tx *ndrutil.Tx) (*UtxoViewpoint, error) {
 	b.chainLock.RLock()
 	defer b.chainLock.RUnlock()
 

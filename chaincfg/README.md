@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/chaincfg"
 )
 

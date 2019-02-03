@@ -14,7 +14,7 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -120,7 +120,7 @@ func dbFetchIndexerVersion(dbTx database.Tx, idxKey []byte) (uint32, error) {
 // given block using the provided indexer and updates the tip of the indexer
 // accordingly.  An error will be returned if the current tip for the indexer is
 // not the previous block for the passed block.
-func dbIndexConnectBlock(dbTx database.Tx, indexer Indexer, block, parent *dcrutil.Block, view *blockchain.UtxoViewpoint) error {
+func dbIndexConnectBlock(dbTx database.Tx, indexer Indexer, block, parent *ndrutil.Block, view *blockchain.UtxoViewpoint) error {
 	// Assert that the block being connected properly connects to the
 	// current tip of the index.
 	idxKey := indexer.Key()
@@ -148,7 +148,7 @@ func dbIndexConnectBlock(dbTx database.Tx, indexer Indexer, block, parent *dcrut
 // given block using the provided indexer and updates the tip of the indexer
 // accordingly.  An error will be returned if the current tip for the indexer is
 // not the passed block.
-func dbIndexDisconnectBlock(dbTx database.Tx, indexer Indexer, block, parent *dcrutil.Block, view *blockchain.UtxoViewpoint) error {
+func dbIndexDisconnectBlock(dbTx database.Tx, indexer Indexer, block, parent *ndrutil.Block, view *blockchain.UtxoViewpoint) error {
 	// Assert that the block being disconnected is the current tip of the
 	// index.
 	idxKey := indexer.Key()
@@ -360,13 +360,13 @@ func (m *Manager) upgradeIndexes(interrupt <-chan struct{}) error {
 }
 
 // dbFetchBlockByHash uses an existing database transaction to retrieve the raw
-// block for the provided hash, deserialize it, and return a dcrutil.Block.
-func dbFetchBlockByHash(dbTx database.Tx, hash *chainhash.Hash) (*dcrutil.Block, error) {
+// block for the provided hash, deserialize it, and return a ndrutil.Block.
+func dbFetchBlockByHash(dbTx database.Tx, hash *chainhash.Hash) (*ndrutil.Block, error) {
 	blockBytes, err := dbTx.FetchBlock(hash)
 	if err != nil {
 		return nil, err
 	}
-	return dcrutil.NewBlockFromBytes(blockBytes)
+	return ndrutil.NewBlockFromBytes(blockBytes)
 }
 
 // Init initializes the enabled indexes.  This is called during chain
@@ -414,7 +414,7 @@ func (m *Manager) Init(chain *blockchain.BlockChain, interrupt <-chan struct{}) 
 	// reorganized while the index is disabled.  This has to be done in
 	// reverse order because later indexes can depend on earlier ones.
 	var err error
-	var cachedBlock *dcrutil.Block
+	var cachedBlock *ndrutil.Block
 	for i := len(m.enabledIndexes); i > 0; i-- {
 		indexer := m.enabledIndexes[i-1]
 
@@ -441,7 +441,7 @@ func (m *Manager) Init(chain *blockchain.BlockChain, interrupt <-chan struct{}) 
 		err = m.db.Update(func(dbTx database.Tx) error {
 			for !chain.MainChainHasBlock(hash) {
 				// Get the block, unless it's already cached.
-				var block *dcrutil.Block
+				var block *ndrutil.Block
 				if cachedBlock == nil && height > 0 {
 					block, err = dbFetchBlockByHash(dbTx, hash)
 					if err != nil {
@@ -553,13 +553,13 @@ func (m *Manager) Init(chain *blockchain.BlockChain, interrupt <-chan struct{}) 
 	log.Infof("Catching up indexes from height %d to %d", lowestHeight,
 		bestHeight)
 
-	var cachedParent *dcrutil.Block
+	var cachedParent *ndrutil.Block
 	for height := lowestHeight + 1; height <= bestHeight; height++ {
 		if interruptRequested(interrupt) {
 			return errInterruptRequested
 		}
 
-		var block, parent *dcrutil.Block
+		var block, parent *ndrutil.Block
 		err = m.db.Update(func(dbTx database.Tx) error {
 			// Get the parent of the block, unless it's already cached.
 			if cachedParent == nil && height > 0 {
@@ -675,9 +675,9 @@ func dbFetchTx(dbTx database.Tx, hash *chainhash.Hash) (*wire.MsgTx, error) {
 // transactions in the block.  This is sometimes needed when catching indexes up
 // because many of the txouts could actually already be spent however the
 // associated scripts are still required to index them.
-func makeUtxoView(dbTx database.Tx, block *dcrutil.Block, interrupt <-chan struct{}) (*blockchain.UtxoViewpoint, error) {
+func makeUtxoView(dbTx database.Tx, block *ndrutil.Block, interrupt <-chan struct{}) (*blockchain.UtxoViewpoint, error) {
 	view := blockchain.NewUtxoViewpoint()
-	processTxns := func(txns []*dcrutil.Tx, regularTree bool) error {
+	processTxns := func(txns []*ndrutil.Tx, regularTree bool) error {
 		for txIdx, tx := range txns {
 			// Coinbases do not reference any inputs.  Since the block is
 			// required to have already gone through full validation, it has
@@ -702,7 +702,7 @@ func makeUtxoView(dbTx database.Tx, block *dcrutil.Block, interrupt <-chan struc
 					return err
 				}
 
-				view.AddTxOuts(dcrutil.NewTx(originTx), int64(txIn.BlockHeight),
+				view.AddTxOuts(ndrutil.NewTx(originTx), int64(txIn.BlockHeight),
 					txIn.BlockIndex)
 			}
 
@@ -726,7 +726,7 @@ func makeUtxoView(dbTx database.Tx, block *dcrutil.Block, interrupt <-chan struc
 // checks, and invokes each indexer.
 //
 // This is part of the blockchain.IndexManager interface.
-func (m *Manager) ConnectBlock(dbTx database.Tx, block, parent *dcrutil.Block, view *blockchain.UtxoViewpoint) error {
+func (m *Manager) ConnectBlock(dbTx database.Tx, block, parent *ndrutil.Block, view *blockchain.UtxoViewpoint) error {
 	// Call each of the currently active optional indexes with the block
 	// being connected so they can update accordingly.
 	for _, index := range m.enabledIndexes {
@@ -744,7 +744,7 @@ func (m *Manager) ConnectBlock(dbTx database.Tx, block, parent *dcrutil.Block, v
 // the index entries associated with the block.
 //
 // This is part of the blockchain.IndexManager interface.
-func (m *Manager) DisconnectBlock(dbTx database.Tx, block, parent *dcrutil.Block, view *blockchain.UtxoViewpoint) error {
+func (m *Manager) DisconnectBlock(dbTx database.Tx, block, parent *ndrutil.Block, view *blockchain.UtxoViewpoint) error {
 	// Call each of the currently active optional indexes with the block
 	// being disconnected so they can update accordingly.
 	for _, index := range m.enabledIndexes {

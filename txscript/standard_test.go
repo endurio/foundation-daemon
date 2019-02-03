@@ -12,9 +12,9 @@ import (
 
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrec"
-	"github.com/endurio/ndrd/dcrec/secp256k1"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrec"
+	"github.com/endurio/ndrd/ndrec/secp256k1"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 // mustParseShortForm parses the passed short form script and returns the
@@ -31,16 +31,16 @@ func mustParseShortForm(script string) []byte {
 	return s
 }
 
-// newAddressPubKey returns a new dcrutil.AddressPubKey from the provided
+// newAddressPubKey returns a new ndrutil.AddressPubKey from the provided
 // serialized public key.  It panics if an error occurs.  This is only used in
 // the tests as a helper since the only way it can fail is if there is an error
 // in the test source code.
-func newAddressPubKey(serializedPubKey []byte) dcrutil.Address {
+func newAddressPubKey(serializedPubKey []byte) ndrutil.Address {
 	pubkey, err := secp256k1.ParsePubKey(serializedPubKey)
 	if err != nil {
 		panic("invalid public key in test source")
 	}
-	addr, err := dcrutil.NewAddressSecpPubKeyCompressed(pubkey,
+	addr, err := ndrutil.NewAddressSecpPubKeyCompressed(pubkey,
 		&chaincfg.MainNetParams)
 	if err != nil {
 		panic("invalid public key in test source")
@@ -49,13 +49,13 @@ func newAddressPubKey(serializedPubKey []byte) dcrutil.Address {
 	return addr
 }
 
-// newAddressPubKeyHash returns a new dcrutil.AddressPubKeyHash from the
+// newAddressPubKeyHash returns a new ndrutil.AddressPubKeyHash from the
 // provided hash.  It panics if an error occurs.  This is only used in the tests
 // as a helper since the only way it can fail is if there is an error in the
 // test source code.
-func newAddressPubKeyHash(pkHash []byte) dcrutil.Address {
-	addr, err := dcrutil.NewAddressPubKeyHash(pkHash, &chaincfg.MainNetParams,
-		dcrec.STEcdsaSecp256k1)
+func newAddressPubKeyHash(pkHash []byte) ndrutil.Address {
+	addr, err := ndrutil.NewAddressPubKeyHash(pkHash, &chaincfg.MainNetParams,
+		ndrec.STEcdsaSecp256k1)
 	if err != nil {
 		panic("invalid public key hash in test source")
 	}
@@ -63,12 +63,12 @@ func newAddressPubKeyHash(pkHash []byte) dcrutil.Address {
 	return addr
 }
 
-// newAddressScriptHash returns a new dcrutil.AddressScriptHash from the
+// newAddressScriptHash returns a new ndrutil.AddressScriptHash from the
 // provided hash.  It panics if an error occurs.  This is only used in the tests
 // as a helper since the only way it can fail is if there is an error in the
 // test source code.
-func newAddressScriptHash(scriptHash []byte) dcrutil.Address {
-	addr, err := dcrutil.NewAddressScriptHashFromHash(scriptHash,
+func newAddressScriptHash(scriptHash []byte) ndrutil.Address {
+	addr, err := ndrutil.NewAddressScriptHashFromHash(scriptHash,
 		&chaincfg.MainNetParams)
 	if err != nil {
 		panic("invalid script hash in test source")
@@ -85,7 +85,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 	tests := []struct {
 		name    string
 		script  []byte
-		addrs   []dcrutil.Address
+		addrs   []ndrutil.Address
 		reqSigs int
 		class   ScriptClass
 		noparse bool
@@ -94,7 +94,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 			name: "standard p2pk with compressed pubkey (0x02)",
 			script: hexToBytes("2102192d74d0cb94344c9569c2e779015" +
 				"73d8d7903c3ebec3a957724895dca52c6b4ac"),
-			addrs: []dcrutil.Address{
+			addrs: []ndrutil.Address{
 				newAddressPubKey(hexToBytes("02192d74d0cb9434" +
 					"4c9569c2e77901573d8d7903c3ebec3a9577" +
 					"24895dca52c6b4")),
@@ -108,7 +108,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 				"c1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddf" +
 				"b84ccf9744464f82e160bfa9b8b64f9d4c03f999b864" +
 				"3f656b412a3ac"),
-			addrs: []dcrutil.Address{
+			addrs: []ndrutil.Address{
 				newAddressPubKey(hexToBytes("0411db93e1dcdb8a" +
 					"016b49840f8c53bc1eb68a382e97b1482eca" +
 					"d7b148a6909a5cb2e0eaddfb84ccf9744464" +
@@ -122,7 +122,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 			name: "standard p2pk with compressed pubkey (0x03)",
 			script: hexToBytes("2103b0bd634234abbb1ba1e986e884185" +
 				"c61cf43e001f9137f23c2c409273eb16e65ac"),
-			addrs: []dcrutil.Address{
+			addrs: []ndrutil.Address{
 				newAddressPubKey(hexToBytes("03b0bd634234abbb" +
 					"1ba1e986e884185c61cf43e001f9137f23c2" +
 					"c409273eb16e65")),
@@ -136,7 +136,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 				"c61cf43e001f9137f23c2c409273eb16e6537a576782" +
 				"eba668a7ef8bd3b3cfb1edb7117ab65129b8a2e681f3" +
 				"c1e0908ef7bac"),
-			addrs: []dcrutil.Address{
+			addrs: []ndrutil.Address{
 				newAddressPubKey(hexToBytes("04b0bd634234abbb" +
 					"1ba1e986e884185c61cf43e001f9137f23c2" +
 					"c409273eb16e6537a576782eba668a7ef8bd" +
@@ -150,7 +150,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 			name: "standard p2pkh",
 			script: hexToBytes("76a914ad06dd6ddee55cbca9a9e3713bd" +
 				"7587509a3056488ac"),
-			addrs: []dcrutil.Address{
+			addrs: []ndrutil.Address{
 				newAddressPubKeyHash(hexToBytes("ad06dd6ddee5" +
 					"5cbca9a9e3713bd7587509a30564")),
 			},
@@ -161,7 +161,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 			name: "standard p2sh",
 			script: hexToBytes("a91463bcc565f9e68ee0189dd5cc67f1b" +
 				"0e5f02f45cb87"),
-			addrs: []dcrutil.Address{
+			addrs: []ndrutil.Address{
 				newAddressScriptHash(hexToBytes("63bcc565f9e6" +
 					"8ee0189dd5cc67f1b0e5f02f45cb")),
 			},
@@ -178,7 +178,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 				"1354d80e550078cb532a34bfa2fcfdeb7d76519aecc6" +
 				"2770f5b0e4ef8551946d8a540911abe3e7854a26f39f" +
 				"58b25c15342af52ae"),
-			addrs: []dcrutil.Address{
+			addrs: []ndrutil.Address{
 				newAddressPubKey(hexToBytes("04cc71eb30d653c0" +
 					"c3163990c47b976f3fb3f37cccdcbedb169a" +
 					"1dfef58bbfbfaff7d8a473e7e2e6d317b87b" +
@@ -206,7 +206,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 				"2bbf781c5410d3f22a7a3a56ffefb2238af8627363bd" +
 				"f2ed97c1f89784a1aecdb43384f11d2acc64443c7fc2" +
 				"99cef0400421a53ae"),
-			addrs: []dcrutil.Address{
+			addrs: []ndrutil.Address{
 				newAddressPubKey(hexToBytes("04cb9c3c222c5f7a" +
 					"7d3b9bd152f363a0b6d54c9eb312c4d4f9af" +
 					"1e8551b6c421a6a4ab0e29105f24de20ff46" +
@@ -282,7 +282,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 				"16e20626520666f756e6420696e207472616e7361637" +
 				"4696f6e2036633533636439383731313965663739376" +
 				"435616463636453ae"),
-			addrs:   []dcrutil.Address{},
+			addrs:   []ndrutil.Address{},
 			reqSigs: 1,
 			class:   MultiSigTy,
 		},
@@ -298,7 +298,7 @@ func TestExtractPkScriptAddrs(t *testing.T) {
 				"13963663463303363363039633539336333653931666" +
 				"56465373032392131323364643432643235363339643" +
 				"338613663663530616234636434340a00000053ae"),
-			addrs:   []dcrutil.Address{},
+			addrs:   []ndrutil.Address{},
 			reqSigs: 1,
 			class:   MultiSigTy,
 		},
@@ -461,46 +461,46 @@ func TestCalcScriptInfo(t *testing.T) {
 	}
 }
 
-// bogusAddress implements the dcrutil.Address interface so the tests can ensure
+// bogusAddress implements the ndrutil.Address interface so the tests can ensure
 // unsupported address types are handled properly.
 type bogusAddress struct{}
 
 // EncodeAddress simply returns an empty string.  It exists to satisfy the
-// dcrutil.Address interface.
+// ndrutil.Address interface.
 func (b *bogusAddress) EncodeAddress() string {
 	return ""
 }
 
 // ScriptAddress simply returns an empty byte slice.  It exists to satisfy the
-// dcrutil.Address interface.
+// ndrutil.Address interface.
 func (b *bogusAddress) ScriptAddress() []byte {
 	return nil
 }
 
 // Hash160 simply returns an empty byte slice.  It exists to satisfy the
-// dcrutil.Address interface.
+// ndrutil.Address interface.
 func (b *bogusAddress) Hash160() *[20]byte {
 	return nil
 }
 
-// IsForNet lies blatantly to satisfy the dcrutil.Address interface.
+// IsForNet lies blatantly to satisfy the ndrutil.Address interface.
 func (b *bogusAddress) IsForNet(chainParams *chaincfg.Params) bool {
 	return true // why not?
 }
 
 // String simply returns an empty string.  It exists to satisfy the
-// dcrutil.Address interface.
+// ndrutil.Address interface.
 func (b *bogusAddress) String() string {
 	return ""
 }
 
 // DSA returns -1.
-func (b *bogusAddress) DSA(chainParams *chaincfg.Params) dcrec.SignatureType {
+func (b *bogusAddress) DSA(chainParams *chaincfg.Params) ndrec.SignatureType {
 	return -1
 }
 
 // Net returns the network for the bogus address.  It exists to satisfy the
-// dcrutil.Address interface.
+// ndrutil.Address interface.
 func (b *bogusAddress) Net() *chaincfg.Params {
 	return &chaincfg.RegNetParams
 }
@@ -511,30 +511,30 @@ func TestPayToAddrScript(t *testing.T) {
 	t.Parallel()
 
 	// 1MirQ9bwyQcGVJPwKUgapu5ouK2E2Ey4gX
-	p2pkhMain, err := dcrutil.NewAddressPubKeyHash(hexToBytes("e34cce70c86"+
+	p2pkhMain, err := ndrutil.NewAddressPubKeyHash(hexToBytes("e34cce70c86"+
 		"373273efcc54ce7d2a491bb4a0e84"), &chaincfg.MainNetParams,
-		dcrec.STEcdsaSecp256k1)
+		ndrec.STEcdsaSecp256k1)
 	if err != nil {
 		t.Fatalf("Unable to create public key hash address: %v", err)
 	}
 
 	// Taken from transaction:
 	// b0539a45de13b3e0403909b8bd1a555b8cbe45fd4e3f3fda76f3a5f52835c29d
-	p2shMain, _ := dcrutil.NewAddressScriptHashFromHash(hexToBytes("e8c30"+
+	p2shMain, _ := ndrutil.NewAddressScriptHashFromHash(hexToBytes("e8c30"+
 		"0c87986efa84c37c0519929019ef86eb5b4"), &chaincfg.MainNetParams)
 	if err != nil {
 		t.Fatalf("Unable to create script hash address: %v", err)
 	}
 
 	//  mainnet p2pk 13CG6SJ3yHUXo4Cr2RY4THLLJrNFuG3gUg
-	p2pkCompressedMain, err := dcrutil.NewAddressSecpPubKey(hexToBytes("02192d7"+
+	p2pkCompressedMain, err := ndrutil.NewAddressSecpPubKey(hexToBytes("02192d7"+
 		"4d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
 		&chaincfg.MainNetParams)
 	if err != nil {
 		t.Fatalf("Unable to create pubkey address (compressed): %v",
 			err)
 	}
-	p2pkCompressed2Main, err := dcrutil.NewAddressSecpPubKey(hexToBytes("03b0b"+
+	p2pkCompressed2Main, err := ndrutil.NewAddressSecpPubKey(hexToBytes("03b0b"+
 		"d634234abbb1ba1e986e884185c61cf43e001f9137f23c2c409273eb16e65"),
 		&chaincfg.MainNetParams)
 	if err != nil {
@@ -551,7 +551,7 @@ func TestPayToAddrScript(t *testing.T) {
 	errUnsupportedAddress := scriptError(ErrUnsupportedAddress, "")
 
 	tests := []struct {
-		in       dcrutil.Address
+		in       ndrutil.Address
 		expected string
 		err      error
 	}{
@@ -594,11 +594,11 @@ func TestPayToAddrScript(t *testing.T) {
 		},
 
 		// Supported address types with nil pointers.
-		{(*dcrutil.AddressPubKeyHash)(nil), "", errUnsupportedAddress},
-		{(*dcrutil.AddressScriptHash)(nil), "", errUnsupportedAddress},
-		{(*dcrutil.AddressSecpPubKey)(nil), "", errUnsupportedAddress},
-		{(*dcrutil.AddressEdwardsPubKey)(nil), "", errUnsupportedAddress},
-		{(*dcrutil.AddressSecSchnorrPubKey)(nil), "", errUnsupportedAddress},
+		{(*ndrutil.AddressPubKeyHash)(nil), "", errUnsupportedAddress},
+		{(*ndrutil.AddressScriptHash)(nil), "", errUnsupportedAddress},
+		{(*ndrutil.AddressSecpPubKey)(nil), "", errUnsupportedAddress},
+		{(*ndrutil.AddressEdwardsPubKey)(nil), "", errUnsupportedAddress},
+		{(*ndrutil.AddressSecSchnorrPubKey)(nil), "", errUnsupportedAddress},
 
 		// Unsupported address type.
 		{&bogusAddress{}, "", errUnsupportedAddress},
@@ -628,14 +628,14 @@ func TestMultiSigScript(t *testing.T) {
 	t.Parallel()
 
 	//  mainnet p2pk 13CG6SJ3yHUXo4Cr2RY4THLLJrNFuG3gUg
-	p2pkCompressedMain, err := dcrutil.NewAddressSecpPubKey(hexToBytes("02192d"+
+	p2pkCompressedMain, err := ndrutil.NewAddressSecpPubKey(hexToBytes("02192d"+
 		"74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
 		&chaincfg.MainNetParams)
 	if err != nil {
 		t.Fatalf("Unable to create pubkey address (compressed): %v",
 			err)
 	}
-	p2pkCompressed2Main, err := dcrutil.NewAddressSecpPubKey(hexToBytes("03b0b"+
+	p2pkCompressed2Main, err := ndrutil.NewAddressSecpPubKey(hexToBytes("03b0b"+
 		"d634234abbb1ba1e986e884185c61cf43e001f9137f23c2c409273eb16e65"),
 		&chaincfg.MainNetParams)
 	if err != nil {
@@ -649,13 +649,13 @@ func TestMultiSigScript(t *testing.T) {
 		"2a3"))
 
 	tests := []struct {
-		keys      []*dcrutil.AddressSecpPubKey
+		keys      []*ndrutil.AddressSecpPubKey
 		nrequired int
 		expected  string
 		err       error
 	}{
 		{
-			[]*dcrutil.AddressSecpPubKey{
+			[]*ndrutil.AddressSecpPubKey{
 				p2pkCompressedMain,
 				p2pkCompressed2Main,
 			},
@@ -667,7 +667,7 @@ func TestMultiSigScript(t *testing.T) {
 			nil,
 		},
 		{
-			[]*dcrutil.AddressSecpPubKey{
+			[]*ndrutil.AddressSecpPubKey{
 				p2pkCompressedMain,
 				p2pkCompressed2Main,
 			},
@@ -679,7 +679,7 @@ func TestMultiSigScript(t *testing.T) {
 			nil,
 		},
 		{
-			[]*dcrutil.AddressSecpPubKey{
+			[]*ndrutil.AddressSecpPubKey{
 				p2pkCompressedMain,
 				p2pkCompressed2Main,
 			},
@@ -689,8 +689,8 @@ func TestMultiSigScript(t *testing.T) {
 		},
 		{
 			// By default compressed pubkeys are used in Decred.
-			[]*dcrutil.AddressSecpPubKey{
-				p2pkUncompressedMain.(*dcrutil.AddressSecpPubKey),
+			[]*ndrutil.AddressSecpPubKey{
+				p2pkUncompressedMain.(*ndrutil.AddressSecpPubKey),
 			},
 			1,
 			"1 DATA_33 0x0311db93e1dcdb8a016b49840f8c53bc1eb68a3" +
@@ -698,8 +698,8 @@ func TestMultiSigScript(t *testing.T) {
 			nil,
 		},
 		{
-			[]*dcrutil.AddressSecpPubKey{
-				p2pkUncompressedMain.(*dcrutil.AddressSecpPubKey),
+			[]*ndrutil.AddressSecpPubKey{
+				p2pkUncompressedMain.(*ndrutil.AddressSecpPubKey),
 			},
 			2,
 			"",
@@ -1121,7 +1121,7 @@ func TestGenerateProvablyPruneableOut(t *testing.T) {
 func TestGenerateSStxAddrPush(t *testing.T) {
 	var tests = []struct {
 		addrStr  string
-		amount   dcrutil.Amount
+		amount   ndrutil.Amount
 		limits   uint16
 		expected []byte
 	}{
@@ -1141,7 +1141,7 @@ func TestGenerateSStxAddrPush(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		addr, err := dcrutil.DecodeAddress(test.addrStr)
+		addr, err := ndrutil.DecodeAddress(test.addrStr)
 		if err != nil {
 			t.Errorf("DecodeAddress failed: %v", err)
 			continue

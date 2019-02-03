@@ -8,7 +8,7 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/endurio/ndrd/dcrec/secp256k1"
+	"github.com/endurio/ndrd/ndrec/secp256k1"
 	"github.com/endurio/ndrd/txscript"
 )
 

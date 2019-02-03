@@ -10,7 +10,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/endurio/ndrd/dcrjson"
+	"github.com/endurio/ndrd/ndrjson"
 
 	"github.com/btcsuite/go-socks/socks"
 )
@@ -130,7 +130,7 @@ func sendPostRequest(marshalledJSON []byte, cfg *config) ([]byte, error) {
 	}
 
 	// Unmarshal the response.
-	var resp dcrjson.Response
+	var resp ndrjson.Response
 	if err := json.Unmarshal(respBytes, &resp); err != nil {
 		return nil, err
 	}

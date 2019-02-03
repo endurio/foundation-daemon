@@ -16,7 +16,7 @@ import (
 	"github.com/endurio/ndrd/blockchain/internal/dbnamespace"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -199,7 +199,7 @@ func dbPutBlockNode(dbTx database.Tx, node *blockNode) error {
 
 // dbMaybeStoreBlock stores the provided block in the database if it's not
 // already there.
-func dbMaybeStoreBlock(dbTx database.Tx, block *dcrutil.Block) error {
+func dbMaybeStoreBlock(dbTx database.Tx, block *ndrutil.Block) error {
 	// Store the block in ffldb if not already done.
 	hasBlock, err := dbTx.HasBlock(block.Hash())
 	if err != nil {
@@ -517,7 +517,7 @@ func serializeSpendJournalEntry(stxos []spentTxOut) ([]byte, error) {
 // view MUST have the utxos referenced by all of the transactions available for
 // the passed block since that information is required to reconstruct the spent
 // txouts.
-func dbFetchSpendJournalEntry(dbTx database.Tx, block *dcrutil.Block) ([]spentTxOut, error) {
+func dbFetchSpendJournalEntry(dbTx database.Tx, block *ndrutil.Block) ([]spentTxOut, error) {
 	// Exclude the coinbase transaction since it can't spend anything.
 	spendBucket := dbTx.Metadata().Bucket(dbnamespace.SpendJournalBucketName)
 	serialized := spendBucket.Get(block.Hash()[:])
@@ -1185,7 +1185,7 @@ func dbPutBestState(dbTx database.Tx, snapshot *BestState, workSum *big.Int) err
 // the genesis block, so it must only be called on an uninitialized database.
 func (b *BlockChain) createChainState() error {
 	// Create a new node from the genesis block and set it as the best node.
-	genesisBlock := dcrutil.NewBlock(b.chainParams.GenesisBlock)
+	genesisBlock := ndrutil.NewBlock(b.chainParams.GenesisBlock)
 	header := &genesisBlock.MsgBlock().Header
 	node := newBlockNode(header, nil)
 	node.status = statusDataStored | statusValid
@@ -1475,8 +1475,8 @@ func (b *BlockChain) initChainState() error {
 }
 
 // dbFetchBlockByNode uses an existing database transaction to retrieve the raw
-// block for the provided node, deserialize it, and return a dcrutil.Block.
-func dbFetchBlockByNode(dbTx database.Tx, node *blockNode) (*dcrutil.Block, error) {
+// block for the provided node, deserialize it, and return a ndrutil.Block.
+func dbFetchBlockByNode(dbTx database.Tx, node *blockNode) (*ndrutil.Block, error) {
 	// Load the raw block bytes from the database.
 	blockBytes, err := dbTx.FetchBlock(&node.hash)
 	if err != nil {
@@ -1484,7 +1484,7 @@ func dbFetchBlockByNode(dbTx database.Tx, node *blockNode) (*dcrutil.Block, erro
 	}
 
 	// Create the encapsulated block and set the height appropriately.
-	block, err := dcrutil.NewBlockFromBytes(blockBytes)
+	block, err := ndrutil.NewBlockFromBytes(blockBytes)
 	if err != nil {
 		return nil, err
 	}

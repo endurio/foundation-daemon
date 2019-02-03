@@ -16,7 +16,7 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -106,7 +106,7 @@ func upgradeToVersion2(db database.DB, chainParams *chaincfg.Params, dbInfo *dat
 		copy(hash[:], hashBytes)
 		return &hash, nil
 	}
-	dbFetchBlockByHeight := func(dbTx database.Tx, height int64) (*dcrutil.Block, error) {
+	dbFetchBlockByHeight := func(dbTx database.Tx, height int64) (*ndrutil.Block, error) {
 		// First find the hash associated with the provided height in the index.
 		hash, err := dbFetchHashByHeight(dbTx, height)
 		if err != nil {
@@ -120,7 +120,7 @@ func upgradeToVersion2(db database.DB, chainParams *chaincfg.Params, dbInfo *dat
 		}
 
 		// Create the encapsulated block and set the height appropriately.
-		block, err := dcrutil.NewBlockFromBytes(blockBytes)
+		block, err := ndrutil.NewBlockFromBytes(blockBytes)
 		if err != nil {
 			return nil, err
 		}

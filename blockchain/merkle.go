@@ -9,7 +9,7 @@ import (
 	"math"
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -96,7 +96,7 @@ func populateMerkleStore(offset int, merkles []*chainhash.Hash) {
 // are calculated by concatenating the left node with itself before hashing.
 // Since this function uses nodes that are pointers to the hashes, empty nodes
 // will be nil.
-func BuildMerkleTreeStore(transactions []*dcrutil.Tx) []*chainhash.Hash {
+func BuildMerkleTreeStore(transactions []*ndrutil.Tx) []*chainhash.Hash {
 	// If there's an empty stake tree, return totally zeroed out merkle tree root
 	// only.
 	if len(transactions) == 0 {
@@ -123,7 +123,7 @@ func BuildMerkleTreeStore(transactions []*dcrutil.Tx) []*chainhash.Hash {
 }
 
 // BuildMsgTxMerkleTreeStore is identical to BuildMerkleTreeStore but takes a
-// slice of the wire.MsgTx transaction type instead of the dcrutil.Tx wrapper.
+// slice of the wire.MsgTx transaction type instead of the ndrutil.Tx wrapper.
 // See BuildMerkleTreeStore for more details.
 func BuildMsgTxMerkleTreeStore(transactions []*wire.MsgTx) []*chainhash.Hash {
 	// If there's an empty stake tree, return totally zeroed out merkle tree root

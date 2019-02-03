@@ -12,9 +12,9 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainec"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrec"
-	"github.com/endurio/ndrd/dcrec/secp256k1"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrec"
+	"github.com/endurio/ndrd/ndrec/secp256k1"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/txscript"
 	"github.com/endurio/ndrd/wire"
 )
@@ -23,12 +23,12 @@ import (
 // It also prints the created script hex and uses the DisasmString function to
 // display the disassembled script.
 func ExamplePayToAddrScript() {
-	// Parse the address to send the coins to into a dcrutil.Address
+	// Parse the address to send the coins to into a ndrutil.Address
 	// which is useful to ensure the accuracy of the address and determine
 	// the address type.  It is also required for the upcoming call to
 	// PayToAddrScript.
 	addressStr := "DsSej1qR3Fyc8kV176DCh9n9cY9nqf9Quxk"
-	address, err := dcrutil.DecodeAddress(addressStr)
+	address, err := ndrutil.DecodeAddress(addressStr)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -93,9 +93,9 @@ func ExampleSignTxOutput() {
 		return
 	}
 	privKey, pubKey := secp256k1.PrivKeyFromBytes(privKeyBytes)
-	pubKeyHash := dcrutil.Hash160(pubKey.SerializeCompressed())
-	addr, err := dcrutil.NewAddressPubKeyHash(pubKeyHash,
-		&chaincfg.MainNetParams, dcrec.STEcdsaSecp256k1)
+	pubKeyHash := ndrutil.Hash160(pubKey.SerializeCompressed())
+	addr, err := ndrutil.NewAddressPubKeyHash(pubKeyHash,
+		&chaincfg.MainNetParams, ndrec.STEcdsaSecp256k1)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -133,7 +133,7 @@ func ExampleSignTxOutput() {
 	redeemTx.AddTxOut(txOut)
 
 	// Sign the redeeming transaction.
-	lookupKey := func(a dcrutil.Address) (chainec.PrivateKey, bool, error) {
+	lookupKey := func(a ndrutil.Address) (chainec.PrivateKey, bool, error) {
 		// Ordinarily this function would involve looking up the private
 		// key for the provided address, but since the only thing being
 		// signed in this example uses the address associated with the
@@ -157,7 +157,7 @@ func ExampleSignTxOutput() {
 	sigScript, err := txscript.SignTxOutput(&chaincfg.MainNetParams,
 		redeemTx, 0, originTx.TxOut[0].PkScript, txscript.SigHashAll,
 		txscript.KeyClosure(lookupKey), nil, nil,
-		dcrec.STEcdsaSecp256k1)
+		ndrec.STEcdsaSecp256k1)
 	if err != nil {
 		fmt.Println(err)
 		return

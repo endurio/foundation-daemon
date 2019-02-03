@@ -14,11 +14,11 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/database"
 	_ "github.com/endurio/ndrd/database/ffldb"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 var (
-	ndrdHomeDir     = dcrutil.AppDataDir("ndrd", false)
+	ndrdHomeDir     = ndrutil.AppDataDir("ndrd", false)
 	knownDbTypes    = database.SupportedDrivers()
 	activeNetParams = &chaincfg.MainNetParams
 

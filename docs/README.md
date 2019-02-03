@@ -171,7 +171,7 @@ The following versioned modules are provided by ndrd repository:
 
 * [rpcclient](https://github.com/endurio/ndrd/tree/master/rpcclient) - Implements
   a robust and easy to use Websocket-enabled Decred JSON-RPC client
-* [dcrjson](https://github.com/endurio/ndrd/tree/master/dcrjson) - Provides an
+* [ndrjson](https://github.com/endurio/ndrd/tree/master/ndrjson) - Provides an
   extensive API for the underlying JSON-RPC command and return values
 * [wire](https://github.com/endurio/ndrd/tree/master/wire) - Implements the
   Decred wire protocol
@@ -181,17 +181,17 @@ The following versioned modules are provided by ndrd repository:
   Implements Decred block handling and chain selection rules
 * [txscript](https://github.com/endurio/ndrd/tree/master/txscript) -
   Implements the Decred transaction scripting language
-* [dcrec](https://github.com/endurio/ndrd/tree/master/dcrec) - Provides constants
+* [ndrec](https://github.com/endurio/ndrd/tree/master/ndrec) - Provides constants
   for the supported cryptographic signatures supported by Decred scripts
-  * [secp256k1](https://github.com/endurio/ndrd/tree/master/dcrec/secp256k1) -
+  * [secp256k1](https://github.com/endurio/ndrd/tree/master/ndrec/secp256k1) -
     Implements the secp256k1 elliptic curve
-  * [edwards](https://github.com/endurio/ndrd/tree/master/dcrec/edwards) -
+  * [edwards](https://github.com/endurio/ndrd/tree/master/ndrec/edwards) -
     Implements the edwards25519 twisted Edwards curve
 * [database](https://github.com/endurio/ndrd/tree/master/database) -
   Provides a database interface for the Decred block chain
 * [mempool](https://github.com/endurio/ndrd/tree/master/mempool) - Provides a
   policy-enforced pool of unmined Decred transactions
-* [dcrutil](https://github.com/endurio/ndrd/tree/master/dcrutil) - Provides
+* [ndrutil](https://github.com/endurio/ndrd/tree/master/ndrutil) - Provides
   Decred-specific convenience functions and types
 * [chaincfg](https://github.com/endurio/ndrd/tree/master/chaincfg) - Defines
   chain configuration parameters for the standard Decred networks and allows

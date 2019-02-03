@@ -20,7 +20,7 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -76,7 +76,7 @@ func TestBlockchainSpendJournal(t *testing.T) {
 	// Load up the short chain
 	finalIdx1 := 179
 	for i := 1; i < finalIdx1+1; i++ {
-		bl, err := dcrutil.NewBlockFromBytes(blockChain[int64(i)])
+		bl, err := ndrutil.NewBlockFromBytes(blockChain[int64(i)])
 		if err != nil {
 			t.Fatalf("NewBlockFromBytes error: %v", err.Error())
 		}
@@ -220,7 +220,7 @@ func TestSequenceLocksActive(t *testing.T) {
 func TestCheckBlockSanity(t *testing.T) {
 	params := &chaincfg.RegNetParams
 	timeSource := NewMedianTime()
-	block := dcrutil.NewBlock(&badBlock)
+	block := ndrutil.NewBlock(&badBlock)
 	err := CheckBlockSanity(block, timeSource, params)
 	if err == nil {
 		t.Fatalf("block should fail.\n")
@@ -262,7 +262,7 @@ func TestCheckBlockHeaderContext(t *testing.T) {
 
 	// Test failing checkBlockHeaderContext when calcNextRequiredDifficulty
 	// fails.
-	block := dcrutil.NewBlock(&badBlock)
+	block := ndrutil.NewBlock(&badBlock)
 	newNode := newBlockNode(&block.MsgBlock().Header, nil)
 	err = chain.checkBlockHeaderContext(&block.MsgBlock().Header, newNode, BFNone)
 	if err == nil {
@@ -372,7 +372,7 @@ func TestCheckConnectBlockTemplate(t *testing.T) {
 	accepted := func() {
 		msgBlock := g.Tip()
 		blockHeight := msgBlock.Header.Height
-		block := dcrutil.NewBlock(msgBlock)
+		block := ndrutil.NewBlock(msgBlock)
 		t.Logf("Testing block %s (hash %s, height %d)",
 			g.TipName(), block.Hash(), blockHeight)
 
@@ -400,7 +400,7 @@ func TestCheckConnectBlockTemplate(t *testing.T) {
 	rejected := func(code ErrorCode) {
 		msgBlock := g.Tip()
 		blockHeight := msgBlock.Header.Height
-		block := dcrutil.NewBlock(msgBlock)
+		block := ndrutil.NewBlock(msgBlock)
 		t.Logf("Testing block %s (hash %s, height %d)", g.TipName(),
 			block.Hash(), blockHeight)
 
@@ -442,7 +442,7 @@ func TestCheckConnectBlockTemplate(t *testing.T) {
 	acceptedToSideChainWithExpectedTip := func(tipName string) {
 		msgBlock := g.Tip()
 		blockHeight := msgBlock.Header.Height
-		block := dcrutil.NewBlock(msgBlock)
+		block := ndrutil.NewBlock(msgBlock)
 		t.Logf("Testing block %s (hash %s, height %d)",
 			g.TipName(), block.Hash(), blockHeight)
 
@@ -484,7 +484,7 @@ func TestCheckConnectBlockTemplate(t *testing.T) {
 	acceptedBlockTemplate := func() {
 		msgBlock := g.Tip()
 		blockHeight := msgBlock.Header.Height
-		block := dcrutil.NewBlock(msgBlock)
+		block := ndrutil.NewBlock(msgBlock)
 		t.Logf("Testing block template %s (hash %s, height %d)",
 			g.TipName(), block.Hash(), blockHeight)
 
@@ -498,7 +498,7 @@ func TestCheckConnectBlockTemplate(t *testing.T) {
 	rejectedBlockTemplate := func(code ErrorCode) {
 		msgBlock := g.Tip()
 		blockHeight := msgBlock.Header.Height
-		block := dcrutil.NewBlock(msgBlock)
+		block := ndrutil.NewBlock(msgBlock)
 		t.Logf("Testing block template %s (hash %s, height %d)",
 			g.TipName(), block.Hash(), blockHeight)
 

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 // BehaviorFlags is a bitmask defining tweaks to the normal behavior when
@@ -105,7 +105,7 @@ func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags) e
 // best chain.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) ProcessBlock(block *dcrutil.Block, flags BehaviorFlags) (int64, bool, error) {
+func (b *BlockChain) ProcessBlock(block *ndrutil.Block, flags BehaviorFlags) (int64, bool, error) {
 	b.chainLock.Lock()
 	defer b.chainLock.Unlock()
 

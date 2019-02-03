@@ -7,7 +7,7 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -28,7 +28,7 @@ type SequenceLock struct {
 // from the point of view of the block node passed in as the first argument.
 //
 // See the CalcSequenceLock comments for more details.
-func (b *BlockChain) calcSequenceLock(node *blockNode, tx *dcrutil.Tx, view *UtxoViewpoint, isActive bool) (*SequenceLock, error) {
+func (b *BlockChain) calcSequenceLock(node *blockNode, tx *ndrutil.Tx, view *UtxoViewpoint, isActive bool) (*SequenceLock, error) {
 	// A value of -1 for each lock type allows a transaction to be included
 	// in a block at any given height or time.
 	sequenceLock := &SequenceLock{MinHeight: -1, MinTime: -1}
@@ -136,7 +136,7 @@ func (b *BlockChain) calcSequenceLock(node *blockNode, tx *dcrutil.Tx, view *Utx
 // consensus checking must check the status of the agenda first.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) CalcSequenceLock(tx *dcrutil.Tx, view *UtxoViewpoint) (*SequenceLock, error) {
+func (b *BlockChain) CalcSequenceLock(tx *ndrutil.Tx, view *UtxoViewpoint) (*SequenceLock, error) {
 	b.chainLock.Lock()
 	seqLock, err := b.calcSequenceLock(b.bestChain.Tip(), tx, view, true)
 	b.chainLock.Unlock()

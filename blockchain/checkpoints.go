@@ -11,7 +11,7 @@ import (
 
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/txscript"
 )
 
@@ -188,7 +188,7 @@ func (b *BlockChain) findPreviousCheckpoint() (*blockNode, error) {
 
 // isNonstandardTransaction determines whether a transaction contains any
 // scripts which are not one of the standard types.
-func isNonstandardTransaction(tx *dcrutil.Tx) bool {
+func isNonstandardTransaction(tx *ndrutil.Tx) bool {
 	// Check all of the output public key scripts for non-standard scripts.
 	for _, txOut := range tx.MsgTx().TxOut {
 		scriptClass := txscript.GetScriptClass(txOut.Version, txOut.PkScript)
@@ -216,7 +216,7 @@ func isNonstandardTransaction(tx *dcrutil.Tx) bool {
 // decision and then manually added to the list of checkpoints for a network.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) IsCheckpointCandidate(block *dcrutil.Block) (bool, error) {
+func (b *BlockChain) IsCheckpointCandidate(block *ndrutil.Block) (bool, error) {
 	b.chainLock.RLock()
 	defer b.chainLock.RUnlock()
 

@@ -13,9 +13,9 @@ import (
 
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrec"
-	"github.com/endurio/ndrd/dcrec/secp256k1"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrec"
+	"github.com/endurio/ndrd/ndrec/secp256k1"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/txscript"
 	"github.com/endurio/ndrd/wire"
 )
@@ -25,7 +25,7 @@ func TestCalcMinRequiredTxRelayFee(t *testing.T) {
 	tests := []struct {
 		name     string         // test description.
 		size     int64          // Transaction size in bytes.
-		relayFee dcrutil.Amount // minimum relay transaction fee.
+		relayFee ndrutil.Amount // minimum relay transaction fee.
 		want     int64          // Expected fee.
 	}{
 		{
@@ -51,8 +51,8 @@ func TestCalcMinRequiredTxRelayFee(t *testing.T) {
 		{
 			"max standard tx size with max relay fee",
 			maxStandardTxSize,
-			dcrutil.MaxAmount,
-			dcrutil.MaxAmount,
+			ndrutil.MaxAmount,
+			ndrutil.MaxAmount,
 		},
 		{
 			"1500 bytes with 5000 relay fee",
@@ -211,7 +211,7 @@ func TestDust(t *testing.T) {
 	tests := []struct {
 		name     string // test description
 		txOut    wire.TxOut
-		relayFee dcrutil.Amount // minimum relay transaction fee.
+		relayFee ndrutil.Amount // minimum relay transaction fee.
 		isDust   bool
 	}{
 		{
@@ -267,8 +267,8 @@ func TestDust(t *testing.T) {
 		{
 			// Maximum allowed value is never dust.
 			"max amount is never dust",
-			wire.TxOut{Value: dcrutil.MaxAmount, Version: 0, PkScript: pkScript},
-			dcrutil.MaxAmount,
+			wire.TxOut{Value: ndrutil.MaxAmount, Version: 0, PkScript: pkScript},
+			ndrutil.MaxAmount,
 			false,
 		},
 		{
@@ -319,8 +319,8 @@ func TestCheckTransactionStandard(t *testing.T) {
 		SignatureScript:  dummySigScript,
 	}
 	addrHash := [20]byte{0x01}
-	addr, err := dcrutil.NewAddressPubKeyHash(addrHash[:],
-		&chaincfg.RegNetParams, dcrec.STEcdsaSecp256k1)
+	addr, err := ndrutil.NewAddressPubKeyHash(addrHash[:],
+		&chaincfg.RegNetParams, ndrec.STEcdsaSecp256k1)
 	if err != nil {
 		t.Fatalf("NewAddressPubKeyHash: unexpected error: %v", err)
 	}
@@ -529,7 +529,7 @@ func TestCheckTransactionStandard(t *testing.T) {
 	medianTime := time.Now()
 	for _, test := range tests {
 		// Ensure standardness is as expected.
-		tx := dcrutil.NewTx(&test.tx)
+		tx := ndrutil.NewTx(&test.tx)
 		err := checkTransactionStandard(tx,
 			test.height, medianTime, DefaultMinRelayTxFee,
 			maxTxVersion)

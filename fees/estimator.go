@@ -17,7 +17,7 @@ import (
 	ldbutil "github.com/btcsuite/goleveldb/leveldb/util"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 const (
@@ -102,13 +102,13 @@ type EstimatorConfig struct {
 
 	// MinBucketFee is the value of the fee rate of the lowest bucket for which
 	// estimation is tracked.
-	MinBucketFee dcrutil.Amount
+	MinBucketFee ndrutil.Amount
 
 	// MaxBucketFee is the value of the fee for the highest bucket for which
 	// estimation is tracked.
 	//
 	// It MUST be higher than MinBucketFee.
-	MaxBucketFee dcrutil.Amount
+	MaxBucketFee ndrutil.Amount
 
 	// ExtraBucketFee is an additional bucket fee rate to include in the
 	// database for tracking transactions. Specifying this can be useful when
@@ -118,7 +118,7 @@ type EstimatorConfig struct {
 	//
 	// It MUST have a value between MinBucketFee and MaxBucketFee, otherwise
 	// it's ignored.
-	ExtraBucketFee dcrutil.Amount
+	ExtraBucketFee ndrutil.Amount
 
 	// FeeRateStep is the multiplier to generate the fee rate buckets (each
 	// bucket is higher than the previous one by this factor).
@@ -723,7 +723,7 @@ func (stats *Estimator) estimateMedianFee(targetConfs int32, successPct float64)
 //
 // This function is safe to be called from multiple goroutines but might block
 // until concurrent modifications to the internal database state are complete.
-func (stats *Estimator) EstimateFee(targetConfs int32) (dcrutil.Amount, error) {
+func (stats *Estimator) EstimateFee(targetConfs int32) (ndrutil.Amount, error) {
 	stats.lock.RLock()
 	rate, err := stats.estimateMedianFee(targetConfs, 0.95)
 	stats.lock.RUnlock()
@@ -739,7 +739,7 @@ func (stats *Estimator) EstimateFee(targetConfs int32) (dcrutil.Amount, error) {
 		rate = stats.bucketFeeBounds[0]
 	}
 
-	return dcrutil.Amount(rate), nil
+	return ndrutil.Amount(rate), nil
 }
 
 // Enable establishes the current best height of the blockchain after
@@ -870,7 +870,7 @@ func (stats *Estimator) processMinedTransaction(blockHeight int64, txh *chainhas
 // ProcessBlock processes all mined transactions in the provided block.
 //
 // This function is safe to be called from multiple goroutines.
-func (stats *Estimator) ProcessBlock(block *dcrutil.Block) error {
+func (stats *Estimator) ProcessBlock(block *ndrutil.Block) error {
 	stats.lock.Lock()
 	defer stats.lock.Unlock()
 

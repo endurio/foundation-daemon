@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 // maybeAcceptBlock potentially accepts a block into the block chain and, if
@@ -25,7 +25,7 @@ import (
 // behavior.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) maybeAcceptBlock(block *dcrutil.Block, flags BehaviorFlags) (int64, error) {
+func (b *BlockChain) maybeAcceptBlock(block *ndrutil.Block, flags BehaviorFlags) (int64, error) {
 	// This function should never be called with orphan blocks or the
 	// genesis block.
 	prevHash := &block.MsgBlock().Header.PrevBlock

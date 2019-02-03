@@ -16,8 +16,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/endurio/ndrd/dcrjson"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrjson"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/internal/version"
 
 	flags "github.com/jessevdk/go-flags"
@@ -27,13 +27,13 @@ const (
 	// unusableFlags are the command usage flags which this utility are not
 	// able to use.  In particular it doesn't support websockets and
 	// consequently notifications.
-	unusableFlags = dcrjson.UFWebsocketOnly | dcrjson.UFNotification
+	unusableFlags = ndrjson.UFWebsocketOnly | ndrjson.UFNotification
 )
 
 var (
-	ndrdHomeDir            = dcrutil.AppDataDir("ndrd", false)
-	dcrctlHomeDir          = dcrutil.AppDataDir("ndrctl", false)
-	ndrwHomeDir            = dcrutil.AppDataDir("ndrw", false)
+	ndrdHomeDir            = ndrutil.AppDataDir("ndrd", false)
+	dcrctlHomeDir          = ndrutil.AppDataDir("ndrctl", false)
+	ndrwHomeDir            = ndrutil.AppDataDir("ndrw", false)
 	defaultConfigFile      = filepath.Join(dcrctlHomeDir, "ndrctl.conf")
 	defaultRPCServer       = "localhost"
 	defaultWalletRPCServer = "localhost"
@@ -51,10 +51,10 @@ func listCommands() {
 	)
 
 	// Get a list of registered commands and categorize and filter them.
-	cmdMethods := dcrjson.RegisteredCmdMethods()
+	cmdMethods := ndrjson.RegisteredCmdMethods()
 	categorized := make([][]string, numCategories)
 	for _, method := range cmdMethods {
-		flags, err := dcrjson.MethodUsageFlags(method)
+		flags, err := ndrjson.MethodUsageFlags(method)
 		if err != nil {
 			// This should never happen since the method was just
 			// returned from the package, but be safe.
@@ -66,7 +66,7 @@ func listCommands() {
 			continue
 		}
 
-		usage, err := dcrjson.MethodUsageText(method)
+		usage, err := ndrjson.MethodUsageText(method)
 		if err != nil {
 			// This should never happen since the method was just
 			// returned from the package, but be safe.
@@ -75,7 +75,7 @@ func listCommands() {
 
 		// Categorize the command based on the usage flags.
 		category := categoryChain
-		if flags&dcrjson.UFWalletOnly != 0 {
+		if flags&ndrjson.UFWalletOnly != 0 {
 			category = categoryWallet
 		}
 		categorized[category] = append(categorized[category], usage)

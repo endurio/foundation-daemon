@@ -10,7 +10,7 @@ import (
 	"math"
 	"runtime"
 
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/txscript"
 	"github.com/endurio/ndrd/wire"
 )
@@ -19,7 +19,7 @@ import (
 type txValidateItem struct {
 	txInIndex int
 	txIn      *wire.TxIn
-	tx        *dcrutil.Tx
+	tx        *ndrutil.Tx
 }
 
 // txValidator provides a type which asynchronously validates transaction
@@ -195,7 +195,7 @@ func newTxValidator(utxoView *UtxoViewpoint, flags txscript.ScriptFlags, sigCach
 
 // ValidateTransactionScripts validates the scripts for the passed transaction
 // using multiple goroutines.
-func ValidateTransactionScripts(tx *dcrutil.Tx, utxoView *UtxoViewpoint, flags txscript.ScriptFlags, sigCache *txscript.SigCache) error {
+func ValidateTransactionScripts(tx *ndrutil.Tx, utxoView *UtxoViewpoint, flags txscript.ScriptFlags, sigCache *txscript.SigCache) error {
 	// Collect all of the transaction inputs and required information for
 	// validation.
 	txIns := tx.MsgTx().TxIn
@@ -222,13 +222,13 @@ func ValidateTransactionScripts(tx *dcrutil.Tx, utxoView *UtxoViewpoint, flags t
 // checkBlockScripts executes and validates the scripts for all transactions in
 // the passed block using multiple goroutines.
 // txTree = true is TxTreeRegular, txTree = false is TxTreeStake.
-func checkBlockScripts(block *dcrutil.Block, utxoView *UtxoViewpoint,
+func checkBlockScripts(block *ndrutil.Block, utxoView *UtxoViewpoint,
 	scriptFlags txscript.ScriptFlags, sigCache *txscript.SigCache) error {
 
 	// Collect all of the transaction inputs and required information for
 	// validation for all transactions in the block into a single slice.
 	numInputs := 0
-	var txs []*dcrutil.Tx
+	var txs []*ndrutil.Tx
 
 	// TxTreeRegular handling.
 	txs = block.Transactions()

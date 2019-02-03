@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/endurio/ndrd/dcrjson"
+	"github.com/endurio/ndrd/ndrjson"
 )
 
 // helpDescsEnUS defines the English descriptions used for the help strings.
@@ -741,61 +741,61 @@ var rpcResultTypes = map[string][]interface{}{
 	"createrawssrtx":        {(*string)(nil)},
 	"createrawtransaction":  {(*string)(nil)},
 	"debuglevel":            {(*string)(nil), (*string)(nil)},
-	"decoderawtransaction":  {(*dcrjson.TxRawDecodeResult)(nil)},
-	"decodescript":          {(*dcrjson.DecodeScriptResult)(nil)},
+	"decoderawtransaction":  {(*ndrjson.TxRawDecodeResult)(nil)},
+	"decodescript":          {(*ndrjson.DecodeScriptResult)(nil)},
 	"estimatefee":           {(*float64)(nil)},
 	"estimatesmartfee":      {(*float64)(nil)},
 	"existsaddress":         {(*bool)(nil)},
 	"existsaddresses":       {(*string)(nil)},
 	"existsmempooltxs":      {(*string)(nil)},
-	"getaddednodeinfo":      {(*[]string)(nil), (*[]dcrjson.GetAddedNodeInfoResult)(nil)},
-	"getbestblock":          {(*dcrjson.GetBestBlockResult)(nil)},
+	"getaddednodeinfo":      {(*[]string)(nil), (*[]ndrjson.GetAddedNodeInfoResult)(nil)},
+	"getbestblock":          {(*ndrjson.GetBestBlockResult)(nil)},
 	"generate":              {(*[]string)(nil)},
 	"getbestblockhash":      {(*string)(nil)},
-	"getblock":              {(*string)(nil), (*dcrjson.GetBlockVerboseResult)(nil)},
-	"getblockchaininfo":     {(*dcrjson.GetBlockChainInfoResult)(nil)},
+	"getblock":              {(*string)(nil), (*ndrjson.GetBlockVerboseResult)(nil)},
+	"getblockchaininfo":     {(*ndrjson.GetBlockChainInfoResult)(nil)},
 	"getblockcount":         {(*int64)(nil)},
 	"getblockhash":          {(*string)(nil)},
-	"getblockheader":        {(*string)(nil), (*dcrjson.GetBlockHeaderVerboseResult)(nil)},
-	"getblocksubsidy":       {(*dcrjson.GetBlockSubsidyResult)(nil)},
-	"getblocktemplate":      {(*dcrjson.GetBlockTemplateResult)(nil), (*string)(nil), nil},
+	"getblockheader":        {(*string)(nil), (*ndrjson.GetBlockHeaderVerboseResult)(nil)},
+	"getblocksubsidy":       {(*ndrjson.GetBlockSubsidyResult)(nil)},
+	"getblocktemplate":      {(*ndrjson.GetBlockTemplateResult)(nil), (*string)(nil), nil},
 	"getcfilter":            {(*string)(nil)},
 	"getcfilterheader":      {(*string)(nil)},
-	"getchaintips":          {(*[]dcrjson.GetChainTipsResult)(nil)},
+	"getchaintips":          {(*[]ndrjson.GetChainTipsResult)(nil)},
 	"getconnectioncount":    {(*int32)(nil)},
 	"getcurrentnet":         {(*uint32)(nil)},
 	"getdifficulty":         {(*float64)(nil)},
 	"getgenerate":           {(*bool)(nil)},
 	"gethashespersec":       {(*float64)(nil)},
-	"getheaders":            {(*dcrjson.GetHeadersResult)(nil)},
-	"getinfo":               {(*dcrjson.InfoChainResult)(nil)},
-	"getmempoolinfo":        {(*dcrjson.GetMempoolInfoResult)(nil)},
-	"getmininginfo":         {(*dcrjson.GetMiningInfoResult)(nil)},
-	"getnettotals":          {(*dcrjson.GetNetTotalsResult)(nil)},
+	"getheaders":            {(*ndrjson.GetHeadersResult)(nil)},
+	"getinfo":               {(*ndrjson.InfoChainResult)(nil)},
+	"getmempoolinfo":        {(*ndrjson.GetMempoolInfoResult)(nil)},
+	"getmininginfo":         {(*ndrjson.GetMiningInfoResult)(nil)},
+	"getnettotals":          {(*ndrjson.GetNetTotalsResult)(nil)},
 	"getnetworkhashps":      {(*int64)(nil)},
-	"getpeerinfo":           {(*[]dcrjson.GetPeerInfoResult)(nil)},
-	"getrawmempool":         {(*[]string)(nil), (*dcrjson.GetRawMempoolVerboseResult)(nil)},
-	"getrawtransaction":     {(*string)(nil), (*dcrjson.TxRawResult)(nil)},
-	"gettxout":              {(*dcrjson.GetTxOutResult)(nil)},
-	"getwork":               {(*dcrjson.GetWorkResult)(nil), (*bool)(nil)},
+	"getpeerinfo":           {(*[]ndrjson.GetPeerInfoResult)(nil)},
+	"getrawmempool":         {(*[]string)(nil), (*ndrjson.GetRawMempoolVerboseResult)(nil)},
+	"getrawtransaction":     {(*string)(nil), (*ndrjson.TxRawResult)(nil)},
+	"gettxout":              {(*ndrjson.GetTxOutResult)(nil)},
+	"getwork":               {(*ndrjson.GetWorkResult)(nil), (*bool)(nil)},
 	"getcoinsupply":         {(*int64)(nil)},
 	"help":                  {(*string)(nil), (*string)(nil)},
 	"node":                  nil,
 	"ping":                  nil,
-	"searchrawtransactions": {(*string)(nil), (*[]dcrjson.SearchRawTransactionsResult)(nil)},
+	"searchrawtransactions": {(*string)(nil), (*[]ndrjson.SearchRawTransactionsResult)(nil)},
 	"sendrawtransaction":    {(*string)(nil)},
 	"setgenerate":           nil,
 	"stop":                  {(*string)(nil)},
 	"submitblock":           {nil, (*string)(nil)},
-	"txfeeinfo":             {(*dcrjson.TxFeeInfoResult)(nil)},
-	"validateaddress":       {(*dcrjson.ValidateAddressChainResult)(nil)},
+	"txfeeinfo":             {(*ndrjson.TxFeeInfoResult)(nil)},
+	"validateaddress":       {(*ndrjson.ValidateAddressChainResult)(nil)},
 	"verifychain":           {(*bool)(nil)},
 	"verifymessage":         {(*bool)(nil)},
-	"version":               {(*map[string]dcrjson.VersionResult)(nil)},
+	"version":               {(*map[string]ndrjson.VersionResult)(nil)},
 
 	// Websocket commands.
 	"loadtxfilter":              nil,
-	"session":                   {(*dcrjson.SessionResult)(nil)},
+	"session":                   {(*ndrjson.SessionResult)(nil)},
 	"notifyblocks":              nil,
 	"notifynewtransactions":     nil,
 	"notifyreceived":            nil,
@@ -835,7 +835,7 @@ func (c *helpCacher) rpcMethodHelp(method string) (string, error) {
 	}
 
 	// Generate, cache, and return the help.
-	help, err := dcrjson.GenerateHelp(method, helpDescsEnUS, resultTypes...)
+	help, err := ndrjson.GenerateHelp(method, helpDescsEnUS, resultTypes...)
 	if err != nil {
 		return "", err
 	}
@@ -858,7 +858,7 @@ func (c *helpCacher) rpcUsage(includeWebsockets bool) (string, error) {
 	// Generate a list of one-line usage for every command.
 	usageTexts := make([]string, 0, len(rpcHandlers))
 	for k := range rpcHandlers {
-		usage, err := dcrjson.MethodUsageText(k)
+		usage, err := ndrjson.MethodUsageText(k)
 		if err != nil {
 			return "", err
 		}
@@ -868,7 +868,7 @@ func (c *helpCacher) rpcUsage(includeWebsockets bool) (string, error) {
 	// Include websockets commands if requested.
 	if includeWebsockets {
 		for k := range wsHandlers {
-			usage, err := dcrjson.MethodUsageText(k)
+			usage, err := ndrjson.MethodUsageText(k)
 			if err != nil {
 				return "", err
 			}

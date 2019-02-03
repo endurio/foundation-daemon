@@ -9,20 +9,20 @@ import (
 	"time"
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 const (
 	// MinHighPriority is the minimum priority value that allows a
 	// transaction to be considered high priority.
-	MinHighPriority = dcrutil.AtomsPerCoin * 144.0 / 250
+	MinHighPriority = ndrutil.AtomsPerCoin * 144.0 / 250
 )
 
 // TxDesc is a descriptor about a transaction in a transaction source along with
 // additional metadata.
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
-	Tx *dcrutil.Tx
+	Tx *ndrutil.Tx
 
 	// Added is the time when the entry was added to the source pool.
 	Added time.Time

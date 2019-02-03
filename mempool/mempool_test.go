@@ -17,8 +17,8 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainec"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrec/secp256k1"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrec/secp256k1"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/txscript"
 	"github.com/endurio/ndrd/wire"
 )
@@ -35,7 +35,7 @@ const (
 type fakeChain struct {
 	sync.RWMutex
 	utxos         *blockchain.UtxoViewpoint
-	blocks        map[chainhash.Hash]*dcrutil.Block
+	blocks        map[chainhash.Hash]*ndrutil.Block
 	currentHash   chainhash.Hash
 	currentHeight int64
 	medianTime    time.Time
@@ -48,7 +48,7 @@ type fakeChain struct {
 // returned view can be examined for duplicate unspent transaction outputs.
 //
 // This function is safe for concurrent access however the returned view is NOT.
-func (s *fakeChain) FetchUtxoView(tx *dcrutil.Tx, treeValid bool) (*blockchain.UtxoViewpoint, error) {
+func (s *fakeChain) FetchUtxoView(tx *ndrutil.Tx, treeValid bool) (*blockchain.UtxoViewpoint, error) {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -72,7 +72,7 @@ func (s *fakeChain) FetchUtxoView(tx *dcrutil.Tx, treeValid bool) (*blockchain.U
 
 // BlockByHash returns the block with the given hash from the fake chain
 // instance.  Blocks can be added to the instance with the AddBlock function.
-func (s *fakeChain) BlockByHash(hash *chainhash.Hash) (*dcrutil.Block, error) {
+func (s *fakeChain) BlockByHash(hash *chainhash.Hash) (*ndrutil.Block, error) {
 	s.RLock()
 	block, ok := s.blocks[*hash]
 	s.RUnlock()
@@ -85,7 +85,7 @@ func (s *fakeChain) BlockByHash(hash *chainhash.Hash) (*dcrutil.Block, error) {
 
 // AddBlock adds a block that will be available to the BlockByHash function to
 // the fake chain instance.
-func (s *fakeChain) AddBlock(block *dcrutil.Block) {
+func (s *fakeChain) AddBlock(block *ndrutil.Block) {
 	s.Lock()
 	s.blocks[*block.Hash()] = block
 	s.Unlock()
@@ -142,7 +142,7 @@ func (s *fakeChain) SetPastMedianTime(medianTime time.Time) {
 
 // CalcSequenceLock returns the current sequence lock for the passed transaction
 // associated with the fake chain instance.
-func (s *fakeChain) CalcSequenceLock(tx *dcrutil.Tx, view *blockchain.UtxoViewpoint) (*blockchain.SequenceLock, error) {
+func (s *fakeChain) CalcSequenceLock(tx *ndrutil.Tx, view *blockchain.UtxoViewpoint) (*blockchain.SequenceLock, error) {
 	return &blockchain.SequenceLock{
 		MinHeight: -1,
 		MinTime:   -1,
@@ -165,16 +165,16 @@ func (s *fakeChain) SetStandardVerifyFlags(flags txscript.ScriptFlags) {
 // amount associated with it.
 type spendableOutput struct {
 	outPoint wire.OutPoint
-	amount   dcrutil.Amount
+	amount   ndrutil.Amount
 }
 
 // txOutToSpendableOut returns a spendable output given a transaction and index
 // of the output to use.  This is useful as a convenience when creating test
 // transactions.
-func txOutToSpendableOut(tx *dcrutil.Tx, outputNum uint32, tree int8) spendableOutput {
+func txOutToSpendableOut(tx *ndrutil.Tx, outputNum uint32, tree int8) spendableOutput {
 	return spendableOutput{
 		outPoint: wire.OutPoint{Hash: *tx.Hash(), Index: outputNum, Tree: tree},
-		amount:   dcrutil.Amount(tx.MsgTx().TxOut[outputNum].Value),
+		amount:   ndrutil.Amount(tx.MsgTx().TxOut[outputNum].Value),
 	}
 }
 
@@ -188,7 +188,7 @@ type poolHarness struct {
 	// payAddr is the p2sh address for the signing key and is used for the
 	// payment address throughout the tests.
 	signKey     *secp256k1.PrivateKey
-	payAddr     dcrutil.Address
+	payAddr     ndrutil.Address
 	payScript   []byte
 	chainParams *chaincfg.Params
 
@@ -199,18 +199,18 @@ type poolHarness struct {
 // GetScript is the pool harness' implementation of the ScriptDB interface.
 // It returns the pool harness' payment redeen script for any address
 // passed in.
-func (p *poolHarness) GetScript(addr dcrutil.Address) ([]byte, error) {
+func (p *poolHarness) GetScript(addr ndrutil.Address) ([]byte, error) {
 	return p.payScript, nil
 }
 
 // GetKey is the pool harness' implementation of the KeyDB interface.
 // It returns the pool harness' signature key for any address passed in.
-func (p *poolHarness) GetKey(addr dcrutil.Address) (chainec.PrivateKey, bool, error) {
+func (p *poolHarness) GetKey(addr ndrutil.Address) (chainec.PrivateKey, bool, error) {
 	return p.signKey, true, nil
 }
 
 // AddFakeUTXO creates a fake mined uxto for the provided transaction.
-func (p *poolHarness) AddFakeUTXO(tx *dcrutil.Tx, blockHeight int64) {
+func (p *poolHarness) AddFakeUTXO(tx *ndrutil.Tx, blockHeight int64) {
 	p.chain.utxos.AddTxOuts(tx, blockHeight, wire.NullBlockIndex)
 }
 
@@ -219,7 +219,7 @@ func (p *poolHarness) AddFakeUTXO(tx *dcrutil.Tx, blockHeight int64) {
 // address associated with the harness.  It automatically uses a standard
 // signature script that starts with the block height that is required by
 // version 2 blocks.
-func (p *poolHarness) CreateCoinbaseTx(blockHeight int64, numOutputs uint32) (*dcrutil.Tx, error) {
+func (p *poolHarness) CreateCoinbaseTx(blockHeight int64, numOutputs uint32) (*ndrutil.Tx, error) {
 	// Create standard coinbase script.
 	extraNonce := int64(0)
 	coinbaseScript, err := txscript.NewScriptBuilder().
@@ -253,17 +253,17 @@ func (p *poolHarness) CreateCoinbaseTx(blockHeight int64, numOutputs uint32) (*d
 		})
 	}
 
-	return dcrutil.NewTx(tx), nil
+	return ndrutil.NewTx(tx), nil
 }
 
 // CreateSignedTx creates a new signed transaction that consumes the provided
 // inputs and generates the provided number of outputs by evenly splitting the
 // total input amount.  All outputs will be to the payment script associated
 // with the harness and all inputs are assumed to do the same.
-func (p *poolHarness) CreateSignedTx(inputs []spendableOutput, numOutputs uint32, expiry uint32) (*dcrutil.Tx, error) {
+func (p *poolHarness) CreateSignedTx(inputs []spendableOutput, numOutputs uint32, expiry uint32) (*ndrutil.Tx, error) {
 	// Calculate the total input amount and split it amongst the requested
 	// number of outputs.
-	var totalInput dcrutil.Amount
+	var totalInput ndrutil.Amount
 	for _, input := range inputs {
 		totalInput += input.amount
 	}
@@ -302,15 +302,15 @@ func (p *poolHarness) CreateSignedTx(inputs []spendableOutput, numOutputs uint32
 		tx.TxIn[i].SignatureScript = sigScript
 	}
 
-	return dcrutil.NewTx(tx), nil
+	return ndrutil.NewTx(tx), nil
 }
 
 // CreateTxChain creates a chain of zero-fee transactions (each subsequent
 // transaction spends the entire amount from the previous one) with the first
 // one spending the provided outpoint.  Each transaction spends the entire
 // amount of the previous one and as such does not include any fees.
-func (p *poolHarness) CreateTxChain(firstOutput spendableOutput, numTxns uint32) ([]*dcrutil.Tx, error) {
-	txChain := make([]*dcrutil.Tx, 0, numTxns)
+func (p *poolHarness) CreateTxChain(firstOutput spendableOutput, numTxns uint32) ([]*ndrutil.Tx, error) {
+	txChain := make([]*ndrutil.Tx, 0, numTxns)
 	prevOutPoint := firstOutput.outPoint
 	spendableAmount := firstOutput.amount
 	for i := uint32(0); i < numTxns; i++ {
@@ -337,7 +337,7 @@ func (p *poolHarness) CreateTxChain(firstOutput spendableOutput, numTxns uint32)
 		}
 		tx.TxIn[0].SignatureScript = sigScript
 
-		txChain = append(txChain, dcrutil.NewTx(tx))
+		txChain = append(txChain, ndrutil.NewTx(tx))
 
 		// Next transaction uses outputs from this one.
 		prevOutPoint = wire.OutPoint{Hash: tx.TxHash(), Index: 0}
@@ -348,7 +348,7 @@ func (p *poolHarness) CreateTxChain(firstOutput spendableOutput, numTxns uint32)
 
 // CreateTx creates a zero-fee regular transaction from the provided spendable
 // output.
-func (p *poolHarness) CreateTx(out spendableOutput) (*dcrutil.Tx, error) {
+func (p *poolHarness) CreateTx(out spendableOutput) (*ndrutil.Tx, error) {
 	txns, err := p.CreateTxChain(out, 1)
 	if err != nil {
 		return nil, err
@@ -372,7 +372,7 @@ func newPoolHarness(chainParams *chaincfg.Params) (*poolHarness, []spendableOutp
 	// Generate associated pay-to-script-hash address and resulting payment
 	// script.
 	pubKeyBytes := signPub.SerializeCompressed()
-	payPubKeyAddr, err := dcrutil.NewAddressSecpPubKey(pubKeyBytes,
+	payPubKeyAddr, err := ndrutil.NewAddressSecpPubKey(pubKeyBytes,
 		chainParams)
 	if err != nil {
 		return nil, nil, err
@@ -387,7 +387,7 @@ func newPoolHarness(chainParams *chaincfg.Params) (*poolHarness, []spendableOutp
 	subsidyCache := blockchain.NewSubsidyCache(0, chainParams)
 	chain := &fakeChain{
 		utxos:       blockchain.NewUtxoViewpoint(),
-		blocks:      make(map[chainhash.Hash]*dcrutil.Block),
+		blocks:      make(map[chainhash.Hash]*ndrutil.Block),
 		scriptFlags: BaseStandardVerifyFlags,
 	}
 	harness := poolHarness{
@@ -456,7 +456,7 @@ type testContext struct {
 // orphan pool and transaction pool status.  It also further determines if it
 // should be reported as available by the HaveTransaction function based upon
 // the two flags and tests that condition as well.
-func testPoolMembership(tc *testContext, tx *dcrutil.Tx, inOrphanPool, inTxPool bool) {
+func testPoolMembership(tc *testContext, tx *ndrutil.Tx, inOrphanPool, inTxPool bool) {
 	txHash := tx.Hash()
 	gotOrphanPool := tc.harness.txPool.IsOrphanInPool(txHash)
 	if inOrphanPool != gotOrphanPool {
@@ -633,7 +633,7 @@ func TestExpirationPruning(t *testing.T) {
 	// one block after the previous and the first one expires in the block after
 	// the next one.
 	nextBlockHeight := harness.chain.BestHeight() + 1
-	expiringTxns := make([]*dcrutil.Tx, 0, numTxns)
+	expiringTxns := make([]*ndrutil.Tx, 0, numTxns)
 	for i := 0; i < numTxns; i++ {
 		tx, err := harness.CreateSignedTx([]spendableOutput{
 			txOutToSpendableOut(multiOutputTx, uint32(i), wire.TxTreeRegular),
@@ -721,7 +721,7 @@ func TestBasicOrphanRemoval(t *testing.T) {
 	// Attempt to remove an orphan that has no redeemers and is not present,
 	// and ensure the state of all other orphans are unaffected.
 	nonChainedOrphanTx, err := harness.CreateSignedTx([]spendableOutput{{
-		amount:   dcrutil.Amount(5000000000),
+		amount:   ndrutil.Amount(5000000000),
 		outPoint: wire.OutPoint{Hash: chainhash.Hash{}, Index: 0},
 	}}, 1, uint32(harness.chain.BestHeight()+1))
 	if err != nil {

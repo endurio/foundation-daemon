@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 // NotificationType represents the type of a notification message.
@@ -105,7 +105,7 @@ type BlockAcceptedNtfnsData struct {
 	ForkLen int64
 
 	// Block is the block that was accepted into the chain.
-	Block *dcrutil.Block
+	Block *ndrutil.Block
 }
 
 // ReorganizationNtfnsData is the structure for data indicating information
@@ -120,10 +120,10 @@ type ReorganizationNtfnsData struct {
 // Notification defines notification that is sent to the caller via the callback
 // function provided during the call to New and consists of a notification type
 // as well as associated data that depends on the type as follows:
-// 	- NTNewTipBlockChecked:    *dcrutil.Block
+// 	- NTNewTipBlockChecked:    *ndrutil.Block
 // 	- NTBlockAccepted:         *BlockAcceptedNtfnsData
-// 	- NTBlockConnected:        []*dcrutil.Block of len 2
-// 	- NTBlockDisconnected:     []*dcrutil.Block of len 2
+// 	- NTBlockConnected:        []*ndrutil.Block of len 2
+// 	- NTBlockDisconnected:     []*ndrutil.Block of len 2
 // 	- NTChainReorgStarted:     nil
 // 	- NTChainReorgDone:        nil
 //  - NTReorganization:        *ReorganizationNtfnsData

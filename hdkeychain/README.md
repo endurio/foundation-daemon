@@ -24,7 +24,7 @@ report.
   keys
 - Support for custom networks by registering them with chaincfg
 - Obtaining the underlying EC pubkeys, EC privkeys, and associated endurio
-  addresses ties in seamlessly with existing btcec and dcrutil types which
+  addresses ties in seamlessly with existing btcec and ndrutil types which
   provide powerful tools for working with them to do things like sign
   transactions and generate payment scripts
 - Uses the btcec package which is highly optimized for secp256k1

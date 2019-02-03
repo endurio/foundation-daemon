@@ -14,7 +14,7 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/txscript"
 	"github.com/endurio/ndrd/wire"
 )
@@ -64,7 +64,7 @@ type BlockLocator []*chainhash.Hash
 // is a normal block plus an expiration time to prevent caching the orphan
 // forever.
 type orphanBlock struct {
-	block      *dcrutil.Block
+	block      *ndrutil.Block
 	expiration time.Time
 }
 
@@ -162,7 +162,7 @@ type BlockChain struct {
 	// The block cache for mainchain blocks, to facilitate faster
 	// reorganizations.
 	mainchainBlockCacheLock sync.RWMutex
-	mainchainBlockCache     map[chainhash.Hash]*dcrutil.Block
+	mainchainBlockCache     map[chainhash.Hash]*ndrutil.Block
 	mainchainBlockCacheSize int
 
 	// These fields are related to checkpoint handling.  They are protected
@@ -350,7 +350,7 @@ func (b *BlockChain) removeOrphanBlock(orphan *orphanBlock) {
 // It also imposes a maximum limit on the number of outstanding orphan
 // blocks and will remove the oldest received orphan block if the limit is
 // exceeded.
-func (b *BlockChain) addOrphanBlock(block *dcrutil.Block) {
+func (b *BlockChain) addOrphanBlock(block *ndrutil.Block) {
 	// Remove expired orphan blocks.
 	for _, oBlock := range b.orphans {
 		if time.Now().After(oBlock.expiration) {
@@ -418,7 +418,7 @@ func (b *BlockChain) TipGeneration() ([]chainhash.Hash, error) {
 // chain.
 //
 // This function MUST be called with the chain lock held (for reads).
-func (b *BlockChain) fetchMainChainBlockByNode(node *blockNode) (*dcrutil.Block, error) {
+func (b *BlockChain) fetchMainChainBlockByNode(node *blockNode) (*ndrutil.Block, error) {
 	// Ensure the block is in the main chain.
 	if !b.bestChain.Contains(node) {
 		str := fmt.Sprintf("block %s is not in the main chain", node.hash)
@@ -446,7 +446,7 @@ func (b *BlockChain) fetchMainChainBlockByNode(node *blockNode) (*dcrutil.Block,
 // blocks regardless or whether or not they are part of the main chain.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) fetchBlockByNode(node *blockNode) (*dcrutil.Block, error) {
+func (b *BlockChain) fetchBlockByNode(node *blockNode) (*ndrutil.Block, error) {
 	// Check main chain cache.
 	b.mainchainBlockCacheLock.RLock()
 	block, ok := b.mainchainBlockCache[node.hash]
@@ -510,7 +510,7 @@ func (b *BlockChain) isMajorityVersion(minVer int32, startNode *blockNode, numRe
 
 // pushMainChainBlockCache pushes a block onto the main chain block cache,
 // and removes any old blocks from the cache that might be present.
-func (b *BlockChain) pushMainChainBlockCache(block *dcrutil.Block) {
+func (b *BlockChain) pushMainChainBlockCache(block *ndrutil.Block) {
 	curHeight := block.Height()
 	curHash := block.Hash()
 	b.mainchainBlockCacheLock.Lock()
@@ -534,7 +534,7 @@ func (b *BlockChain) pushMainChainBlockCache(block *dcrutil.Block) {
 // it would be inefficient to repeat it.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) connectBlock(node *blockNode, block, parent *dcrutil.Block, view *UtxoViewpoint, stxos []spentTxOut) error {
+func (b *BlockChain) connectBlock(node *blockNode, block, parent *ndrutil.Block, view *UtxoViewpoint, stxos []spentTxOut) error {
 	// Make sure it's extending the end of the best chain.
 	prevHash := block.MsgBlock().Header.PrevBlock
 	tip := b.bestChain.Tip()
@@ -625,7 +625,7 @@ func (b *BlockChain) connectBlock(node *blockNode, block, parent *dcrutil.Block,
 	b.stateLock.Unlock()
 
 	// Assemble the current block and the parent into a slice.
-	blockAndParent := []*dcrutil.Block{block, parent}
+	blockAndParent := []*ndrutil.Block{block, parent}
 
 	// Notify the caller that the block was connected to the main chain.
 	// The caller would typically want to react with actions such as
@@ -640,7 +640,7 @@ func (b *BlockChain) connectBlock(node *blockNode, block, parent *dcrutil.Block,
 }
 
 // dropMainChainBlockCache drops a block from the main chain block cache.
-func (b *BlockChain) dropMainChainBlockCache(block *dcrutil.Block) {
+func (b *BlockChain) dropMainChainBlockCache(block *ndrutil.Block) {
 	curHash := block.Hash()
 	b.mainchainBlockCacheLock.Lock()
 	delete(b.mainchainBlockCache, *curHash)
@@ -651,7 +651,7 @@ func (b *BlockChain) dropMainChainBlockCache(block *dcrutil.Block) {
 // the main (best) chain.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) disconnectBlock(node *blockNode, block, parent *dcrutil.Block, view *UtxoViewpoint) error {
+func (b *BlockChain) disconnectBlock(node *blockNode, block, parent *ndrutil.Block, view *UtxoViewpoint) error {
 	// Make sure the node being disconnected is the end of the best chain.
 	tip := b.bestChain.Tip()
 	if node.hash != tip.hash {
@@ -737,7 +737,7 @@ func (b *BlockChain) disconnectBlock(node *blockNode, block, parent *dcrutil.Blo
 	b.stateLock.Unlock()
 
 	// Assemble the current block and the parent into a slice.
-	blockAndParent := []*dcrutil.Block{block, parent}
+	blockAndParent := []*ndrutil.Block{block, parent}
 
 	// Notify the caller that the block was disconnected from the main
 	// chain.  The caller would typically want to react with actions such as
@@ -753,7 +753,7 @@ func (b *BlockChain) disconnectBlock(node *blockNode, block, parent *dcrutil.Blo
 
 // countSpentRegularOutputs returns the number of utxos the regular transactions
 // in the passed block spend.
-func countSpentRegularOutputs(block *dcrutil.Block) int {
+func countSpentRegularOutputs(block *ndrutil.Block) int {
 	// Skip the coinbase since it has no inputs.
 	var numSpent int
 	for _, tx := range block.MsgBlock().Transactions[1:] {
@@ -763,7 +763,7 @@ func countSpentRegularOutputs(block *dcrutil.Block) int {
 }
 
 // countSpentOutputs returns the number of utxos the passed block spends.
-func countSpentOutputs(block *dcrutil.Block) int {
+func countSpentOutputs(block *ndrutil.Block) int {
 	return countSpentRegularOutputs(block)
 }
 
@@ -825,7 +825,7 @@ func (b *BlockChain) reorganizeChainInternal(targetTip *blockNode) error {
 	tip := b.bestChain.Tip()
 	view := NewUtxoViewpoint()
 	view.SetBestHash(&tip.hash)
-	var nextBlockToDetach *dcrutil.Block
+	var nextBlockToDetach *ndrutil.Block
 	for tip != nil && tip != fork {
 		// Grab the block to detach based on the node.  Use the fact that the
 		// blocks are being detached in reverse order, so the parent of the
@@ -897,7 +897,7 @@ func (b *BlockChain) reorganizeChainInternal(targetTip *blockNode) error {
 	// chain.  This entails performing several checks to verify each block can
 	// be connected without violating any consensus rules and updating the
 	// relevant information related to the current chain state.
-	var prevBlockAttached *dcrutil.Block
+	var prevBlockAttached *ndrutil.Block
 	for i, n := range attachNodes {
 		// Grab the block to attach based on the node.  Use the fact that the
 		// parent of the block is either the fork point for the first node being
@@ -1139,7 +1139,7 @@ func (b *BlockChain) flushBlockIndexWarnOnly() {
 //    This is useful when using checkpoints.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) connectBestChain(node *blockNode, block, parent *dcrutil.Block, flags BehaviorFlags) (int64, error) {
+func (b *BlockChain) connectBestChain(node *blockNode, block, parent *ndrutil.Block, flags BehaviorFlags) (int64, error) {
 	fastAdd := flags&BFFastAdd == BFFastAdd
 
 	// Ensure the passed parent is actually the parent of the block.
@@ -1387,7 +1387,7 @@ func (b *BlockChain) HeaderByHeight(height int64) (wire.BlockHeader, error) {
 // blocks regardless of whether or not they are part of the main chain.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) BlockByHash(hash *chainhash.Hash) (*dcrutil.Block, error) {
+func (b *BlockChain) BlockByHash(hash *chainhash.Hash) (*ndrutil.Block, error) {
 	node := b.index.LookupNode(hash)
 	if node == nil || !b.index.NodeStatus(node).HaveData() {
 		return nil, fmt.Errorf("block %s is not known", hash)
@@ -1400,7 +1400,7 @@ func (b *BlockChain) BlockByHash(hash *chainhash.Hash) (*dcrutil.Block, error) {
 // BlockByHeight returns the block at the given height in the main chain.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) BlockByHeight(height int64) (*dcrutil.Block, error) {
+func (b *BlockChain) BlockByHeight(height int64) (*ndrutil.Block, error) {
 	// Lookup the block height in the best chain.
 	node := b.bestChain.NodeByHeight(height)
 	if node == nil {
@@ -1694,11 +1694,11 @@ type IndexManager interface {
 
 	// ConnectBlock is invoked when a new block has been connected to the
 	// main chain.
-	ConnectBlock(database.Tx, *dcrutil.Block, *dcrutil.Block, *UtxoViewpoint) error
+	ConnectBlock(database.Tx, *ndrutil.Block, *ndrutil.Block, *UtxoViewpoint) error
 
 	// DisconnectBlock is invoked when a block has been disconnected from
 	// the main chain.
-	DisconnectBlock(database.Tx, *dcrutil.Block, *dcrutil.Block, *UtxoViewpoint) error
+	DisconnectBlock(database.Tx, *ndrutil.Block, *ndrutil.Block, *UtxoViewpoint) error
 }
 
 // Config is a descriptor which specifies the blockchain instance configuration.
@@ -1790,7 +1790,7 @@ func New(config *Config) (*BlockChain, error) {
 		bestChain:               newChainView(nil),
 		orphans:                 make(map[chainhash.Hash]*orphanBlock),
 		prevOrphans:             make(map[chainhash.Hash][]*orphanBlock),
-		mainchainBlockCache:     make(map[chainhash.Hash]*dcrutil.Block),
+		mainchainBlockCache:     make(map[chainhash.Hash]*ndrutil.Block),
 		mainchainBlockCacheSize: mainchainBlockCacheSize,
 		warningCaches:           newThresholdCaches(vbNumBits),
 		deploymentCaches:        newThresholdCaches(chaincfg.DefinedDeployments),

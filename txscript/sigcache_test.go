@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrec/secp256k1"
+	"github.com/endurio/ndrd/ndrec/secp256k1"
 )
 
 // genRandomSig returns a random message, a signature of the message under the

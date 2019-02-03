@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/decred/slog"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 // blockProgressLogger provides periodic logging for other services in order
@@ -40,7 +40,7 @@ func newBlockProgressLogger(progressMessage string, logger slog.Logger) *blockPr
 // logBlockHeight logs a new block height as an information message to show
 // progress to the user. In order to prevent spam, it limits logging to one
 // message every 10 seconds with duration and totals included.
-func (b *blockProgressLogger) logBlockHeight(block *dcrutil.Block) {
+func (b *blockProgressLogger) logBlockHeight(block *ndrutil.Block) {
 	b.Lock()
 	defer b.Unlock()
 	b.receivedLogBlocks++

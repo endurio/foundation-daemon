@@ -12,8 +12,8 @@ import (
 	"fmt"
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrjson"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrjson"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -101,13 +101,13 @@ type NotificationHandlers struct {
 	// memory pool.  It will only be invoked if a preceding call to
 	// NotifyNewTransactions with the verbose flag set to false has been
 	// made to register for the notification and the function is non-nil.
-	OnTxAccepted func(hash *chainhash.Hash, amount dcrutil.Amount)
+	OnTxAccepted func(hash *chainhash.Hash, amount ndrutil.Amount)
 
 	// OnTxAccepted is invoked when a transaction is accepted into the
 	// memory pool.  It will only be invoked if a preceding call to
 	// NotifyNewTransactions with the verbose flag set to true has been
 	// made to register for the notification and the function is non-nil.
-	OnTxAcceptedVerbose func(txDetails *dcrjson.TxRawResult)
+	OnTxAcceptedVerbose func(txDetails *ndrjson.TxRawResult)
 
 	// OnDcrdConnected is invoked when a wallet connects or disconnects from
 	// ndrd.
@@ -120,7 +120,7 @@ type NotificationHandlers struct {
 	//
 	// This will only be available when speaking to a wallet server
 	// such as ndrw.
-	OnAccountBalance func(account string, balance dcrutil.Amount, confirmed bool)
+	OnAccountBalance func(account string, balance ndrutil.Amount, confirmed bool)
 
 	// OnWalletLockState is invoked when a wallet is locked or unlocked.
 	//
@@ -149,7 +149,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 
 	switch ntfn.Method {
 	// OnBlockConnected
-	case dcrjson.BlockConnectedNtfnMethod:
+	case ndrjson.BlockConnectedNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnBlockConnected == nil {
@@ -166,7 +166,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 		c.ntfnHandlers.OnBlockConnected(blockHeader, transactions)
 
 	// OnBlockDisconnected
-	case dcrjson.BlockDisconnectedNtfnMethod:
+	case ndrjson.BlockDisconnectedNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnBlockDisconnected == nil {
@@ -182,7 +182,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 
 		c.ntfnHandlers.OnBlockDisconnected(blockHeader)
 
-	case dcrjson.RelevantTxAcceptedNtfnMethod:
+	case ndrjson.RelevantTxAcceptedNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnRelevantTxAccepted == nil {
@@ -198,7 +198,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 
 		c.ntfnHandlers.OnRelevantTxAccepted(transaction)
 
-	case dcrjson.ReorganizationNtfnMethod:
+	case ndrjson.ReorganizationNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnReorganization == nil {
@@ -216,7 +216,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 		c.ntfnHandlers.OnReorganization(oldHash, oldHeight, newHash, newHeight)
 
 	// OnTxAccepted
-	case dcrjson.TxAcceptedNtfnMethod:
+	case ndrjson.TxAcceptedNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnTxAccepted == nil {
@@ -233,7 +233,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 		c.ntfnHandlers.OnTxAccepted(hash, amt)
 
 	// OnTxAcceptedVerbose
-	case dcrjson.TxAcceptedVerboseNtfnMethod:
+	case ndrjson.TxAcceptedVerboseNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnTxAcceptedVerbose == nil {
@@ -250,7 +250,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 		c.ntfnHandlers.OnTxAcceptedVerbose(rawTx)
 
 		// OnDcrdConnected
-	case dcrjson.DcrdConnectedNtfnMethod:
+	case ndrjson.DcrdConnectedNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnDcrdConnected == nil {
@@ -267,7 +267,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 		c.ntfnHandlers.OnDcrdConnected(connected)
 
 	// OnAccountBalance
-	case dcrjson.AccountBalanceNtfnMethod:
+	case ndrjson.AccountBalanceNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnAccountBalance == nil {
@@ -284,7 +284,7 @@ func (c *Client) handleNotification(ntfn *rawNotification) {
 		c.ntfnHandlers.OnAccountBalance(account, bal, conf)
 
 	// OnWalletLockState
-	case dcrjson.WalletLockStateNtfnMethod:
+	case ndrjson.WalletLockStateNtfnMethod:
 		// Ignore the notification if the client is not interested in
 		// it.
 		if c.ntfnHandlers.OnWalletLockState == nil {
@@ -437,7 +437,7 @@ func parseReorganizationNtfnParams(params []json.RawMessage) (*chainhash.Hash,
 // parseTxAcceptedNtfnParams parses out the transaction hash and total amount
 // from the parameters of a txaccepted notification.
 func parseTxAcceptedNtfnParams(params []json.RawMessage) (*chainhash.Hash,
-	dcrutil.Amount, error) {
+	ndrutil.Amount, error) {
 
 	if len(params) != 2 {
 		return nil, 0, wrongNumParams(len(params))
@@ -458,7 +458,7 @@ func parseTxAcceptedNtfnParams(params []json.RawMessage) (*chainhash.Hash,
 	}
 
 	// Bounds check amount.
-	amt, err := dcrutil.NewAmount(famt)
+	amt, err := ndrutil.NewAmount(famt)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -474,7 +474,7 @@ func parseTxAcceptedNtfnParams(params []json.RawMessage) (*chainhash.Hash,
 
 // parseTxAcceptedVerboseNtfnParams parses out details about a raw transaction
 // from the parameters of a txacceptedverbose notification.
-func parseTxAcceptedVerboseNtfnParams(params []json.RawMessage) (*dcrjson.TxRawResult,
+func parseTxAcceptedVerboseNtfnParams(params []json.RawMessage) (*ndrjson.TxRawResult,
 	error) {
 
 	if len(params) != 1 {
@@ -482,7 +482,7 @@ func parseTxAcceptedVerboseNtfnParams(params []json.RawMessage) (*dcrjson.TxRawR
 	}
 
 	// Unmarshal first parameter as a raw transaction result object.
-	var rawTx dcrjson.TxRawResult
+	var rawTx ndrjson.TxRawResult
 	err := json.Unmarshal(params[0], &rawTx)
 	if err != nil {
 		return nil, err
@@ -515,7 +515,7 @@ func parseDcrdConnectedNtfnParams(params []json.RawMessage) (bool, error) {
 // and whether or not the balance is confirmed or unconfirmed from the
 // parameters of an accountbalance notification.
 func parseAccountBalanceNtfnParams(params []json.RawMessage) (account string,
-	balance dcrutil.Amount, confirmed bool, err error) {
+	balance ndrutil.Amount, confirmed bool, err error) {
 
 	if len(params) != 3 {
 		return "", 0, false, wrongNumParams(len(params))
@@ -541,7 +541,7 @@ func parseAccountBalanceNtfnParams(params []json.RawMessage) (account string,
 	}
 
 	// Bounds check amount.
-	bal, err := dcrutil.NewAmount(fbal)
+	bal, err := ndrutil.NewAmount(fbal)
 	if err != nil {
 		return "", 0, false, err
 	}
@@ -603,7 +603,7 @@ func (c *Client) NotifyBlocksAsync() FutureNotifyBlocksResult {
 		return newNilFutureResult()
 	}
 
-	cmd := dcrjson.NewNotifyBlocksCmd()
+	cmd := ndrjson.NewNotifyBlocksCmd()
 	return c.sendCmd(cmd)
 }
 
@@ -651,7 +651,7 @@ func (c *Client) NotifyNewTransactionsAsync(verbose bool) FutureNotifyNewTransac
 		return newNilFutureResult()
 	}
 
-	cmd := dcrjson.NewNotifyNewTransactionsCmd(&verbose)
+	cmd := ndrjson.NewNotifyNewTransactionsCmd(&verbose)
 	return c.sendCmd(cmd)
 }
 
@@ -688,22 +688,22 @@ func (r FutureLoadTxFilterResult) Receive() error {
 // See LoadTxFilter for the blocking version and more details.
 //
 // NOTE: This is a ndrd extension and requires a websocket connection.
-func (c *Client) LoadTxFilterAsync(reload bool, addresses []dcrutil.Address,
+func (c *Client) LoadTxFilterAsync(reload bool, addresses []ndrutil.Address,
 	outPoints []wire.OutPoint) FutureLoadTxFilterResult {
 
 	addrStrs := make([]string, len(addresses))
 	for i, a := range addresses {
 		addrStrs[i] = a.EncodeAddress()
 	}
-	outPointObjects := make([]dcrjson.OutPoint, len(outPoints))
+	outPointObjects := make([]ndrjson.OutPoint, len(outPoints))
 	for i := range outPoints {
-		outPointObjects[i] = dcrjson.OutPoint{
+		outPointObjects[i] = ndrjson.OutPoint{
 			Hash:  outPoints[i].Hash.String(),
 			Index: outPoints[i].Index,
 		}
 	}
 
-	cmd := dcrjson.NewLoadTxFilterCmd(reload, addrStrs, outPointObjects)
+	cmd := ndrjson.NewLoadTxFilterCmd(reload, addrStrs, outPointObjects)
 	return c.sendCmd(cmd)
 }
 
@@ -712,6 +712,6 @@ func (c *Client) LoadTxFilterAsync(reload bool, addresses []dcrutil.Address,
 // during mempool acceptance, block acceptance, and for all rescanned blocks.
 //
 // NOTE: This is a ndrd extension and requires a websocket connection.
-func (c *Client) LoadTxFilter(reload bool, addresses []dcrutil.Address, outPoints []wire.OutPoint) error {
+func (c *Client) LoadTxFilter(reload bool, addresses []ndrutil.Address, outPoints []wire.OutPoint) error {
 	return c.LoadTxFilterAsync(reload, addresses, outPoints).Receive()
 }

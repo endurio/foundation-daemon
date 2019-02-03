@@ -30,5 +30,5 @@ $ go get -u github.com/endurio/ndrd/fees
 
 ## License
 
-Package dcrutil is licensed under the [copyfree](http://copyfree.org) ISC
+Package ndrutil is licensed under the [copyfree](http://copyfree.org) ISC
 License.

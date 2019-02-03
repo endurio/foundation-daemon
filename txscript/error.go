@@ -33,7 +33,7 @@ const (
 	ErrInvalidSigHashSingleIndex
 
 	// ErrUnsupportedAddress is returned when a concrete type that
-	// implements a dcrutil.Address is not a supported type.
+	// implements a ndrutil.Address is not a supported type.
 	ErrUnsupportedAddress
 
 	// ErrNotMultisigScript is returned from CalcMultiSigStats when the

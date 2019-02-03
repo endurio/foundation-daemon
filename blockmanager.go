@@ -19,7 +19,7 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/mempool"
 	"github.com/endurio/ndrd/wire"
 )
@@ -78,7 +78,7 @@ type newPeerMsg struct {
 // blockMsg packages a Decred block message and the peer it came from together
 // so the block handler has access to that information.
 type blockMsg struct {
-	block *dcrutil.Block
+	block *ndrutil.Block
 	peer  *serverPeer
 }
 
@@ -104,7 +104,7 @@ type donePeerMsg struct {
 // txMsg packages a Decred tx message and the peer it came from together
 // so the block handler has access to that information.
 type txMsg struct {
-	tx   *dcrutil.Tx
+	tx   *ndrutil.Tx
 	peer *serverPeer
 }
 
@@ -197,7 +197,7 @@ type processBlockResponse struct {
 // extra handling whereas this message essentially is just a concurrent safe
 // way to call ProcessBlock on the internal block chain instance.
 type processBlockMsg struct {
-	block *dcrutil.Block
+	block *ndrutil.Block
 	flags blockchain.BehaviorFlags
 	reply chan processBlockResponse
 }
@@ -205,7 +205,7 @@ type processBlockMsg struct {
 // processTransactionResponse is a response sent to the reply channel of a
 // processTransactionMsg.
 type processTransactionResponse struct {
-	acceptedTxs []*dcrutil.Tx
+	acceptedTxs []*ndrutil.Tx
 	err         error
 }
 
@@ -213,7 +213,7 @@ type processTransactionResponse struct {
 // channel for requesting a transaction to be processed through the block
 // manager.
 type processTransactionMsg struct {
-	tx            *dcrutil.Tx
+	tx            *ndrutil.Tx
 	allowOrphans  bool
 	rateLimit     bool
 	allowHighFees bool
@@ -1433,7 +1433,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		// WARNING: The chain lock is not released before sending this
 		// notification, so care must be taken to avoid calling chain functions
 		// which could result in a deadlock.
-		block, ok := notification.Data.(*dcrutil.Block)
+		block, ok := notification.Data.(*ndrutil.Block)
 		if !ok {
 			bmgrLog.Warnf("New tip block checkedd notification is not a block.")
 			break
@@ -1514,7 +1514,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 
 	// A block has been connected to the main block chain.
 	case blockchain.NTBlockConnected:
-		blockSlice, ok := notification.Data.([]*dcrutil.Block)
+		blockSlice, ok := notification.Data.([]*ndrutil.Block)
 		if !ok {
 			bmgrLog.Warnf("Chain connected notification is not a block slice.")
 			break
@@ -1559,7 +1559,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		// Also, in the case the RPC server is enabled, stop rebroadcasting any
 		// transactions in the block that were setup to be rebroadcast.
 		txMemPool := b.server.txMemPool
-		handleConnectedBlockTxns := func(txns []*dcrutil.Tx) {
+		handleConnectedBlockTxns := func(txns []*ndrutil.Tx) {
 			for _, tx := range txns {
 				txMemPool.RemoveTransaction(tx, false)
 				txMemPool.RemoveDoubleSpends(tx)
@@ -1588,7 +1588,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 
 	// A block has been disconnected from the main block chain.
 	case blockchain.NTBlockDisconnected:
-		blockSlice, ok := notification.Data.([]*dcrutil.Block)
+		blockSlice, ok := notification.Data.([]*ndrutil.Block)
 		if !ok {
 			bmgrLog.Warnf("Chain disconnected notification is not a block slice.")
 			break
@@ -1632,7 +1632,7 @@ func (b *blockManager) handleNotifyMsg(notification *blockchain.Notification) {
 		// block (probably the same one), which was disapproved, also spending
 		// those outputs, and, in that case, anything that happens to be in the
 		// pool which depends on the transaction is still valid.
-		handleDisconnectedBlockTxns := func(txns []*dcrutil.Tx) {
+		handleDisconnectedBlockTxns := func(txns []*ndrutil.Tx) {
 			for _, tx := range txns {
 				_, err := txMemPool.MaybeAcceptTransaction(tx, false, true)
 				if err != nil && !isDoubleSpendOrDuplicateError(err) {
@@ -1680,7 +1680,7 @@ func (b *blockManager) NewPeer(sp *serverPeer) {
 
 // QueueTx adds the passed transaction message and peer to the block handling
 // queue.
-func (b *blockManager) QueueTx(tx *dcrutil.Tx, sp *serverPeer) {
+func (b *blockManager) QueueTx(tx *ndrutil.Tx, sp *serverPeer) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&b.shutdown) != 0 {
 		sp.txProcessed <- struct{}{}
@@ -1691,7 +1691,7 @@ func (b *blockManager) QueueTx(tx *dcrutil.Tx, sp *serverPeer) {
 }
 
 // QueueBlock adds the passed block message and peer to the block handling queue.
-func (b *blockManager) QueueBlock(block *dcrutil.Block, sp *serverPeer) {
+func (b *blockManager) QueueBlock(block *ndrutil.Block, sp *serverPeer) {
 	// Don't accept more blocks if we're shutting down.
 	if atomic.LoadInt32(&b.shutdown) != 0 {
 		sp.blockProcessed <- struct{}{}
@@ -1914,7 +1914,7 @@ func (b *blockManager) TipGeneration() ([]chainhash.Hash, error) {
 // ProcessBlock makes use of ProcessBlock on an internal instance of a block
 // chain.  It is funneled through the block manager since blockchain is not safe
 // for concurrent access.
-func (b *blockManager) ProcessBlock(block *dcrutil.Block, flags blockchain.BehaviorFlags) (bool, error) {
+func (b *blockManager) ProcessBlock(block *ndrutil.Block, flags blockchain.BehaviorFlags) (bool, error) {
 	reply := make(chan processBlockResponse, 1)
 	b.msgChan <- processBlockMsg{block: block, flags: flags, reply: reply}
 	response := <-reply
@@ -1924,8 +1924,8 @@ func (b *blockManager) ProcessBlock(block *dcrutil.Block, flags blockchain.Behav
 // ProcessTransaction makes use of ProcessTransaction on an internal instance of
 // a block chain.  It is funneled through the block manager since blockchain is
 // not safe for concurrent access.
-func (b *blockManager) ProcessTransaction(tx *dcrutil.Tx, allowOrphans bool,
-	rateLimit bool, allowHighFees bool) ([]*dcrutil.Tx, error) {
+func (b *blockManager) ProcessTransaction(tx *ndrutil.Tx, allowOrphans bool,
+	rateLimit bool, allowHighFees bool) ([]*ndrutil.Tx, error) {
 	reply := make(chan processTransactionResponse, 1)
 	b.msgChan <- processTransactionMsg{tx, allowOrphans, rateLimit,
 		allowHighFees, reply}

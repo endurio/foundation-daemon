@@ -7,7 +7,7 @@ package mining
 
 import (
 	"github.com/endurio/ndrd/blockchain"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -37,7 +37,7 @@ type Policy struct {
 	// TxMinFreeFee is the minimum fee in Atoms/1000 bytes that is
 	// required for a transaction to be treated as free for mining purposes
 	// (block template generation).
-	TxMinFreeFee dcrutil.Amount
+	TxMinFreeFee ndrutil.Amount
 }
 
 // minInt is a helper function to return the minimum of two ints.  This avoids

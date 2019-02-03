@@ -15,7 +15,7 @@ import (
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
 	"github.com/endurio/ndrd/database"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/txscript"
 	"github.com/endurio/ndrd/wire"
 )
@@ -145,7 +145,7 @@ func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 //
 // This function only differs from IsCoinBaseTx in that it works with a higher
 // level util transaction as opposed to a raw wire transaction.
-func IsCoinBase(tx *dcrutil.Tx) bool {
+func IsCoinBase(tx *ndrutil.Tx) bool {
 	return IsCoinBaseTx(tx.MsgTx())
 }
 
@@ -164,7 +164,7 @@ func IsExpiredTx(tx *wire.MsgTx, blockHeight int64) bool {
 //
 // This function only differs from IsExpiredTx in that it works with a higher
 // level util transaction as opposed to a raw wire transaction.
-func IsExpired(tx *dcrutil.Tx, blockHeight int64) bool {
+func IsExpired(tx *ndrutil.Tx, blockHeight int64) bool {
 	return IsExpiredTx(tx.MsgTx(), blockHeight)
 }
 
@@ -186,7 +186,7 @@ func SequenceLockActive(lock *SequenceLock, blockHeight int64, medianTime time.T
 }
 
 // IsFinalizedTransaction determines whether or not a transaction is finalized.
-func IsFinalizedTransaction(tx *dcrutil.Tx, blockHeight int64, blockTime time.Time) bool {
+func IsFinalizedTransaction(tx *ndrutil.Tx, blockHeight int64, blockTime time.Time) bool {
 	// Lock time of zero means the transaction is finalized.
 	msgTx := tx.MsgTx()
 	lockTime := msgTx.LockTime
@@ -287,9 +287,9 @@ func CheckTransactionSanity(tx *wire.MsgTx, params *chaincfg.Params) error {
 				atom)
 			return ruleError(ErrBadTxOutValue, str)
 		}
-		if atom > dcrutil.MaxAmount {
+		if atom > ndrutil.MaxAmount {
 			str := fmt.Sprintf("transaction output value of %v is higher than "+
-				"max allowed value of %v", atom, dcrutil.MaxAmount)
+				"max allowed value of %v", atom, ndrutil.MaxAmount)
 			return ruleError(ErrBadTxOutValue, str)
 		}
 
@@ -299,13 +299,13 @@ func CheckTransactionSanity(tx *wire.MsgTx, params *chaincfg.Params) error {
 		totalAtom += atom
 		if totalAtom < 0 {
 			str := fmt.Sprintf("total value of all transaction outputs "+
-				"exceeds max allowed value of %v", dcrutil.MaxAmount)
+				"exceeds max allowed value of %v", ndrutil.MaxAmount)
 			return ruleError(ErrBadTxOutValue, str)
 		}
-		if totalAtom > dcrutil.MaxAmount {
+		if totalAtom > ndrutil.MaxAmount {
 			str := fmt.Sprintf("total value of all transaction outputs is %v "+
 				"which is higher than max allowed value of %v", totalAtom,
-				dcrutil.MaxAmount)
+				ndrutil.MaxAmount)
 			return ruleError(ErrBadTxOutValue, str)
 		}
 	}
@@ -413,7 +413,7 @@ func checkBlockHeaderSanity(header *wire.BlockHeader, timeSource MedianTimeSourc
 //
 // The flags do not modify the behavior of this function directly, however they
 // are needed to pass along to checkBlockHeaderSanity.
-func checkBlockSanity(block *dcrutil.Block, timeSource MedianTimeSource, flags BehaviorFlags, chainParams *chaincfg.Params) error {
+func checkBlockSanity(block *ndrutil.Block, timeSource MedianTimeSource, flags BehaviorFlags, chainParams *chaincfg.Params) error {
 	msgBlock := block.MsgBlock()
 	header := &msgBlock.Header
 	err := checkBlockHeaderSanity(header, timeSource, flags, chainParams)
@@ -531,7 +531,7 @@ func checkBlockSanity(block *dcrutil.Block, timeSource MedianTimeSource, flags B
 // CheckBlockSanity performs some preliminary checks on a block to ensure it is
 // sane before continuing with block processing.  These checks are context
 // free.
-func CheckBlockSanity(block *dcrutil.Block, timeSource MedianTimeSource, chainParams *chaincfg.Params) error {
+func CheckBlockSanity(block *ndrutil.Block, timeSource MedianTimeSource, chainParams *chaincfg.Params) error {
 	return checkBlockSanity(block, timeSource, BFNone, chainParams)
 }
 
@@ -672,7 +672,7 @@ func (b *BlockChain) checkBlockHeaderPositional(header *wire.BlockHeader, prevNo
 //
 // The flags are also passed to checkBlockHeaderPositional.  See its
 // documentation for how the flags modify its behavior.
-func (b *BlockChain) checkBlockPositional(block *dcrutil.Block, prevNode *blockNode, flags BehaviorFlags) error {
+func (b *BlockChain) checkBlockPositional(block *ndrutil.Block, prevNode *blockNode, flags BehaviorFlags) error {
 	// The genesis block is valid by definition.
 	if prevNode == nil {
 		return nil
@@ -751,7 +751,7 @@ func (b *BlockChain) checkBlockHeaderContext(header *wire.BlockHeader, prevNode 
 // checkCoinbaseUniqueHeight checks to ensure that for all blocks height > 1 the
 // coinbase contains the height encoding to make coinbase hash collisions
 // impossible.
-func checkCoinbaseUniqueHeight(blockHeight int64, block *dcrutil.Block) error {
+func checkCoinbaseUniqueHeight(blockHeight int64, block *ndrutil.Block) error {
 	// Coinbase TxOut[0] is always tax, TxOut[1] is always
 	// height + extranonce, so at least two outputs must
 	// exist.
@@ -818,7 +818,7 @@ func checkCoinbaseUniqueHeight(blockHeight int64, block *dcrutil.Block) error {
 //
 // The flags are also passed to checkBlockHeaderContext.  See its documentation
 // for how the flags modify its behavior.
-func (b *BlockChain) checkBlockContext(block *dcrutil.Block, prevNode *blockNode, flags BehaviorFlags) error {
+func (b *BlockChain) checkBlockContext(block *ndrutil.Block, prevNode *blockNode, flags BehaviorFlags) error {
 	// The genesis block is valid by definition.
 	if prevNode == nil {
 		return nil
@@ -879,7 +879,7 @@ func (b *BlockChain) checkBlockContext(block *dcrutil.Block, prevNode *blockNode
 //
 // Decred: Check the stake transactions to make sure they don't have this txid
 // too.
-func (b *BlockChain) checkDupTxs(txSet []*dcrutil.Tx, view *UtxoViewpoint) error {
+func (b *BlockChain) checkDupTxs(txSet []*ndrutil.Tx, view *UtxoViewpoint) error {
 	if !chaincfg.CheckForDuplicateHashes {
 		return nil
 	}
@@ -922,7 +922,7 @@ func (b *BlockChain) checkDupTxs(txSet []*dcrutil.Tx, view *UtxoViewpoint) error
 //
 // NOTE: The transaction MUST have already been sanity checked with the
 // CheckTransactionSanity function prior to calling this function.
-func CheckTransactionInputs(subsidyCache *SubsidyCache, tx *dcrutil.Tx, txHeight int64, view *UtxoViewpoint, checkFraudProof bool, chainParams *chaincfg.Params) (int64, error) {
+func CheckTransactionInputs(subsidyCache *SubsidyCache, tx *ndrutil.Tx, txHeight int64, view *UtxoViewpoint, checkFraudProof bool, chainParams *chaincfg.Params) (int64, error) {
 	// Coinbase transactions have no inputs.
 	if IsCoinBase(tx) {
 		return 0, nil
@@ -1038,10 +1038,10 @@ func CheckTransactionInputs(subsidyCache *SubsidyCache, tx *dcrutil.Tx, txHeight
 				"value of %v", originTxAtom)
 			return 0, ruleError(ErrBadTxOutValue, str)
 		}
-		if originTxAtom > dcrutil.MaxAmount {
+		if originTxAtom > ndrutil.MaxAmount {
 			str := fmt.Sprintf("transaction output value of %v is "+
 				"higher than max allowed value of %v",
-				originTxAtom, dcrutil.MaxAmount)
+				originTxAtom, ndrutil.MaxAmount)
 			return 0, ruleError(ErrBadTxOutValue, str)
 		}
 
@@ -1051,11 +1051,11 @@ func CheckTransactionInputs(subsidyCache *SubsidyCache, tx *dcrutil.Tx, txHeight
 		lastAtomIn := totalAtomIn
 		totalAtomIn += originTxAtom
 		if totalAtomIn < lastAtomIn ||
-			totalAtomIn > dcrutil.MaxAmount {
+			totalAtomIn > ndrutil.MaxAmount {
 			str := fmt.Sprintf("total value of all transaction "+
 				"inputs is %v which is higher than max "+
 				"allowed value of %v", totalAtomIn,
-				dcrutil.MaxAmount)
+				ndrutil.MaxAmount)
 			return 0, ruleError(ErrBadTxOutValue, str)
 		}
 	}
@@ -1084,7 +1084,7 @@ func CheckTransactionInputs(subsidyCache *SubsidyCache, tx *dcrutil.Tx, txHeight
 // input and output scripts in the provided transaction.  This uses the
 // quicker, but imprecise, signature operation counting mechanism from
 // txscript.
-func CountSigOps(tx *dcrutil.Tx, isCoinBaseTx bool) int {
+func CountSigOps(tx *ndrutil.Tx, isCoinBaseTx bool) int {
 	msgTx := tx.MsgTx()
 
 	// Accumulate the number of signature operations in all transaction
@@ -1114,7 +1114,7 @@ func CountSigOps(tx *dcrutil.Tx, isCoinBaseTx bool) int {
 // transactions which are of the pay-to-script-hash type.  This uses the
 // precise, signature operation counting mechanism from the script engine which
 // requires access to the input transaction scripts.
-func CountP2SHSigOps(tx *dcrutil.Tx, isCoinBaseTx bool, view *UtxoViewpoint) (int, error) {
+func CountP2SHSigOps(tx *ndrutil.Tx, isCoinBaseTx bool, view *UtxoViewpoint) (int, error) {
 	// Coinbase transactions have no interesting inputs.
 	if isCoinBaseTx {
 		return 0, nil
@@ -1169,7 +1169,7 @@ func CountP2SHSigOps(tx *dcrutil.Tx, isCoinBaseTx bool, view *UtxoViewpoint) (in
 // sure they don't overflow the limits.  It takes a cumulative number of sig
 // ops as an argument and increments will each call.
 // TxTree true == Regular, false == Stake
-func checkNumSigOps(tx *dcrutil.Tx, view *UtxoViewpoint, index int, cumulativeSigOps int) (int, error) {
+func checkNumSigOps(tx *ndrutil.Tx, view *UtxoViewpoint, index int, cumulativeSigOps int) (int, error) {
 	numsigOps := CountSigOps(tx, index == 0)
 
 	// Since the first (and only the first) transaction has already been
@@ -1204,7 +1204,7 @@ func checkNumSigOps(tx *dcrutil.Tx, view *UtxoViewpoint, index int, cumulativeSi
 // transaction inputs for a transaction list given a predetermined TxStore.
 // After ensuring the transaction is valid, the transaction is connected to the
 // UTXO viewpoint.  TxTree true == Regular, false == Stake
-func (b *BlockChain) checkTransactionsAndConnect(subsidyCache *SubsidyCache, inputFees dcrutil.Amount, node *blockNode, txs []*dcrutil.Tx, view *UtxoViewpoint, stxos *[]spentTxOut, txTree bool) error {
+func (b *BlockChain) checkTransactionsAndConnect(subsidyCache *SubsidyCache, inputFees ndrutil.Amount, node *blockNode, txs []*ndrutil.Tx, view *UtxoViewpoint, stxos *[]spentTxOut, txTree bool) error {
 	// Perform several checks on the inputs for each transaction.  Also
 	// accumulate the total fees.  This could technically be combined with
 	// the loop above instead of running another loop over the
@@ -1328,7 +1328,7 @@ func (b *BlockChain) consensusScriptVerifyFlags(node *blockNode) (txscript.Scrip
 // the bulk of its work.
 //
 // This function MUST be called with the chain state lock held (for writes).
-func (b *BlockChain) checkConnectBlock(node *blockNode, block, parent *dcrutil.Block, view *UtxoViewpoint, stxos *[]spentTxOut) error {
+func (b *BlockChain) checkConnectBlock(node *blockNode, block, parent *ndrutil.Block, view *UtxoViewpoint, stxos *[]spentTxOut) error {
 	// If the side chain blocks end up in the database, a call to
 	// CheckBlockSanity should be done here in case a previous version
 	// allowed a block that is no longer valid.  However, since the
@@ -1446,7 +1446,7 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block, parent *dcrutil.B
 // the current tip of the main chain or its parent.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) CheckConnectBlockTemplate(block *dcrutil.Block) error {
+func (b *BlockChain) CheckConnectBlockTemplate(block *ndrutil.Block) error {
 	b.chainLock.Lock()
 	defer b.chainLock.Unlock()
 

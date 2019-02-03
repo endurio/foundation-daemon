@@ -12,8 +12,8 @@ import (
 	"fmt"
 
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrjson"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrjson"
+	"github.com/endurio/ndrd/ndrutil"
 	"github.com/endurio/ndrd/wire"
 )
 
@@ -40,7 +40,7 @@ func (r FutureCreateEncryptedWalletResult) Receive() error {
 //
 // NOTE: This is a ndrw extension.
 func (c *Client) CreateEncryptedWalletAsync(passphrase string) FutureCreateEncryptedWalletResult {
-	cmd := dcrjson.NewCreateEncryptedWalletCmd(passphrase)
+	cmd := ndrjson.NewCreateEncryptedWalletCmd(passphrase)
 	return c.sendCmd(cmd)
 }
 
@@ -86,7 +86,7 @@ func (r FutureDebugLevelResult) Receive() (string, error) {
 //
 // NOTE: This is a ndrd extension.
 func (c *Client) DebugLevelAsync(levelSpec string) FutureDebugLevelResult {
-	cmd := dcrjson.NewDebugLevelCmd(levelSpec)
+	cmd := ndrjson.NewDebugLevelCmd(levelSpec)
 	return c.sendCmd(cmd)
 }
 
@@ -128,8 +128,8 @@ func (r FutureExistsAddressResult) Receive() (bool, error) {
 // ExistsAddressAsync returns an instance of a type that can be used to get the
 // result of the RPC at some future time by invoking the Receive function on the
 // returned instance.
-func (c *Client) ExistsAddressAsync(address dcrutil.Address) FutureExistsAddressResult {
-	cmd := dcrjson.NewExistsAddressCmd(address.EncodeAddress())
+func (c *Client) ExistsAddressAsync(address ndrutil.Address) FutureExistsAddressResult {
+	cmd := ndrjson.NewExistsAddressCmd(address.EncodeAddress())
 	return c.sendCmd(cmd)
 }
 
@@ -137,7 +137,7 @@ func (c *Client) ExistsAddressAsync(address dcrutil.Address) FutureExistsAddress
 // used on the main chain or in mempool.
 //
 // NOTE: This is a ndrd extension.
-func (c *Client) ExistsAddress(address dcrutil.Address) (bool, error) {
+func (c *Client) ExistsAddress(address ndrutil.Address) (bool, error) {
 	return c.ExistsAddressAsync(address).Receive()
 }
 
@@ -166,13 +166,13 @@ func (r FutureExistsAddressesResult) Receive() (string, error) {
 // ExistsAddressesAsync returns an instance of a type that can be used to get the
 // result of the RPC at some future time by invoking the Receive function on the
 // returned instance.
-func (c *Client) ExistsAddressesAsync(addresses []dcrutil.Address) FutureExistsAddressesResult {
+func (c *Client) ExistsAddressesAsync(addresses []ndrutil.Address) FutureExistsAddressesResult {
 	addrsStr := make([]string, len(addresses))
 	for i := range addresses {
 		addrsStr[i] = addresses[i].EncodeAddress()
 	}
 
-	cmd := dcrjson.NewExistsAddressesCmd(addrsStr)
+	cmd := ndrjson.NewExistsAddressesCmd(addrsStr)
 	return c.sendCmd(cmd)
 }
 
@@ -180,7 +180,7 @@ func (c *Client) ExistsAddressesAsync(addresses []dcrutil.Address) FutureExistsA
 // in the blockchain or memory pool.
 //
 // NOTE: This is a ndrd extension.
-func (c *Client) ExistsAddresses(addresses []dcrutil.Address) (string, error) {
+func (c *Client) ExistsAddresses(addresses []ndrutil.Address) (string, error) {
 	return c.ExistsAddressesAsync(addresses).Receive()
 }
 
@@ -214,7 +214,7 @@ func (c *Client) ExistsMissedTicketsAsync(hashes []*chainhash.Hash) FutureExists
 		copy(hashBlob[i*chainhash.HashSize:(i+1)*chainhash.HashSize],
 			hash[:])
 	}
-	cmd := dcrjson.NewExistsMissedTicketsCmd(hex.EncodeToString(hashBlob))
+	cmd := ndrjson.NewExistsMissedTicketsCmd(hex.EncodeToString(hashBlob))
 	return c.sendCmd(cmd)
 }
 
@@ -255,7 +255,7 @@ func (c *Client) ExistsExpiredTicketsAsync(hashes []*chainhash.Hash) FutureExist
 		copy(hashBlob[i*chainhash.HashSize:(i+1)*chainhash.HashSize],
 			hash[:])
 	}
-	cmd := dcrjson.NewExistsExpiredTicketsCmd(hex.EncodeToString(hashBlob))
+	cmd := ndrjson.NewExistsExpiredTicketsCmd(hex.EncodeToString(hashBlob))
 	return c.sendCmd(cmd)
 }
 
@@ -293,7 +293,7 @@ func (r FutureExistsLiveTicketResult) Receive() (bool, error) {
 // result of the RPC at some future time by invoking the Receive function on the
 // returned instance.
 func (c *Client) ExistsLiveTicketAsync(hash *chainhash.Hash) FutureExistsLiveTicketResult {
-	cmd := dcrjson.NewExistsLiveTicketCmd(hash.String())
+	cmd := ndrjson.NewExistsLiveTicketCmd(hash.String())
 	return c.sendCmd(cmd)
 }
 
@@ -336,7 +336,7 @@ func (c *Client) ExistsLiveTicketsAsync(hashes []*chainhash.Hash) FutureExistsLi
 		copy(hashBlob[i*chainhash.HashSize:(i+1)*chainhash.HashSize],
 			hash[:])
 	}
-	cmd := dcrjson.NewExistsLiveTicketsCmd(hex.EncodeToString(hashBlob))
+	cmd := ndrjson.NewExistsLiveTicketsCmd(hex.EncodeToString(hashBlob))
 	return c.sendCmd(cmd)
 }
 
@@ -379,7 +379,7 @@ func (c *Client) ExistsMempoolTxsAsync(hashes []*chainhash.Hash) FutureExistsMem
 		copy(hashBlob[i*chainhash.HashSize:(i+1)*chainhash.HashSize],
 			hash[:])
 	}
-	cmd := dcrjson.NewExistsMempoolTxsCmd(hex.EncodeToString(hashBlob))
+	cmd := ndrjson.NewExistsMempoolTxsCmd(hex.EncodeToString(hashBlob))
 	return c.sendCmd(cmd)
 }
 
@@ -446,7 +446,7 @@ func (r FutureExportWatchingWalletResult) Receive() ([]byte, []byte, error) {
 //
 // NOTE: This is a ndrw extension.
 func (c *Client) ExportWatchingWalletAsync(account string) FutureExportWatchingWalletResult {
-	cmd := dcrjson.NewExportWatchingWalletCmd(&account, dcrjson.Bool(true))
+	cmd := ndrjson.NewExportWatchingWalletCmd(&account, ndrjson.Bool(true))
 	return c.sendCmd(cmd)
 }
 
@@ -473,7 +473,7 @@ func (r FutureGetBestBlockResult) Receive() (*chainhash.Hash, int64, error) {
 	}
 
 	// Unmarshal result as a getbestblock result object.
-	var bestBlock dcrjson.GetBestBlockResult
+	var bestBlock ndrjson.GetBestBlockResult
 	err = json.Unmarshal(res, &bestBlock)
 	if err != nil {
 		return nil, 0, err
@@ -496,7 +496,7 @@ func (r FutureGetBestBlockResult) Receive() (*chainhash.Hash, int64, error) {
 //
 // NOTE: This is a ndrd extension.
 func (c *Client) GetBestBlockAsync() FutureGetBestBlockResult {
-	cmd := dcrjson.NewGetBestBlockCmd()
+	cmd := ndrjson.NewGetBestBlockCmd()
 	return c.sendCmd(cmd)
 }
 
@@ -538,7 +538,7 @@ func (r FutureGetCurrentNetResult) Receive() (wire.CurrencyNet, error) {
 //
 // NOTE: This is a ndrd extension.
 func (c *Client) GetCurrentNetAsync() FutureGetCurrentNetResult {
-	cmd := dcrjson.NewGetCurrentNetCmd()
+	cmd := ndrjson.NewGetCurrentNetCmd()
 	return c.sendCmd(cmd)
 }
 
@@ -555,14 +555,14 @@ type FutureGetHeadersResult chan *response
 
 // Receive waits for the response promised by the future and returns the
 // getheaders result.
-func (r FutureGetHeadersResult) Receive() (*dcrjson.GetHeadersResult, error) {
+func (r FutureGetHeadersResult) Receive() (*ndrjson.GetHeadersResult, error) {
 	res, err := receiveFuture(r)
 	if err != nil {
 		return nil, err
 	}
 
 	// Unmarsal result as a getheaders result object.
-	var vr dcrjson.GetHeadersResult
+	var vr ndrjson.GetHeadersResult
 	err = json.Unmarshal(res, &vr)
 	if err != nil {
 		return nil, err
@@ -580,7 +580,7 @@ func (c *Client) GetHeadersAsync(blockLocators []*chainhash.Hash, hashStop *chai
 	for i := range blockLocators {
 		copy(concatenatedLocators[i*chainhash.HashSize:], blockLocators[i][:])
 	}
-	cmd := dcrjson.NewGetHeadersCmd(hex.EncodeToString(concatenatedLocators),
+	cmd := ndrjson.NewGetHeadersCmd(hex.EncodeToString(concatenatedLocators),
 		hashStop.String())
 	return c.sendCmd(cmd)
 }
@@ -588,7 +588,7 @@ func (c *Client) GetHeadersAsync(blockLocators []*chainhash.Hash, hashStop *chai
 // GetHeaders mimics the wire protocol getheaders and headers messages by
 // returning all headers on the main chain after the first known block in the
 // locators, up until a block hash matches hashStop.
-func (c *Client) GetHeaders(blockLocators []*chainhash.Hash, hashStop *chainhash.Hash) (*dcrjson.GetHeadersResult, error) {
+func (c *Client) GetHeaders(blockLocators []*chainhash.Hash, hashStop *chainhash.Hash) (*ndrjson.GetHeadersResult, error) {
 	return c.GetHeadersAsync(blockLocators, hashStop).Receive()
 }
 
@@ -598,14 +598,14 @@ type FutureListAddressTransactionsResult chan *response
 
 // Receive waits for the response promised by the future and returns information
 // about all transactions associated with the provided addresses.
-func (r FutureListAddressTransactionsResult) Receive() ([]dcrjson.ListTransactionsResult, error) {
+func (r FutureListAddressTransactionsResult) Receive() ([]ndrjson.ListTransactionsResult, error) {
 	res, err := receiveFuture(r)
 	if err != nil {
 		return nil, err
 	}
 
 	// Unmarshal the result as an array of listtransactions objects.
-	var transactions []dcrjson.ListTransactionsResult
+	var transactions []ndrjson.ListTransactionsResult
 	err = json.Unmarshal(res, &transactions)
 	if err != nil {
 		return nil, err
@@ -620,13 +620,13 @@ func (r FutureListAddressTransactionsResult) Receive() ([]dcrjson.ListTransactio
 // See ListAddressTransactions for the blocking version and more details.
 //
 // NOTE: This is a ndrd extension.
-func (c *Client) ListAddressTransactionsAsync(addresses []dcrutil.Address, account string) FutureListAddressTransactionsResult {
+func (c *Client) ListAddressTransactionsAsync(addresses []ndrutil.Address, account string) FutureListAddressTransactionsResult {
 	// Convert addresses to strings.
 	addrs := make([]string, 0, len(addresses))
 	for _, addr := range addresses {
 		addrs = append(addrs, addr.EncodeAddress())
 	}
-	cmd := dcrjson.NewListAddressTransactionsCmd(addrs, &account)
+	cmd := ndrjson.NewListAddressTransactionsCmd(addrs, &account)
 	return c.sendCmd(cmd)
 }
 
@@ -634,7 +634,7 @@ func (c *Client) ListAddressTransactionsAsync(addresses []dcrutil.Address, accou
 // with the provided addresses.
 //
 // NOTE: This is a ndrw extension.
-func (c *Client) ListAddressTransactions(addresses []dcrutil.Address, account string) ([]dcrjson.ListTransactionsResult, error) {
+func (c *Client) ListAddressTransactions(addresses []ndrutil.Address, account string) ([]ndrjson.ListTransactionsResult, error) {
 	return c.ListAddressTransactionsAsync(addresses, account).Receive()
 }
 
@@ -644,14 +644,14 @@ type FutureSessionResult chan *response
 
 // Receive waits for the response promised by the future and returns the
 // session result.
-func (r FutureSessionResult) Receive() (*dcrjson.SessionResult, error) {
+func (r FutureSessionResult) Receive() (*ndrjson.SessionResult, error) {
 	res, err := receiveFuture(r)
 	if err != nil {
 		return nil, err
 	}
 
 	// Unmarshal result as a session result object.
-	var session dcrjson.SessionResult
+	var session ndrjson.SessionResult
 	err = json.Unmarshal(res, &session)
 	if err != nil {
 		return nil, err
@@ -673,7 +673,7 @@ func (c *Client) SessionAsync() FutureSessionResult {
 		return newFutureError(ErrWebsocketsRequired)
 	}
 
-	cmd := dcrjson.NewSessionCmd()
+	cmd := ndrjson.NewSessionCmd()
 	return c.sendCmd(cmd)
 }
 
@@ -682,7 +682,7 @@ func (c *Client) SessionAsync() FutureSessionResult {
 // This RPC requires the client to be running in websocket mode.
 //
 // NOTE: This is a Decred extension.
-func (c *Client) Session() (*dcrjson.SessionResult, error) {
+func (c *Client) Session() (*ndrjson.SessionResult, error) {
 	return c.SessionAsync().Receive()
 }
 
@@ -692,14 +692,14 @@ type FutureVersionResult chan *response
 
 // Receive waits for the response promised by the future and returns the version
 // result.
-func (r FutureVersionResult) Receive() (map[string]dcrjson.VersionResult, error) {
+func (r FutureVersionResult) Receive() (map[string]ndrjson.VersionResult, error) {
 	res, err := receiveFuture(r)
 	if err != nil {
 		return nil, err
 	}
 
 	// Unmarsal result as a version result object.
-	var vr map[string]dcrjson.VersionResult
+	var vr map[string]ndrjson.VersionResult
 	err = json.Unmarshal(res, &vr)
 	if err != nil {
 		return nil, err
@@ -713,11 +713,11 @@ func (r FutureVersionResult) Receive() (map[string]dcrjson.VersionResult, error)
 //
 // See Version for the blocking version and more details.
 func (c *Client) VersionAsync() FutureVersionResult {
-	cmd := dcrjson.NewVersionCmd()
+	cmd := ndrjson.NewVersionCmd()
 	return c.sendCmd(cmd)
 }
 
 // Version returns information about the server's JSON-RPC API versions.
-func (c *Client) Version() (map[string]dcrjson.VersionResult, error) {
+func (c *Client) Version() (map[string]ndrjson.VersionResult, error) {
 	return c.VersionAsync().Receive()
 }

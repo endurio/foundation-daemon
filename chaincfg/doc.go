@@ -25,7 +25,7 @@
 //          "fmt"
 //          "log"
 //
-//          "github.com/endurio/ndrd/dcrutil"
+//          "github.com/endurio/ndrd/ndrutil"
 //          "github.com/endurio/ndrd/chaincfg"
 //  )
 //
@@ -46,7 +46,7 @@
 //
 //          // Create and print new payment address, specific to the active network.
 //          pubKeyHash := make([]byte, 20)
-//          addr, err := dcrutil.NewAddressPubKeyHash(pubKeyHash, chainParams)
+//          addr, err := ndrutil.NewAddressPubKeyHash(pubKeyHash, chainParams)
 //          if err != nil {
 //                  log.Fatal(err)
 //          }

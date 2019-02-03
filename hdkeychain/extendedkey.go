@@ -22,9 +22,9 @@ import (
 	"github.com/decred/base58"
 	"github.com/endurio/ndrd/chaincfg"
 	"github.com/endurio/ndrd/chaincfg/chainhash"
-	"github.com/endurio/ndrd/dcrec"
-	"github.com/endurio/ndrd/dcrec/secp256k1"
-	"github.com/endurio/ndrd/dcrutil"
+	"github.com/endurio/ndrd/ndrec"
+	"github.com/endurio/ndrd/ndrec/secp256k1"
+	"github.com/endurio/ndrd/ndrutil"
 )
 
 const (
@@ -304,7 +304,7 @@ func (k *ExtendedKey) Child(i uint32) (*ExtendedKey, error) {
 
 	// The fingerprint of the parent for the derived child is the first 4
 	// bytes of the RIPEMD160(BLAKE256(parentPubKey)).
-	parentFP := dcrutil.Hash160(k.pubKeyBytes())[:4]
+	parentFP := ndrutil.Hash160(k.pubKeyBytes())[:4]
 	return newExtendedKey(k.version, childKey, childChainCode, parentFP,
 		k.depth+1, i, isPrivate), nil
 }
@@ -337,12 +337,12 @@ func (k *ExtendedKey) Neuter() (*ExtendedKey, error) {
 		k.depth, k.childNum, false), nil
 }
 
-// ECPubKey converts the extended key to a dcrec public key and returns it.
+// ECPubKey converts the extended key to a ndrec public key and returns it.
 func (k *ExtendedKey) ECPubKey() (*secp256k1.PublicKey, error) {
 	return secp256k1.ParsePubKey(k.pubKeyBytes())
 }
 
-// ECPrivKey converts the extended key to a dcrec private key and returns it.
+// ECPrivKey converts the extended key to a ndrec private key and returns it.
 // As you might imagine this is only possible if the extended key is a private
 // extended key (as determined by the IsPrivate function).  The ErrNotPrivExtKey
 // error will be returned if this function is called on a public extended key.
@@ -357,9 +357,9 @@ func (k *ExtendedKey) ECPrivKey() (*secp256k1.PrivateKey, error) {
 
 // Address converts the extended key to a standard Decred pay-to-pubkey-hash
 // address for the passed network.
-func (k *ExtendedKey) Address(net *chaincfg.Params) (*dcrutil.AddressPubKeyHash, error) {
-	pkHash := dcrutil.Hash160(k.pubKeyBytes())
-	return dcrutil.NewAddressPubKeyHash(pkHash, net, dcrec.STEcdsaSecp256k1)
+func (k *ExtendedKey) Address(net *chaincfg.Params) (*ndrutil.AddressPubKeyHash, error) {
+	pkHash := ndrutil.Hash160(k.pubKeyBytes())
+	return ndrutil.NewAddressPubKeyHash(pkHash, net, ndrec.STEcdsaSecp256k1)
 }
 
 // paddedAppend appends the src byte slice to dst, returning the new slice.
