@@ -154,7 +154,7 @@ func TestBlock(t *testing.T) {
 	}
 
 	// Ensure the transaction location information is accurate.
-	txLocs, _, err := b.TxLoc()
+	txLocs, err := b.TxLoc()
 	if err != nil {
 		t.Errorf("TxLoc: %v", err)
 		return
@@ -297,7 +297,7 @@ func TestBlockErrors(t *testing.T) {
 	// This makes use of the test package only function, SetBlockBytes, to
 	// inject a short byte buffer.
 	b.SetBlockBytes(shortBytes)
-	_, _, err = b.TxLoc()
+	_, err = b.TxLoc()
 	if err != io.EOF {
 		t.Errorf("TxLoc: did not get expected error - "+
 			"got %v, want %v", err, io.EOF)
@@ -559,5 +559,4 @@ var Block100000 = wire.MsgBlock{
 			LockTime: 0,
 		},
 	},
-	STransactions: []*wire.MsgTx{},
 }

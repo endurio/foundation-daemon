@@ -36,28 +36,12 @@ func TestTx(t *testing.T) {
 			gotIndex, wantIndex)
 	}
 
-	// Ensure tree type set and get work properly.
-	wantTree := int8(0)
-	tx.SetTree(0)
-	if gotTree := tx.Tree(); gotTree != wantTree {
-		t.Errorf("Index: mismatched index - got %v, want %v",
-			gotTree, wantTree)
-	}
-
 	// Ensure stake transaction index set and get work properly.
 	wantIndex = 0
 	tx.SetIndex(0)
 	if gotIndex := tx.Index(); gotIndex != wantIndex {
 		t.Errorf("Index: mismatched index - got %v, want %v",
 			gotIndex, wantIndex)
-	}
-
-	// Ensure tree type set and get work properly.
-	wantTree = int8(1)
-	tx.SetTree(1)
-	if gotTree := tx.Tree(); gotTree != wantTree {
-		t.Errorf("Index: mismatched index - got %v, want %v",
-			gotTree, wantTree)
 	}
 
 	// Hash for block 100,000 transaction 0.

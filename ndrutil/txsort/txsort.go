@@ -38,11 +38,6 @@ func (s sortableInputSlice) Swap(i, j int) {
 // First sort based on input tree, then input hash (reversed / big-endian), then
 // index.
 func (s sortableInputSlice) Less(i, j int) bool {
-	// Sort by tree first.
-	if s[i].PreviousOutPoint.Tree != s[j].PreviousOutPoint.Tree {
-		return s[i].PreviousOutPoint.Tree < s[j].PreviousOutPoint.Tree
-	}
-
 	// Input hashes are the same, so compare the index.
 	ihash := s[i].PreviousOutPoint.Hash
 	jhash := s[j].PreviousOutPoint.Hash
